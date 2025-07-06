@@ -1,401 +1,370 @@
 "use client"
 
 import { useState } from "react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, Users, TrendingUp, Star, Plus, Clock, MessageCircle, Globe, Lock } from "lucide-react"
-
-interface GroupsPageProps {
-  onGroupSelect: (groupId: number) => void
-}
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  Search,
+  Users,
+  TrendingUp,
+  Lock,
+  Globe,
+  UserPlus,
+  MessageCircle,
+  Filter,
+  Camera,
+  Mountain,
+  Utensils,
+  Plane,
+  Heart,
+} from "lucide-react"
 
 const trendingGroups = [
   {
     id: 1,
     name: "Travel Photography Masters",
-    description:
-      "A community for passionate travel photographers sharing tips, techniques, and breathtaking shots from around the world.",
+    description: "Share your best travel shots and learn from pros",
     avatar: "/placeholder.svg?height=80&width=80",
-    coverImage: "/placeholder.svg?height=200&width=400",
-    members: "45.2K",
-    posts: "1.2K",
+    coverImage: "/placeholder.svg?height=120&width=300",
+    members: 45000,
+    posts: 1200,
     category: "Photography",
-    privacy: "Public",
+    isPrivate: false,
+    tags: ["Photography", "Travel", "Tips"],
     activity: "Very Active",
-    tags: ["photography", "travel", "landscape"],
-    recentActivity: "2 hours ago",
     isJoined: false,
+    growthRate: "+15.2%",
   },
   {
     id: 2,
-    name: "Backpackers United",
-    description:
-      "Connect with fellow backpackers, share travel stories, get advice on budget travel, and find travel companions.",
+    name: "Digital Nomad Community",
+    description: "Remote workers sharing tips, locations, and experiences",
     avatar: "/placeholder.svg?height=80&width=80",
-    coverImage: "/placeholder.svg?height=200&width=400",
-    members: "32.8K",
-    posts: "856",
-    category: "Travel",
-    privacy: "Public",
-    activity: "Active",
-    tags: ["backpacking", "budget-travel", "adventure"],
-    recentActivity: "1 hour ago",
+    coverImage: "/placeholder.svg?height=120&width=300",
+    members: 32000,
+    posts: 890,
+    category: "Lifestyle",
+    isPrivate: false,
+    tags: ["Remote Work", "Travel", "Lifestyle"],
+    activity: "Very Active",
     isJoined: true,
+    growthRate: "+22.8%",
   },
   {
     id: 3,
-    name: "Food Explorers Global",
-    description:
-      "Discover authentic local cuisines, share food experiences, and connect with food lovers from every corner of the globe.",
+    name: "Backpackers United",
+    description: "Budget travel tips and backpacking adventures worldwide",
     avatar: "/placeholder.svg?height=80&width=80",
-    coverImage: "/placeholder.svg?height=200&width=400",
-    members: "28.5K",
-    posts: "2.1K",
-    category: "Food",
-    privacy: "Public",
-    activity: "Very Active",
-    tags: ["food", "cuisine", "local-food"],
-    recentActivity: "30 minutes ago",
+    coverImage: "/placeholder.svg?height=120&width=300",
+    members: 28000,
+    posts: 756,
+    category: "Travel",
+    isPrivate: false,
+    tags: ["Backpacking", "Budget Travel", "Adventure"],
+    activity: "Active",
     isJoined: false,
+    growthRate: "+18.5%",
   },
   {
     id: 4,
-    name: "Adventure Seekers",
-    description:
-      "For thrill-seekers and adventure enthusiasts. Share your extreme sports experiences and plan epic adventures together.",
+    name: "Foodie Adventures",
+    description: "Discover amazing cuisines and restaurants around the world",
     avatar: "/placeholder.svg?height=80&width=80",
-    coverImage: "/placeholder.svg?height=200&width=400",
-    members: "51.3K",
-    posts: "1.8K",
-    category: "Adventure",
-    privacy: "Public",
-    activity: "Active",
-    tags: ["adventure", "extreme-sports", "hiking"],
-    recentActivity: "45 minutes ago",
+    coverImage: "/placeholder.svg?height=120&width=300",
+    members: 38000,
+    posts: 1100,
+    category: "Food",
+    isPrivate: false,
+    tags: ["Food", "Restaurants", "Culture"],
+    activity: "Very Active",
     isJoined: false,
+    growthRate: "+12.3%",
   },
 ]
 
-const myGroups = [
-  {
-    id: 2,
-    name: "Backpackers United",
-    avatar: "/placeholder.svg?height=60&width=60",
-    members: "32.8K",
-    unreadPosts: 12,
-    lastActivity: "2 hours ago",
-    role: "Member",
-  },
+const allGroups = [
+  ...trendingGroups,
   {
     id: 5,
-    name: "Digital Nomads Hub",
-    avatar: "/placeholder.svg?height=60&width=60",
-    members: "67.1K",
-    unreadPosts: 5,
-    lastActivity: "4 hours ago",
-    role: "Admin",
+    name: "Mountain Climbers Elite",
+    description: "For serious mountaineers and climbing enthusiasts",
+    avatar: "/placeholder.svg?height=80&width=80",
+    coverImage: "/placeholder.svg?height=120&width=300",
+    members: 15000,
+    posts: 420,
+    category: "Adventure",
+    isPrivate: true,
+    tags: ["Climbing", "Mountains", "Extreme Sports"],
+    activity: "Moderate",
+    isJoined: false,
   },
   {
     id: 6,
     name: "Solo Female Travelers",
-    avatar: "/placeholder.svg?height=60&width=60",
-    members: "23.4K",
-    unreadPosts: 8,
-    lastActivity: "1 day ago",
-    role: "Moderator",
+    description: "Safe travel tips and support for women traveling alone",
+    avatar: "/placeholder.svg?height=80&width=80",
+    coverImage: "/placeholder.svg?height=120&width=300",
+    members: 22000,
+    posts: 680,
+    category: "Travel",
+    isPrivate: false,
+    tags: ["Solo Travel", "Safety", "Women"],
+    activity: "Active",
+    isJoined: true,
   },
-]
-
-const suggestedGroups = [
   {
     id: 7,
-    name: "Street Art Hunters",
-    description: "Discover and share amazing street art from cities around the world.",
-    avatar: "/placeholder.svg?height=60&width=60",
-    members: "15.7K",
-    category: "Art",
-    reason: "Based on your interests in photography",
-    mutualMembers: 8,
+    name: "Luxury Travel Experiences",
+    description: "Premium destinations and high-end travel experiences",
+    avatar: "/placeholder.svg?height=80&width=80",
+    coverImage: "/placeholder.svg?height=120&width=300",
+    members: 12000,
+    posts: 340,
+    category: "Luxury",
+    isPrivate: true,
+    tags: ["Luxury", "Premium", "Exclusive"],
+    activity: "Moderate",
+    isJoined: false,
   },
   {
     id: 8,
-    name: "Sustainable Travel",
-    description: "Promoting eco-friendly and responsible travel practices.",
-    avatar: "/placeholder.svg?height=60&width=60",
-    members: "19.2K",
-    category: "Environment",
-    reason: "Popular in your network",
-    mutualMembers: 12,
-  },
-  {
-    id: 9,
-    name: "Local Guides Network",
-    description: "Connect with local guides and get insider tips for your travels.",
-    avatar: "/placeholder.svg?height=60&width=60",
-    members: "41.8K",
-    category: "Travel",
-    reason: "Recommended for you",
-    mutualMembers: 15,
+    name: "Street Food Hunters",
+    description: "Finding the best street food in every corner of the world",
+    avatar: "/placeholder.svg?height=80&width=80",
+    coverImage: "/placeholder.svg?height=120&width=300",
+    members: 19000,
+    posts: 590,
+    category: "Food",
+    isPrivate: false,
+    tags: ["Street Food", "Local Cuisine", "Budget Eats"],
+    activity: "Active",
+    isJoined: false,
   },
 ]
 
+const categories = [
+  { name: "All", icon: Users, count: allGroups.length },
+  { name: "Travel", icon: Plane, count: 4 },
+  { name: "Photography", icon: Camera, count: 2 },
+  { name: "Food", icon: Utensils, count: 3 },
+  { name: "Adventure", icon: Mountain, count: 2 },
+  { name: "Lifestyle", icon: Heart, count: 1 },
+]
+
+interface GroupsPageProps {
+  onGroupSelect: (groupId: number) => void
+}
+
 export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedPrivacy, setSelectedPrivacy] = useState("all")
+  const [selectedCategory, setSelectedCategory] = useState("All")
+  const [filteredGroups, setFilteredGroups] = useState(allGroups)
+
+  const handleCategoryFilter = (category: string) => {
+    setSelectedCategory(category)
+    if (category === "All") {
+      setFilteredGroups(allGroups)
+    } else {
+      setFilteredGroups(allGroups.filter((group) => group.category === category))
+    }
+  }
+
+  const handleJoinToggle = (groupId: number) => {
+    setFilteredGroups((prev) =>
+      prev.map((group) => (group.id === groupId ? { ...group, isJoined: !group.isJoined } : group)),
+    )
+  }
+
+  const GroupCard = ({ group, isTrending = false }: { group: any; isTrending?: boolean }) => (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
+      <div className="relative h-32 bg-gradient-to-r from-blue-400 to-purple-500">
+        <div className="absolute inset-0 bg-black bg-opacity-20" />
+        <div className="absolute top-3 right-3 flex gap-2">
+          {isTrending && group.growthRate && (
+            <Badge className="bg-green-500 text-white">
+              <TrendingUp className="w-3 h-3 mr-1" />
+              {group.growthRate}
+            </Badge>
+          )}
+          <div className="flex items-center gap-1 bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs">
+            {group.isPrivate ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+            {group.isPrivate ? "Private" : "Public"}
+          </div>
+        </div>
+        <div className="absolute bottom-3 left-3">
+          <Avatar className="w-16 h-16 border-4 border-white">
+            <AvatarImage src={group.avatar || "/placeholder.svg"} alt={group.name} />
+            <AvatarFallback>
+              {group.name
+                .split(" ")
+                .map((n: string) => n[0])
+                .join("")}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+      </div>
+
+      <CardContent className="p-4" onClick={() => onGroupSelect(group.id)}>
+        <div className="mb-3">
+          <h3 className="font-bold text-lg mb-1 group-hover:text-blue-600 transition-colors">{group.name}</h3>
+          <p className="text-sm text-gray-600 line-clamp-2 mb-2">{group.description}</p>
+
+          <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+            <div className="flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              <span>{group.members.toLocaleString()} members</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <MessageCircle className="w-3 h-3" />
+              <span>{group.posts} posts</span>
+            </div>
+            <div
+              className={`px-2 py-1 rounded-full text-xs ${
+                group.activity === "Very Active"
+                  ? "bg-green-100 text-green-700"
+                  : group.activity === "Active"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {group.activity}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-1 mb-3">
+            {group.tags.map((tag: string) => (
+              <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          <Button
+            size="sm"
+            variant={group.isJoined ? "outline" : "default"}
+            className="flex-1"
+            onClick={() => handleJoinToggle(group.id)}
+          >
+            {group.isJoined ? (
+              <>
+                <Users className="w-4 h-4 mr-2" />
+                Joined
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-4 h-4 mr-2" />
+                {group.isPrivate ? "Request" : "Join"}
+              </>
+            )}
+          </Button>
+          <Button size="sm" variant="outline">
+            <MessageCircle className="w-4 h-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold">Groups</h1>
-            <div className="flex items-center gap-2">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Group
-              </Button>
-              <Button variant="outline" size="icon">
-                <Filter className="w-4 h-4" />
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold">Discover Groups</h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search groups..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+              <Button variant="outline" size="sm">
+                <Filter className="w-4 h-4 mr-2" />
+                Filters
               </Button>
             </div>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="flex gap-4 mb-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Search groups..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="travel">Travel</SelectItem>
-                <SelectItem value="photography">Photography</SelectItem>
-                <SelectItem value="food">Food</SelectItem>
-                <SelectItem value="adventure">Adventure</SelectItem>
-                <SelectItem value="culture">Culture</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={selectedPrivacy} onValueChange={setSelectedPrivacy}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Privacy" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Groups</SelectItem>
-                <SelectItem value="public">Public</SelectItem>
-                <SelectItem value="private">Private</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <Tabs defaultValue="discover" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="discover">Discover</TabsTrigger>
-            <TabsTrigger value="my-groups">My Groups</TabsTrigger>
-            <TabsTrigger value="suggested">Suggested</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="discover" className="space-y-6">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-5 h-5 text-orange-500" />
-              <h2 className="text-lg font-semibold">Trending Groups</h2>
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* Categories */}
+        <div className="mb-8">
+          <ScrollArea className="w-full">
+            <div className="flex gap-2 pb-2">
+              {categories.map((category) => {
+                const IconComponent = category.icon
+                return (
+                  <Button
+                    key={category.name}
+                    variant={selectedCategory === category.name ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleCategoryFilter(category.name)}
+                    className="flex items-center gap-2 whitespace-nowrap"
+                  >
+                    <IconComponent className="w-4 h-4" />
+                    {category.name}
+                    <Badge variant="secondary" className="ml-1">
+                      {category.count}
+                    </Badge>
+                  </Button>
+                )
+              })}
             </div>
+          </ScrollArea>
+        </div>
 
-            <div className="space-y-6">
+        {/* Trending Groups */}
+        {selectedCategory === "All" && (
+          <section className="mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-gradient-to-r from-pink-500 to-orange-500 p-2 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Trending Groups</h2>
+                <p className="text-sm text-gray-600">Groups gaining popularity this week</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {trendingGroups.map((group) => (
-                <Card
-                  key={group.id}
-                  className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => onGroupSelect(group.id)}
-                >
-                  <div className="relative h-32 bg-gradient-to-r from-blue-400 to-purple-500 rounded-t-lg">
-                    <div className="absolute inset-0 bg-black bg-opacity-20 rounded-t-lg" />
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-16 h-16 border-2 border-white">
-                          <AvatarImage src={group.avatar || "/placeholder.svg"} />
-                          <AvatarFallback>{group.name[0]}</AvatarFallback>
-                        </Avatar>
-                        <div className="text-white">
-                          <h3 className="font-semibold text-lg">{group.name}</h3>
-                          <div className="flex items-center gap-2 text-sm opacity-90">
-                            <Users className="w-4 h-4" />
-                            {group.members} members
-                            <span>•</span>
-                            {group.privacy === "Public" ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                            {group.privacy}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <CardContent className="p-6">
-                    <p className="text-gray-700 mb-4 line-clamp-2">{group.description}</p>
-
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="w-4 h-4" />
-                          {group.posts} posts
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {group.recentActivity}
-                        </div>
-                      </div>
-                      <Badge variant={group.activity === "Very Active" ? "default" : "secondary"}>
-                        {group.activity}
-                      </Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{group.category}</Badge>
-                        <div className="flex gap-1">
-                          {group.tags.slice(0, 2).map((tag) => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              #{tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <Button
-                        variant={group.isJoined ? "outline" : "default"}
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                        }}
-                      >
-                        {group.isJoined ? "Joined" : "Join Group"}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <GroupCard key={group.id} group={group} isTrending />
               ))}
             </div>
-          </TabsContent>
+          </section>
+        )}
 
-          <TabsContent value="my-groups" className="space-y-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="w-5 h-5 text-blue-500" />
-              <h2 className="text-lg font-semibold">My Groups</h2>
+        {/* All Groups */}
+        <section>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-2 rounded-lg">
+              <Users className="w-5 h-5 text-white" />
             </div>
-
-            <div className="space-y-4">
-              {myGroups.map((group) => (
-                <Card
-                  key={group.id}
-                  className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => onGroupSelect(group.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={group.avatar || "/placeholder.svg"} />
-                        <AvatarFallback>{group.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{group.name}</h3>
-                          <Badge variant="outline" className="text-xs">
-                            {group.role}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-1">
-                          <span>{group.members} members</span>
-                          <span>Last activity: {group.lastActivity}</span>
-                        </div>
-                        {group.unreadPosts > 0 && (
-                          <div className="flex items-center gap-1 text-sm text-blue-600">
-                            <MessageCircle className="w-4 h-4" />
-                            {group.unreadPosts} new posts
-                          </div>
-                        )}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                        }}
-                      >
-                        View
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div>
+              <h2 className="text-xl font-bold">
+                {selectedCategory === "All" ? "All Groups" : `${selectedCategory} Groups`}
+              </h2>
+              <p className="text-sm text-gray-600">{filteredGroups.length} groups found</p>
             </div>
-          </TabsContent>
-
-          <TabsContent value="suggested" className="space-y-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Star className="w-5 h-5 text-yellow-500" />
-              <h2 className="text-lg font-semibold">Suggested for You</h2>
-            </div>
-
-            <div className="space-y-4">
-              {suggestedGroups.map((group) => (
-                <Card
-                  key={group.id}
-                  className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => onGroupSelect(group.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={group.avatar || "/placeholder.svg"} />
-                        <AvatarFallback>{group.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{group.name}</h3>
-                          <Badge variant="outline" className="text-xs">
-                            {group.category}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-gray-700 mb-2 line-clamp-2">{group.description}</p>
-                        <p className="text-xs text-blue-600 mb-2">{group.reason}</p>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>{group.members} members</span>
-                            {group.mutualMembers > 0 && <span>{group.mutualMembers} mutual members</span>}
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                            }}
-                          >
-                            Join
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredGroups.map((group) => (
+              <GroupCard key={group.id} group={group} />
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   )

@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   ArrowLeft,
   MapPin,
@@ -16,9 +17,8 @@ import {
   UserPlus,
   MoreHorizontal,
   Heart,
-  Grid3X3,
-  Play,
-  Tag,
+  Send,
+  Bookmark,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -56,9 +56,12 @@ const posts = [
     id: 1,
     image: "/placeholder.svg?height=400&width=400",
     likes: 2156,
-    comments: 89,
+    comments: [
+      { username: "sarah_explorer", text: "This is absolutely stunning! 😍" },
+      { username: "mike_photographer", text: "Amazing composition!" },
+    ],
     caption:
-      "Golden hour magic in the rice terraces of Bali 🌅 Sometimes the best moments happen when you least expect them.",
+      "Golden hour magic in the rice terraces of Bali 🌅 Sometimes the best moments happen when you least expect them. This shot was completely unplanned - I was just walking back to my hotel when the light hit perfectly.",
     timeAgo: "2 hours ago",
     location: "Jatiluwih, Bali",
   },
@@ -66,8 +69,12 @@ const posts = [
     id: 2,
     image: "/placeholder.svg?height=400&width=400",
     likes: 1834,
-    comments: 67,
-    caption: "Street food adventures in Bangkok! This pad thai changed my life 🍜 #StreetFood #Bangkok",
+    comments: [
+      { username: "foodie_emma", text: "I need this recipe! 🤤" },
+      { username: "bangkok_local", text: "Best pad thai in the city!" },
+    ],
+    caption:
+      "Street food adventures in Bangkok! This pad thai changed my life 🍜 The vendor has been perfecting this recipe for 30 years and you can taste every bit of that experience. #StreetFood #Bangkok",
     timeAgo: "1 day ago",
     location: "Bangkok, Thailand",
   },
@@ -75,8 +82,13 @@ const posts = [
     id: 3,
     image: "/placeholder.svg?height=400&width=400",
     likes: 3421,
-    comments: 156,
-    caption: "Sunrise from Mount Batur was absolutely breathtaking! Worth every step of the 4am hike 🏔️",
+    comments: [
+      { username: "hiker_tom", text: "Worth the early wake up call!" },
+      { username: "sunrise_chaser", text: "Incredible view! 🏔️" },
+      { username: "bali_guide", text: "One of the best sunrise spots!" },
+    ],
+    caption:
+      "Sunrise from Mount Batur was absolutely breathtaking! Worth every step of the 4am hike 🏔️ There's something magical about watching the world wake up from 1,717 meters above sea level.",
     timeAgo: "3 days ago",
     location: "Mount Batur, Bali",
   },
@@ -84,8 +96,12 @@ const posts = [
     id: 4,
     image: "/placeholder.svg?height=400&width=400",
     likes: 1567,
-    comments: 43,
-    caption: "Local fishermen at work during blue hour. Their dedication is truly inspiring 🎣",
+    comments: [
+      { username: "ocean_lover", text: "Beautiful blue hour shot!" },
+      { username: "local_fisherman", text: "Thank you for capturing our work!" },
+    ],
+    caption:
+      "Local fishermen at work during blue hour. Their dedication is truly inspiring 🎣 Started their day at 4am and still going strong as the sun sets. Respect for these hardworking souls.",
     timeAgo: "5 days ago",
     location: "Sanur Beach, Bali",
   },
@@ -93,8 +109,12 @@ const posts = [
     id: 5,
     image: "/placeholder.svg?height=400&width=400",
     likes: 2890,
-    comments: 112,
-    caption: "Hidden waterfall discovered during today's jungle trek! Nature never ceases to amaze me 💚",
+    comments: [
+      { username: "nature_lover", text: "Hidden gems are the best! 💚" },
+      { username: "waterfall_hunter", text: "Adding this to my list!" },
+    ],
+    caption:
+      "Hidden waterfall discovered during today's jungle trek! Nature never ceases to amaze me 💚 After 3 hours of hiking through dense jungle, this was the perfect reward. The sound of the water was absolutely therapeutic.",
     timeAgo: "1 week ago",
     location: "Sekumpul Falls, Bali",
   },
@@ -102,10 +122,104 @@ const posts = [
     id: 6,
     image: "/placeholder.svg?height=400&width=400",
     likes: 1245,
-    comments: 34,
-    caption: "Traditional Balinese ceremony at the local temple. Such rich culture and beautiful traditions 🙏",
+    comments: [
+      { username: "culture_enthusiast", text: "Beautiful traditions! 🙏" },
+      { username: "temple_guide", text: "Thank you for respecting our culture" },
+    ],
+    caption:
+      "Traditional Balinese ceremony at the local temple. Such rich culture and beautiful traditions 🙏 Feeling grateful to witness and document these sacred moments with permission from the local community.",
     timeAgo: "1 week ago",
     location: "Tanah Lot, Bali",
+  },
+]
+const mockPosts = [
+  {
+    id: 1,
+    image: "/placeholder.svg?height=400&width=400",
+    likes: 3420,
+    comments: 156,
+    caption:
+      "Golden hour magic at Tanah Lot Temple 🌅 The way the light dances on the ancient stones never gets old. This place holds so much history and spiritual energy.",
+    timeAgo: "2 hours ago",
+    location: "Tanah Lot, Bali",
+  },
+  {
+    id: 2,
+    image: "/placeholder.svg?height=400&width=400",
+    likes: 2890,
+    comments: 98,
+    caption:
+      "Rice terraces of Jatiluwih - a UNESCO World Heritage site that showcases the incredible ingenuity of Balinese farmers. The morning mist makes everything look ethereal ✨",
+    timeAgo: "1 day ago",
+    location: "Jatiluwih, Bali",
+  },
+  {
+    id: 3,
+    image: "/placeholder.svg?height=400&width=400",
+    likes: 4156,
+    comments: 234,
+    caption:
+      "Street food adventures in Ubud! This nasi gudeg from a local warung is absolutely incredible. Sometimes the best meals come from the most unexpected places 🍛",
+    timeAgo: "3 days ago",
+    location: "Ubud, Bali",
+  },
+  {
+    id: 4,
+    image: "/placeholder.svg?height=400&width=400",
+    likes: 1876,
+    comments: 67,
+    caption:
+      "Sunrise hike to Mount Batur was challenging but so worth it! Nothing beats watching the world wake up from 1,717 meters above sea level 🏔️",
+    timeAgo: "5 days ago",
+    location: "Mount Batur, Bali",
+  },
+]
+
+const mockFollowers = [
+  {
+    id: 1,
+    name: "Sarah Explorer",
+    username: "sarah_explorer",
+    avatar: "/placeholder.svg?height=40&width=40",
+    isVerified: true,
+    followers: "45K",
+    bio: "Adventure seeker & nature photographer",
+  },
+  {
+    id: 2,
+    name: "Mike Chen",
+    username: "mike_photographer",
+    avatar: "/placeholder.svg?height=40&width=40",
+    isVerified: false,
+    followers: "12K",
+    bio: "Street photographer based in Tokyo",
+  },
+  {
+    id: 3,
+    name: "Emma Wilson",
+    username: "emma_foodie",
+    avatar: "/placeholder.svg?height=40&width=40",
+    isVerified: true,
+    followers: "89K",
+    bio: "Food blogger & recipe creator",
+  },
+  {
+    id: 4,
+    name: "David Kim",
+    username: "david_traveler",
+    avatar: "/placeholder.svg?height=40&width=40",
+    isVerified: false,
+    followers: "23K",
+    bio: "Digital nomad exploring Asia",
+  },
+  {
+    id: 5,
+    name: "Lisa Rodriguez",
+    username: "lisa_yoga",
+    avatar: "/placeholder.svg?height=40&width=40",
+    isVerified: true,
+    followers: "67K",
+    bio: "Yoga instructor & wellness coach",
   },
 ]
 
@@ -125,11 +239,58 @@ const mutualFollowers = [
 export function PersonPage({ personId, onBack }: PersonPageProps) {
   const [activeTab, setActiveTab] = useState("posts")
   const [isFollowing, setIsFollowing] = useState(false)
+  const [postComments, setPostComments] = useState<{ [key: number]: any[] }>({})
+  const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({})
+  const [showComments, setShowComments] = useState<{ [key: number]: boolean }>({})
+  const [likedPosts, setLikedPosts] = useState<{ [key: number]: boolean }>({})
 
   const person = personData[personId as keyof typeof personData] || personData[1]
 
+  const handleLike = (postId: number) => {
+    setLikedPosts((prev) => ({
+      ...prev,
+      [postId]: !prev[postId],
+    }))
+  }
+
   const handleFollow = () => {
     setIsFollowing(!isFollowing)
+  }
+
+  const handleAddComment = (postId: number) => {
+    const commentText = commentInputs[postId]?.trim()
+    if (!commentText) return
+
+    const newComment = {
+      username: "your_username",
+      text: commentText,
+      timestamp: "now",
+      isOwn: true,
+    }
+
+    setPostComments((prev) => ({
+      ...prev,
+      [postId]: [...(prev[postId] || []), newComment],
+    }))
+
+    setCommentInputs((prev) => ({
+      ...prev,
+      [postId]: "",
+    }))
+  }
+
+  const toggleComments = (postId: number) => {
+    setShowComments((prev) => ({
+      ...prev,
+      [postId]: !prev[postId],
+    }))
+  }
+
+  const handleCommentInputChange = (postId: number, value: string) => {
+    setCommentInputs((prev) => ({
+      ...prev,
+      [postId]: value,
+    }))
   }
 
   return (
@@ -291,105 +452,136 @@ export function PersonPage({ personId, onBack }: PersonPageProps) {
         </div>
 
         {/* Content Tabs */}
-        <div className="bg-white border-t">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full justify-start border-b bg-transparent h-auto p-0">
-              <TabsTrigger
-                value="posts"
-                className="flex items-center gap-2 border-b-2 border-transparent data-[state=active]:border-blue-500 rounded-none bg-transparent"
-              >
-                <Grid3X3 className="w-4 h-4" />
-                Posts
-              </TabsTrigger>
-              <TabsTrigger
-                value="reels"
-                className="flex items-center gap-2 border-b-2 border-transparent data-[state=active]:border-blue-500 rounded-none bg-transparent"
-              >
-                <Play className="w-4 h-4" />
-                Reels
-              </TabsTrigger>
-              <TabsTrigger
-                value="tagged"
-                className="flex items-center gap-2 border-b-2 border-transparent data-[state=active]:border-blue-500 rounded-none bg-transparent"
-              >
-                <Tag className="w-4 h-4" />
-                Tagged
-              </TabsTrigger>
-            </TabsList>
+        {/* Content Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="posts">Posts</TabsTrigger>
+            <TabsTrigger value="followers">Followers</TabsTrigger>
+            <TabsTrigger value="following">Following</TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="posts" className="mt-0">
-              <div className="grid grid-cols-3 gap-1 md:gap-2">
-                {posts.map((post) => (
-                  <div key={post.id} className="relative aspect-square group cursor-pointer">
-                    <Image src={post.image || "/placeholder.svg"} alt="Post" fill className="object-cover" />
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-4 text-white">
-                        <div className="flex items-center gap-1">
-                          <Heart className="w-5 h-5 fill-current" />
-                          <span className="font-semibold">{post.likes.toLocaleString()}</span>
+          <TabsContent value="posts" className="mt-6">
+            <div className="grid gap-6">
+              {mockPosts.map((post) => (
+                <Card key={post.id} className="overflow-hidden">
+                  <CardContent className="p-0">
+                    <Image
+                      src={post.image || "/placeholder.svg"}
+                      alt="Post"
+                      width={400}
+                      height={400}
+                      className="w-full aspect-square object-cover"
+                    />
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-4">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleLike(post.id)}
+                            className={likedPosts[post.id] ? "text-red-500" : ""}
+                          >
+                            <Heart className={`w-6 h-6 ${likedPosts[post.id] ? "fill-current" : ""}`} />
+                          </Button>
+                          <Button variant="ghost" size="icon">
+                            <MessageCircle className="w-6 h-6" />
+                          </Button>
+                          <Button variant="ghost" size="icon">
+                            <Send className="w-6 h-6" />
+                          </Button>
                         </div>
+                        <Button variant="ghost" size="icon">
+                          <Bookmark className="w-6 h-6" />
+                        </Button>
+                      </div>
+
+                      <div className="font-semibold text-sm mb-2">
+                        {(post.likes + (likedPosts[post.id] ? 1 : 0)).toLocaleString()} likes
+                      </div>
+
+                      <div className="text-sm mb-2">
+                        <span className="font-semibold mr-2">{person.username}</span>
+                        {post.caption}
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{post.timeAgo}</span>
                         <div className="flex items-center gap-1">
-                          <MessageCircle className="w-5 h-5 fill-current" />
-                          <span className="font-semibold">{post.comments}</span>
+                          <MapPin className="w-3 h-3" />
+                          <span>{post.location}</span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
-            <TabsContent value="reels" className="mt-0">
-              <div className="grid grid-cols-3 gap-1 md:gap-2">
-                {posts.slice(0, 3).map((post) => (
-                  <div key={post.id} className="relative aspect-square group cursor-pointer">
-                    <Image src={post.image || "/placeholder.svg"} alt="Reel" fill className="object-cover" />
-                    <div className="absolute top-2 right-2">
-                      <Play className="w-5 h-5 text-white fill-current" />
-                    </div>
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-4 text-white">
-                        <div className="flex items-center gap-1">
-                          <Heart className="w-5 h-5 fill-current" />
-                          <span className="font-semibold">{post.likes.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="w-5 h-5 fill-current" />
-                          <span className="font-semibold">{post.comments}</span>
+          <TabsContent value="followers" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Followers ({person.followers.toLocaleString()})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {mockFollowers.map((follower) => (
+                    <div key={follower.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={follower.avatar || "/placeholder.svg"} />
+                          <AvatarFallback>{follower.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{follower.name}</span>
+                            {follower.isVerified && <Star className="w-4 h-4 text-blue-500 fill-current" />}
+                          </div>
+                          <span className="text-sm text-gray-600">@{follower.username}</span>
                         </div>
                       </div>
+                      <Button variant="outline" size="sm">
+                        Follow
+                      </Button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            <TabsContent value="tagged" className="mt-0">
-              <div className="grid grid-cols-3 gap-1 md:gap-2">
-                {posts.slice(2, 5).map((post) => (
-                  <div key={post.id} className="relative aspect-square group cursor-pointer">
-                    <Image src={post.image || "/placeholder.svg"} alt="Tagged post" fill className="object-cover" />
-                    <div className="absolute top-2 right-2">
-                      <Tag className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-4 text-white">
-                        <div className="flex items-center gap-1">
-                          <Heart className="w-5 h-5 fill-current" />
-                          <span className="font-semibold">{post.likes.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="w-5 h-5 fill-current" />
-                          <span className="font-semibold">{post.comments}</span>
+          <TabsContent value="following" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Following ({person.following.toLocaleString()})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {mockFollowers.map((following) => (
+                    <div key={following.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={following.avatar || "/placeholder.svg"} />
+                          <AvatarFallback>{following.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{following.name}</span>
+                            {following.isVerified && <Star className="w-4 h-4 text-blue-500 fill-current" />}
+                          </div>
+                          <span className="text-sm text-gray-600">@{following.username}</span>
                         </div>
                       </div>
+                      <Button variant="outline" size="sm">
+                        Following
+                      </Button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

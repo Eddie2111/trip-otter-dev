@@ -51,6 +51,7 @@
     "dayjs": "^1.11.13",
     "embla-carousel-react": "latest",
     "input-otp": "latest",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.454.0",
     "mongoose": "^8.16.1",
     "next": "15.2.4",
@@ -74,6 +75,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -31,6 +31,18 @@ class AuthAPI {
       throw axiosError.response?.data || axiosError.message;
     }
   };
+
+  public signOut = async (): Promise<any> => {
+    try {
+      const response: AxiosResponse = await this.apiClient.get(
+        '/api/auth/signout'
+      );
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
 }
 
 export const useAuthApi = new AuthAPI();

@@ -34,6 +34,8 @@ import { PersonPage } from "./person-page"
 import { LoginPage } from "./login-page"
 import { SignupPage } from "./signup-page"
 import { SearchModal } from "./search-modal"
+import { useAuthApi } from "@/lib/requests"
+import { toast } from "sonner"
 
 const stories = [
   { id: 1, username: "Your story", avatar: "/placeholder.svg?height=60&width=60", hasStory: false, isOwn: true },
@@ -157,9 +159,15 @@ export function TripotterFeed() {
     setIsAuthenticated(true)
   }
 
-  const handleLogout = () => {
-    setIsAuthenticated(false)
-    setCurrentPage("feed")
+  const handleLogout = async () => {
+    const response = await useAuthApi.signOut();
+    if(response.status === 200) {
+      setIsAuthenticated(false)
+      setCurrentPage("feed")
+      toast.success("Come back soon!");
+    } else {
+      toast.error("Something went wrong. Please try again. Better if refresh the page");
+    }
   }
 
   const handleShopSelect = (shopId: number) => {

@@ -12,12 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Mail, Lock, Camera } from "lucide-react"
 import { useAuthApi } from "@/lib/requests"
 import { toast } from "sonner"
-
-export const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  rememberMe: z.boolean().default(false),
-})
+import { loginSchema } from "@/utils/models/signin.model"
 
 type LoginFormValues = z.infer<typeof loginSchema>
 

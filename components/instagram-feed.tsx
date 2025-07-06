@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { ChatPage } from "./chat-page"
 import { ShopsPage } from "./shops-page"
+import { GroupsPage } from "./groups-page"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -27,6 +28,12 @@ import {
 import Image from "next/image"
 import { ShopPage } from "./shop-page"
 import { ProductPage } from "./product-page"
+import { GroupPage } from "./group-page"
+import { PeoplePage } from "./people-page"
+import { PersonPage } from "./person-page"
+import { LoginPage } from "./login-page"
+import { SignupPage } from "./signup-page"
+import { SearchModal } from "./search-modal"
 
 const stories = [
   { id: 1, username: "Your story", avatar: "/placeholder.svg?height=60&width=60", hasStory: false, isOwn: true },
@@ -125,14 +132,35 @@ const suggestedUsers = [
 ]
 
 export function InstagramFeed() {
-  const [currentPage, setCurrentPage] = useState<"feed" | "chat" | "shops" | "shop" | "product">("feed")
+  const [currentPage, setCurrentPage] = useState<
+    "feed" | "chat" | "shops" | "shop" | "product" | "groups" | "group" | "people" | "person"
+  >("feed")
   const [selectedShopId, setSelectedShopId] = useState<number | null>(null)
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
+  const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null)
   const [postComments, setPostComments] = useState<{ [key: number]: any[] }>({})
   const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({})
   const [showComments, setShowComments] = useState<{ [key: number]: boolean }>({})
   const [editingComment, setEditingComment] = useState<{ postId: number; commentIndex: number } | null>(null)
   const [editCommentText, setEditCommentText] = useState("")
+
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login")
+  const [showSearchModal, setShowSearchModal] = useState(false)
+
+  const handleLogin = () => {
+    setIsAuthenticated(true)
+  }
+
+  const handleSignup = () => {
+    setIsAuthenticated(true)
+  }
+
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    setCurrentPage("feed")
+  }
 
   const handleShopSelect = (shopId: number) => {
     setSelectedShopId(shopId)
@@ -144,6 +172,16 @@ export function InstagramFeed() {
     setCurrentPage("product")
   }
 
+  const handleGroupSelect = (groupId: number) => {
+    setSelectedGroupId(groupId)
+    setCurrentPage("group")
+  }
+
+  const handlePersonSelect = (personId: number) => {
+    setSelectedPersonId(personId)
+    setCurrentPage("person")
+  }
+
   const handleBackToShops = () => {
     setSelectedShopId(null)
     setSelectedProductId(null)
@@ -153,6 +191,16 @@ export function InstagramFeed() {
   const handleBackToShop = () => {
     setSelectedProductId(null)
     setCurrentPage("shop")
+  }
+
+  const handleBackToGroups = () => {
+    setSelectedGroupId(null)
+    setCurrentPage("groups")
+  }
+
+  const handleBackToPeople = () => {
+    setSelectedPersonId(null)
+    setCurrentPage("people")
   }
 
   const handleAddComment = (postId: number) => {
@@ -238,8 +286,25 @@ export function InstagramFeed() {
     }
   }
 
+  // Authentication check
+  if (!isAuthenticated) {
+    if (authMode === "login") {
+      return <LoginPage onLogin={handleLogin} onSwitchToSignup={() => setAuthMode("signup")} />
+    } else {
+      return <SignupPage onSignup={handleSignup} onSwitchToLogin={() => setAuthMode("login")} />
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Search Modal */}
+      <SearchModal
+        isOpen={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        onPersonSelect={handlePersonSelect}
+        onGroupSelect={handleGroupSelect}
+        onShopSelect={handleShopSelect}
+      />
       {/* Desktop Header */}
       <div className="hidden md:block sticky top-0 z-10 bg-white border-b">
         <div className="max-w-full mx-auto px-4 py-3">
@@ -249,14 +314,14 @@ export function InstagramFeed() {
               <h1 className="text-2xl font-bold">Tripotter</h1>
             </div>
             <div className="flex-1 max-w-xs mx-8">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search"
-                  className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-gray-500 bg-transparent"
+                onClick={() => setShowSearchModal(true)}
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Search
+              </Button>
             </div>
             <div className="flex items-center gap-6 mr-8">
               <MessageCircle className="w-6 h-6 cursor-pointer" onClick={() => setCurrentPage("chat")} />
@@ -297,11 +362,19 @@ export function InstagramFeed() {
                 <Home className="w-5 h-5" />
                 Home
               </Button>
-              <Button variant="ghost" className="w-full justify-start gap-3 h-12 text-base">
+              <Button
+                variant={currentPage === "people" || currentPage === "person" ? "default" : "ghost"}
+                className="w-full justify-start gap-3 h-12 text-base"
+                onClick={() => setCurrentPage("people")}
+              >
                 <Users className="w-5 h-5" />
                 People
               </Button>
-              <Button variant="ghost" className="w-full justify-start gap-3 h-12 text-base">
+              <Button
+                variant={currentPage === "groups" || currentPage === "group" ? "default" : "ghost"}
+                className="w-full justify-start gap-3 h-12 text-base"
+                onClick={() => setCurrentPage("groups")}
+              >
                 <User className="w-5 h-5" />
                 Groups
               </Button>
@@ -320,62 +393,78 @@ export function InstagramFeed() {
                 Settings
               </Button>
             </nav>
-
-            <div className="absolute bottom-4 left-4 right-4">
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-12 text-base text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                <LogOut className="w-5 h-5" />
-                Log out
-              </Button>
-            </div>
+          </div>
+          <div className="absolute bottom-4 left-4 right-4">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 h-12 text-base text-red-600"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-5 h-5" />
+              Logout
+            </Button>
           </div>
         </div>
 
-        {/* Main Content Area - Always accounts for left panel */}
+        {/* Main Content */}
         <div className="flex-1 md:ml-64">
-          {currentPage === "chat" && <ChatPage />}
-          {currentPage === "shops" && <ShopsPage onShopSelect={handleShopSelect} />}
+          {currentPage === "chat" && <ChatPage onBack={() => setCurrentPage("feed")} />}
+          {currentPage === "shops" && (
+            <ShopsPage onShopSelect={handleShopSelect} onProductSelect={handleProductSelect} />
+          )}
           {currentPage === "shop" && selectedShopId && (
             <ShopPage shopId={selectedShopId} onBack={handleBackToShops} onProductSelect={handleProductSelect} />
           )}
-          {currentPage === "product" && selectedProductId && selectedShopId && (
-            <ProductPage productId={selectedProductId} shopId={selectedShopId} onBack={handleBackToShop} />
+          {currentPage === "product" && selectedProductId && (
+            <ProductPage productId={selectedProductId} onBack={handleBackToShop} />
+          )}
+          {currentPage === "groups" && <GroupsPage onGroupSelect={handleGroupSelect} />}
+          {currentPage === "group" && selectedGroupId && (
+            <GroupPage groupId={selectedGroupId} onBack={handleBackToGroups} />
+          )}
+          {currentPage === "people" && <PeoplePage onPersonSelect={handlePersonSelect} />}
+          {currentPage === "person" && selectedPersonId && (
+            <PersonPage personId={selectedPersonId} onBack={handleBackToPeople} />
           )}
           {currentPage === "feed" && (
             <div className="max-w-6xl mx-auto flex gap-8 px-4 md:px-8 py-0 md:py-8">
-              {/* Feed Content */}
+              {/* Feed */}
               <div className="flex-1 max-w-none md:max-w-lg">
                 {/* Stories */}
-                <div className="bg-white border-b md:border md:rounded-lg mb-0 md:mb-6">
-                  <ScrollArea className="w-full">
-                    <div className="flex gap-4 p-4 pb-3">
-                      {stories.map((story) => (
-                        <div key={story.id} className="flex flex-col items-center gap-1 min-w-[60px] md:min-w-[70px]">
-                          <div
-                            className={`relative ${story.hasStory ? "ring-2 ring-pink-500 ring-offset-2" : ""} rounded-full`}
-                          >
-                            <Avatar className="w-14 h-14 md:w-16 md:h-16">
-                              <AvatarImage src={story.avatar || "/placeholder.svg"} alt={story.username} />
-                              <AvatarFallback>{story.username[0].toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            {story.isOwn && (
-                              <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1">
-                                <PlusSquare className="w-3 h-3 text-white" />
-                              </div>
-                            )}
+                <Card className="mb-6 bg-white">
+                  <CardContent className="p-4">
+                    <ScrollArea className="w-full">
+                      <div className="flex gap-4 pb-2">
+                        {stories.map((story) => (
+                          <div key={story.id} className="flex flex-col items-center gap-1 min-w-0">
+                            <div
+                              className={`relative ${
+                                story.hasStory && !story.isOwn
+                                  ? "bg-gradient-to-tr from-yellow-400 to-pink-600 p-0.5 rounded-full"
+                                  : ""
+                              }`}
+                            >
+                              <Avatar
+                                className={`w-14 h-14 ${story.hasStory && !story.isOwn ? "border-2 border-white" : ""}`}
+                              >
+                                <AvatarImage src={story.avatar || "/placeholder.svg"} alt={story.username} />
+                                <AvatarFallback>{story.username[0].toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              {story.isOwn && (
+                                <div className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-1">
+                                  <PlusSquare className="w-3 h-3 text-white" />
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-xs text-center truncate w-16">{story.username}</span>
                           </div>
-                          <span className="text-xs text-center max-w-[60px] md:max-w-[70px] truncate">
-                            {story.isOwn ? "Your story" : story.username}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
 
-                {/* Feed Posts */}
+                {/* Posts */}
                 <div className="space-y-0 md:space-y-6 pb-20 md:pb-0">
                   {posts.map((post) => (
                     <Card
@@ -389,7 +478,10 @@ export function InstagramFeed() {
                             <AvatarImage src={post.avatar || "/placeholder.svg"} alt={post.username} />
                             <AvatarFallback>{post.username[0].toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <span className="font-semibold text-sm md:text-base">{post.username}</span>
+                          <div>
+                            <span className="font-semibold text-sm md:text-base">{post.username}</span>
+                            <div className="text-xs text-gray-500">{post.timeAgo}</div>
+                          </div>
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -398,9 +490,9 @@ export function InstagramFeed() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem>Save</DropdownMenuItem>
                             <DropdownMenuItem>Report</DropdownMenuItem>
                             <DropdownMenuItem>Unfollow</DropdownMenuItem>
-                            <DropdownMenuItem>Add to favorites</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -458,10 +550,73 @@ export function InstagramFeed() {
                             </div>
                           ))}
                           {postComments[post.id]?.map((comment, index) => (
-                            <div key={`new-${index}`} className="text-sm">
-                              <span className="font-semibold mr-2">{comment.username}</span>
-                              {comment.text}
-                              {comment.isOwn && <span className="text-xs text-gray-500 ml-2">{comment.timestamp}</span>}
+                            <div key={`new-${index}`} className="text-sm group">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <span className="font-semibold mr-2">{comment.username}</span>
+                                  {editingComment?.postId === post.id && editingComment?.commentIndex === index ? (
+                                    <div className="mt-1">
+                                      <input
+                                        type="text"
+                                        value={editCommentText}
+                                        onChange={(e) => setEditCommentText(e.target.value)}
+                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        onKeyPress={(e) => {
+                                          if (e.key === "Enter") handleSaveEdit()
+                                          if (e.key === "Escape") handleCancelEdit()
+                                        }}
+                                        autoFocus
+                                      />
+                                      <div className="flex gap-2 mt-1">
+                                        <Button onClick={handleSaveEdit} size="sm" className="h-6 px-2 text-xs">
+                                          Save
+                                        </Button>
+                                        <Button
+                                          onClick={handleCancelEdit}
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-6 px-2 text-xs bg-transparent"
+                                        >
+                                          Cancel
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      {comment.text}
+                                      {comment.edited && <span className="text-xs text-gray-400 ml-1">(edited)</span>}
+                                      {comment.isOwn && (
+                                        <span className="text-xs text-gray-500 ml-2">{comment.timestamp}</span>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                                {comment.isOwn &&
+                                  !(editingComment?.postId === post.id && editingComment?.commentIndex === index) && (
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="w-6 h-6">
+                                            <MoreHorizontal className="w-3 h-3" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem
+                                            onClick={() => handleEditComment(post.id, index, comment.text)}
+                                          >
+                                            Edit
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => handleDeleteComment(post.id, index)}
+                                            className="text-red-600"
+                                          >
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  )}
+                              </div>
                             </div>
                           ))}
 
@@ -492,123 +647,6 @@ export function InstagramFeed() {
                                   )}
                                 </div>
                               </div>
-
-                              {/* Show all comments when expanded */}
-                              <div className="mt-3 space-y-2 max-h-60 overflow-y-auto">
-                                {[...post.comments, ...(postComments[post.id] || [])].map((comment, index) => {
-                                  const isOwnComment = comment.isOwn || comment.username === "your_username"
-                                  const isFromNewComments = index >= post.comments.length
-                                  const newCommentIndex = isFromNewComments ? index - post.comments.length : -1
-                                  const isEditing =
-                                    editingComment?.postId === post.id &&
-                                    editingComment?.commentIndex === newCommentIndex &&
-                                    isFromNewComments
-
-                                  return (
-                                    <div key={index} className="flex items-start gap-2 group">
-                                      <Avatar className="w-6 h-6 mt-1">
-                                        <AvatarImage src="/placeholder.svg?height=24&width=24" />
-                                        <AvatarFallback>{comment.username[0].toUpperCase()}</AvatarFallback>
-                                      </Avatar>
-                                      <div className="flex-1">
-                                        {isEditing ? (
-                                          <div className="space-y-2">
-                                            <input
-                                              type="text"
-                                              value={editCommentText}
-                                              onChange={(e) => setEditCommentText(e.target.value)}
-                                              onKeyPress={(e) => {
-                                                if (e.key === "Enter") handleSaveEdit()
-                                                if (e.key === "Escape") handleCancelEdit()
-                                              }}
-                                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                              autoFocus
-                                            />
-                                            <div className="flex gap-2">
-                                              <Button
-                                                onClick={handleSaveEdit}
-                                                size="sm"
-                                                className="h-6 px-2 text-xs bg-blue-500 hover:bg-blue-600"
-                                              >
-                                                Save
-                                              </Button>
-                                              <Button
-                                                onClick={handleCancelEdit}
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-6 px-2 text-xs bg-transparent"
-                                              >
-                                                Cancel
-                                              </Button>
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <>
-                                            <div className="text-sm">
-                                              <span className="font-semibold mr-2">{comment.username}</span>
-                                              {comment.text}
-                                              {comment.edited && (
-                                                <span className="text-xs text-gray-400 ml-2">(edited)</span>
-                                              )}
-                                            </div>
-                                            <div className="flex items-center gap-4 mt-1">
-                                              <span className="text-xs text-gray-500">{comment.timestamp || "2h"}</span>
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-xs text-gray-500 h-auto p-0"
-                                              >
-                                                Like
-                                              </Button>
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-xs text-gray-500 h-auto p-0"
-                                              >
-                                                Reply
-                                              </Button>
-                                              {isOwnComment && isFromNewComments && (
-                                                <>
-                                                  <Button
-                                                    onClick={() =>
-                                                      handleEditComment(post.id, newCommentIndex, comment.text)
-                                                    }
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-xs text-gray-500 h-auto p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                  >
-                                                    Edit
-                                                  </Button>
-                                                  <Button
-                                                    onClick={() => handleDeleteComment(post.id, newCommentIndex)}
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-xs text-red-500 h-auto p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                  >
-                                                    Delete
-                                                  </Button>
-                                                </>
-                                              )}
-                                            </div>
-                                          </>
-                                        )}
-                                      </div>
-                                      <Button variant="ghost" size="icon" className="w-4 h-4 mt-1">
-                                        <Heart className="w-3 h-3" />
-                                      </Button>
-                                    </div>
-                                  )
-                                })}
-                              </div>
-
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleComments(post.id)}
-                                className="text-xs text-gray-500 mt-2 h-auto p-0"
-                              >
-                                Hide comments
-                              </Button>
                             </div>
                           )}
 
@@ -624,50 +662,18 @@ export function InstagramFeed() {
                               </Button>
                             )}
                         </div>
-
-                        {/* Time */}
-                        <div className="text-xs text-gray-500 mt-2 uppercase">{post.timeAgo}</div>
                       </div>
                     </Card>
                   ))}
                 </div>
               </div>
 
-              {/* Desktop Right Sidebar - Only visible on feed page */}
+              {/* Right Sidebar - Suggested Users */}
               <div className="hidden lg:block w-80 space-y-6">
-                {/* User Profile Card */}
-                <Card className="p-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Avatar className="w-14 h-14">
-                      <AvatarImage src="/placeholder.svg?height=56&width=56" />
-                      <AvatarFallback>YU</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-semibold">your_username</div>
-                      <div className="text-sm text-gray-500">Your Name</div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <div className="text-center">
-                      <div className="font-semibold">150</div>
-                      <div className="text-gray-500">posts</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold">1.2K</div>
-                      <div className="text-gray-500">followers</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold">800</div>
-                      <div className="text-gray-500">following</div>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Suggestions */}
                 <Card className="p-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-500">Suggestions For You</h3>
-                    <Button variant="ghost" size="sm" className="text-xs">
+                    <h3 className="font-semibold text-gray-500">Suggested for you</h3>
+                    <Button variant="ghost" size="sm" className="text-xs font-semibold">
                       See All
                     </Button>
                   </div>
@@ -681,7 +687,8 @@ export function InstagramFeed() {
                           </Avatar>
                           <div>
                             <div className="font-semibold text-sm">{user.username}</div>
-                            <div className="text-xs text-gray-500">Followed by {user.mutualFollowers} others</div>
+                            <div className="text-xs text-gray-500">{user.name}</div>
+                            <div className="text-xs text-gray-400">Followed by {user.mutualFollowers} others</div>
                           </div>
                         </div>
                         <Button variant="ghost" size="sm" className="text-blue-500 text-xs font-semibold">
@@ -692,18 +699,10 @@ export function InstagramFeed() {
                   </div>
                 </Card>
 
-                {/* Footer Links */}
-                <div className="text-xs text-gray-400 space-y-2">
-                  <div className="flex flex-wrap gap-2">
-                    <span>About</span>
-                    <span>Help</span>
-                    <span>Press</span>
-                    <span>API</span>
-                    <span>Jobs</span>
-                    <span>Privacy</span>
-                    <span>Terms</span>
-                  </div>
-                  <div>© 2024 Tripotter</div>
+                <div className="text-xs text-gray-400 space-y-1">
+                  <div>About • Help • Press • API • Jobs • Privacy • Terms</div>
+                  <div>Locations • Language • Meta Verified</div>
+                  <div className="mt-4">© 2024 Tripotter from Meta</div>
                 </div>
               </div>
             </div>
@@ -714,19 +713,24 @@ export function InstagramFeed() {
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t">
         <div className="flex items-center justify-around py-2">
-          <Button variant="ghost" size="icon" className="w-12 h-12" onClick={() => setCurrentPage("feed")}>
-            <Home className={`w-6 h-6 ${currentPage === "feed" ? "text-blue-500" : ""}`} />
+          <Button
+            variant="ghost"
+            size="icon"
+            className={currentPage === "feed" ? "text-black" : "text-gray-400"}
+            onClick={() => setCurrentPage("feed")}
+          >
+            <Home className="w-6 h-6" />
           </Button>
-          <Button variant="ghost" size="icon" className="w-12 h-12">
+          <Button variant="ghost" size="icon" className="text-gray-400">
             <Search className="w-6 h-6" />
           </Button>
-          <Button variant="ghost" size="icon" className="w-12 h-12">
+          <Button variant="ghost" size="icon" className="text-gray-400">
             <PlusSquare className="w-6 h-6" />
           </Button>
-          <Button variant="ghost" size="icon" className="w-12 h-12">
+          <Button variant="ghost" size="icon" className="text-gray-400">
             <Heart className="w-6 h-6" />
           </Button>
-          <Button variant="ghost" size="icon" className="w-12 h-12">
+          <Button variant="ghost" size="icon" className="text-gray-400">
             <User className="w-6 h-6" />
           </Button>
         </div>

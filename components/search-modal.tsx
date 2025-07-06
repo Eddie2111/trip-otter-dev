@@ -450,7 +450,7 @@ export function SearchModal({ isOpen, onClose, onPersonSelect, onGroupSelect, on
                           <span>⭐ {shop.rating}</span>
                           <span>•</span>
                           <span>{shop.products} products</span>
-                          <span>•</span>
+                          <span>��</span>
                           <span>{shop.category}</span>
                         </div>
                       </div>

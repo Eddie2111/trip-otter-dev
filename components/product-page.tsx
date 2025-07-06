@@ -11,7 +11,7 @@ import { shopProducts } from "./shop-page"
 
 interface ProductPageProps {
   productId: number
-  shopId: number
+  shopId?: number
   onBack: () => void
 }
 

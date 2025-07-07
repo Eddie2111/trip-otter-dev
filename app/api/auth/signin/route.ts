@@ -1,4 +1,3 @@
-
 import { runDBOperation } from "@/lib/useDB";
 import { NextRequest } from "next/server";
 import UserSchema from '@/utils/schema/user-schema';

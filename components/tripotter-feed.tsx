@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { ChatPage } from "./chat-page"
 import { ShopsPage } from "./shops-page"
 import { GroupsPage } from "./groups-page"
@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { SessionProvider } from 'next-auth/react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   Heart,
@@ -35,7 +34,7 @@ import { PersonPage } from "./person-page"
 import { LoginPage } from "./login-page"
 import { SignupPage } from "./signup-page"
 import { SearchModal } from "./search-modal"
-import { useAuthApi } from "@/lib/requests"
+import { signOut, useSession } from "next-auth/react"
 import { toast } from "sonner"
 
 const stories = [
@@ -133,7 +132,6 @@ const suggestedUsers = [
     mutualFollowers: 5,
   },
 ]
-import { signOut, useSession } from "next-auth/react"
 
 export function TripotterFeed() {
   const [currentPage, setCurrentPage] = useState<
@@ -149,41 +147,38 @@ export function TripotterFeed() {
   const [editingComment, setEditingComment] = useState<{ postId: number; commentIndex: number } | null>(null)
   const [editCommentText, setEditCommentText] = useState("")
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [authMode, setAuthMode] = useState<"login" | "signup">("login")
   const [showSearchModal, setShowSearchModal] = useState(false)
-  const { data: session, update } = useSession()
 
-  useEffect(() => {
-    if (session?.user?.email) {
-      setIsAuthenticated(true)
-    }
-  })
+  // Use NextAuth session hook
+  const { data: session, status } = useSession()
+
+  // Determine authentication state based on session
+  const isAuthenticated = status === "authenticated" && !!session?.user
+
   const handleLogin = () => {
-    console.log(session?.user?.email);
-    setIsAuthenticated(session?.user?.email ? true : false)
+    // This will be handled by NextAuth automatically
+    // No need to manually set authentication state
   }
 
   const handleSignup = () => {
-    console.log(session?.user?.email);
-    setIsAuthenticated(session?.user?.email ? true : false)
+    // This will be handled by NextAuth automatically
+    // No need to manually set authentication state
   }
 
   const handleLogout = async () => {
-    console.log("lmao")
-    await signOut()
-    // setIsAuthenticated(false)
-    // await update();
-    // const response = await useAuthApi.signOut();
-    // if(response.status === 200) {
-    //   setIsAuthenticated(false)
-    //   setCurrentPage("feed")
-    //   toast.success("Come back soon!");
-    // } else {
-    //   toast.error("Something went wrong. Please try again. Better if refresh the page");
-    // }
+    try {
+      await signOut({
+        redirect: false, // Don't redirect automatically
+        callbackUrl: "/", // Optional: specify where to redirect after logout
+      })
+      toast.success("Come back soon!")
+      setCurrentPage("feed") // Reset to feed page
+    } catch (error) {
+      console.error("Logout error:", error)
+      toast.error("Something went wrong during logout. Please try again.")
+    }
   }
-  console.log(currentPage, isAuthenticated, session);
 
   const handleShopSelect = (shopId: number) => {
     setSelectedShopId(shopId)
@@ -231,7 +226,7 @@ export function TripotterFeed() {
     if (!commentText) return
 
     const newComment = {
-      username: "your_username",
+      username: session?.user?.name || "your_username",
       text: commentText,
       timestamp: "now",
       isOwn: true,
@@ -309,7 +304,19 @@ export function TripotterFeed() {
     }
   }
 
-  // Authentication check
+  // Show loading state while session is being fetched
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Authentication check - now properly using NextAuth session
   if (!isAuthenticated) {
     if (authMode === "login") {
       return <LoginPage onLogin={handleLogin} onSwitchToSignup={() => setAuthMode("signup")} />
@@ -350,8 +357,8 @@ export function TripotterFeed() {
               <MessageCircle className="w-6 h-6 cursor-pointer" onClick={() => setCurrentPage("chat")} />
               <Heart className="w-6 h-6 cursor-pointer" />
               <Avatar className="w-8 h-8 cursor-pointer">
-                <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                <AvatarFallback>U</AvatarFallback>
+                <AvatarImage src={session?.user?.image || "/placeholder.svg?height=32&width=32"} />
+                <AvatarFallback>{session?.user?.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
               </Avatar>
             </div>
           </div>
@@ -432,9 +439,7 @@ export function TripotterFeed() {
         {/* Main Content */}
         <div className="flex-1 md:ml-64">
           {currentPage === "chat" && <ChatPage />}
-          {currentPage === "shops" && (
-            <ShopsPage onShopSelect={handleShopSelect} />
-          )}
+          {currentPage === "shops" && <ShopsPage onShopSelect={handleShopSelect} />}
           {currentPage === "shop" && selectedShopId && (
             <ShopPage shopId={selectedShopId} onBack={handleBackToShops} onProductSelect={handleProductSelect} />
           )}
@@ -647,8 +652,8 @@ export function TripotterFeed() {
                             <div className="mt-3 pt-3 border-t">
                               <div className="flex items-center gap-2">
                                 <Avatar className="w-6 h-6">
-                                  <AvatarImage src="/placeholder.svg?height=24&width=24" />
-                                  <AvatarFallback>U</AvatarFallback>
+                                  <AvatarImage src={session?.user?.image || "/placeholder.svg?height=24&width=24"} />
+                                  <AvatarFallback>{session?.user?.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 relative">
                                   <input
@@ -759,5 +764,5 @@ export function TripotterFeed() {
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -18,11 +18,10 @@ import { signIn } from "next-auth/react"
 type LoginFormValues = z.infer<typeof loginSchema>
 
 interface LoginPageProps {
-  onLogin: () => void
   onSwitchToSignup: () => void
 }
 
-export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
+export function LoginPage({ onSwitchToSignup }: LoginPageProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -45,7 +44,6 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
         password: data.password,
       });
       if (response.status === 200) {
-        onLogin();
         toast.success("Welcome!");
       } else {
         toast.info("Unable to sign in, try again?");

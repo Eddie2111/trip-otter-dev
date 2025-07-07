@@ -12,6 +12,32 @@ const userSchema = new Schema<UserDocument>(
         default: uuidv4,
         immutable: true,
     },
+    bio: {
+      type: String,
+      required: false,
+      maxlength: [100, 'Bio must be less than 100 characters'],
+    },
+    location: {
+      type: String,
+      required: false,
+      maxlength: [100, 'Location must be less than 100 characters'],
+    },
+    socials: {
+      type: [{
+        platform: { type: String, required: true },
+        url: { type: String, required: true },
+      }],
+      required: false,
+      default: [],
+    },
+    coverImage: {
+      type: String,
+      required: false,
+    },
+    profileImage: {
+      type: String,
+      required: false,
+    },
     fullName: {
       type: String,
       required: [true, 'Full name is required'],

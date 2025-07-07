@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -23,12 +23,12 @@ import {
 import Image from "next/image"
 
 interface PersonPageProps {
-  personId: number
+  personId: string
   onBack: () => void
 }
 
 const personData = {
-  1: {
+  "1": {
     username: "alex_wanderer",
     name: "Alex Thompson",
     avatar: "/placeholder.svg?height=150&width=150",
@@ -244,7 +244,7 @@ export function PersonPage({ personId, onBack }: PersonPageProps) {
   const [showComments, setShowComments] = useState<{ [key: number]: boolean }>({})
   const [likedPosts, setLikedPosts] = useState<{ [key: number]: boolean }>({})
 
-  const person = personData[personId as keyof typeof personData] || personData[1]
+  const person = personData[personId.toString() as keyof typeof personData] || personData[1]
 
   const handleLike = (postId: number) => {
     setLikedPosts((prev) => ({
@@ -292,6 +292,15 @@ export function PersonPage({ personId, onBack }: PersonPageProps) {
       [postId]: value,
     }))
   }
+  useEffect(() => {
+    const fetchPosts = async () => {
+      const response = await fetch(`/api/users?id=${personId}`)
+      const data = await response.json()
+      console.log(data);
+    }
+
+    fetchPosts()
+  })
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -331,7 +340,7 @@ export function PersonPage({ personId, onBack }: PersonPageProps) {
               </Avatar>
 
               <div className="md:mb-4">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 mt-12 md:mt-24">
                   <h1 className="text-2xl font-bold">{person.name}</h1>
                   {person.verified && <Star className="w-5 h-5 text-blue-500 fill-current" />}
                 </div>

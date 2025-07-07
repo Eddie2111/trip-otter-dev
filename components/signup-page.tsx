@@ -18,11 +18,10 @@ import { signIn } from "next-auth/react"
 type SignupFormValues = z.infer<typeof signupSchema>
 
 interface SignupPageProps {
-  onSignup: () => void
   onSwitchToLogin: () => void
 }
 
-export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
+export function SignupPage({ onSwitchToLogin }: SignupPageProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -63,7 +62,6 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
       const response = await useAuthApi.signUp(data);
   
       if (response.status === 200) {
-        onSignup();
         toast.success("Account created successfully!");
       } else {
         toast.info("Error creating account: " + (response.message || "Unknown error"));

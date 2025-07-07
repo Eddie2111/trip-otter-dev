@@ -135,12 +135,12 @@ const suggestedUsers = [
 
 export function TripotterFeed() {
   const [currentPage, setCurrentPage] = useState<
-    "feed" | "chat" | "shops" | "shop" | "product" | "groups" | "group" | "people" | "person"
+    "feed" | "chat" | "shops" | "shop" | "product" | "groups" | "group" | "people" | "person" | "settings"
   >("feed")
   const [selectedShopId, setSelectedShopId] = useState<number | null>(null)
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
-  const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null)
+  const [selectedPersonId, setSelectedPersonId] = useState<string>("")
   const [postComments, setPostComments] = useState<{ [key: number]: any[] }>({})
   const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({})
   const [showComments, setShowComments] = useState<{ [key: number]: boolean }>({})
@@ -150,30 +150,18 @@ export function TripotterFeed() {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login")
   const [showSearchModal, setShowSearchModal] = useState(false)
 
-  // Use NextAuth session hook
   const { data: session, status } = useSession()
 
-  // Determine authentication state based on session
   const isAuthenticated = status === "authenticated" && !!session?.user
-
-  const handleLogin = () => {
-    // This will be handled by NextAuth automatically
-    // No need to manually set authentication state
-  }
-
-  const handleSignup = () => {
-    // This will be handled by NextAuth automatically
-    // No need to manually set authentication state
-  }
 
   const handleLogout = async () => {
     try {
       await signOut({
-        redirect: false, // Don't redirect automatically
-        callbackUrl: "/", // Optional: specify where to redirect after logout
+        redirect: false,
+        callbackUrl: "/",
       })
       toast.success("Come back soon!")
-      setCurrentPage("feed") // Reset to feed page
+      setCurrentPage("feed")
     } catch (error) {
       console.error("Logout error:", error)
       toast.error("Something went wrong during logout. Please try again.")
@@ -196,7 +184,7 @@ export function TripotterFeed() {
   }
 
   const handlePersonSelect = (personId: number) => {
-    setSelectedPersonId(personId)
+    setSelectedPersonId(personId.toString())
     setCurrentPage("person")
   }
 
@@ -217,7 +205,7 @@ export function TripotterFeed() {
   }
 
   const handleBackToPeople = () => {
-    setSelectedPersonId(null)
+    setSelectedPersonId("")
     setCurrentPage("people")
   }
 
@@ -316,12 +304,11 @@ export function TripotterFeed() {
     )
   }
 
-  // Authentication check - now properly using NextAuth session
   if (!isAuthenticated) {
     if (authMode === "login") {
-      return <LoginPage onLogin={handleLogin} onSwitchToSignup={() => setAuthMode("signup")} />
+      return <LoginPage onSwitchToSignup={() => setAuthMode("signup")} />
     } else {
-      return <SignupPage onSignup={handleSignup} onSwitchToLogin={() => setAuthMode("login")} />
+      return <SignupPage onSwitchToLogin={() => setAuthMode("login")} />
     }
   }
 
@@ -356,10 +343,28 @@ export function TripotterFeed() {
             <div className="flex items-center gap-6 mr-8">
               <MessageCircle className="w-6 h-6 cursor-pointer" onClick={() => setCurrentPage("chat")} />
               <Heart className="w-6 h-6 cursor-pointer" />
-              <Avatar className="w-8 h-8 cursor-pointer">
-                <AvatarImage src={session?.user?.image || "/placeholder.svg?height=32&width=32"} />
-                <AvatarFallback>{session?.user?.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-              </Avatar>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Avatar className="w-8 h-8 cursor-pointer">
+                    <AvatarImage src={session?.user?.image || "/placeholder.svg?height=32&width=32"} />
+                    <AvatarFallback>{session?.user?.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => setCurrentPage("person")} className="cursor-pointer">
+                    <User className="w-4 h-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setCurrentPage("settings")} className="cursor-pointer">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -418,7 +423,11 @@ export function TripotterFeed() {
                 <ShoppingBag className="w-5 h-5" />
                 Shops
               </Button>
-              <Button variant="ghost" className="w-full justify-start gap-3 h-12 text-base">
+              <Button
+                variant={currentPage === "settings" ? "default" : "ghost"}
+                className="w-full justify-start gap-3 h-12 text-base"
+                onClick={() => setCurrentPage("settings")}
+              >
                 <Settings className="w-5 h-5" />
                 Settings
               </Button>
@@ -451,9 +460,35 @@ export function TripotterFeed() {
             <GroupPage groupId={selectedGroupId} onBack={handleBackToGroups} />
           )}
           {currentPage === "people" && <PeoplePage onPersonSelect={handlePersonSelect} />}
-          {currentPage === "person" && selectedPersonId && (
-            <PersonPage personId={selectedPersonId} onBack={handleBackToPeople} />
+
+          {currentPage === "person" && (
+            <PersonPage
+              personId={selectedPersonId || session?.user?.email}
+              onBack={selectedPersonId ? handleBackToPeople : () => setCurrentPage("feed")}
+            />
           )}
+          {currentPage === "settings" && (
+            <div className="max-w-4xl mx-auto px-4 py-8">
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h1 className="text-2xl font-bold mb-6">Settings</h1>
+                <div className="space-y-4">
+                  <div className="p-4 border rounded-lg">
+                    <h3 className="font-semibold mb-2">Account Settings</h3>
+                    <p className="text-gray-600">Manage your account preferences and privacy settings.</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <h3 className="font-semibold mb-2">Notifications</h3>
+                    <p className="text-gray-600">Control how you receive notifications.</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <h3 className="font-semibold mb-2">Privacy</h3>
+                    <p className="text-gray-600">Manage your privacy and data settings.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {currentPage === "feed" && (
             <div className="max-w-6xl mx-auto flex gap-8 px-4 md:px-8 py-0 md:py-8">
               {/* Feed */}

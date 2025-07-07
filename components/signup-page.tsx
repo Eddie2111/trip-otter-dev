@@ -13,6 +13,7 @@ import { Eye, EyeOff, User, Mail, Lock, Camera, Check, X } from "lucide-react"
 import { useAuthApi } from "@/lib/requests"
 import { toast } from "sonner"
 import { signupSchema } from "@/utils/models/signup.model"
+import { signIn } from "next-auth/react"
 
 type SignupFormValues = z.infer<typeof signupSchema>
 
@@ -77,10 +78,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
   }
 
   const handleGoogleSignup = () => {
-    // Simulate Google OAuth
-    setTimeout(() => {
-      onSignup()
-    }, 500)
+    signIn("google")
   }
 
   const handleUsernameChange = (value: string) => {

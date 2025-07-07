@@ -21,9 +21,9 @@ const userSchema = new Schema<UserDocument>(
     username: {
       type: String,
       required: [true, 'Username is required'],
-      minlength: [3, 'Username must be at least 3 characters'],
+      minlength: [5, 'Username must be at least 3 characters'],
       maxlength: [20, 'Username must be less than 20 characters'],
-      match: [/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores'],
+      match: [/^[a-z0-9_.]{6,20}$/, 'Username can only contain lowercase letters, numbers, underscores, and dots, and must be 1–16 characters.'],
       unique: true,
       lowercase: true,
       trim: true,

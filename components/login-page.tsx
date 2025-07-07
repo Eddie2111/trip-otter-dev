@@ -10,10 +10,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Mail, Lock, Camera } from "lucide-react"
-import { useAuthApi } from "@/lib/requests"
 import { toast } from "sonner"
 import { loginSchema } from "@/utils/models/signin.model"
-
+import { IErrorProps } from "@/types/error"
+import { signIn } from "next-auth/react"
+ 
 type LoginFormValues = z.infer<typeof loginSchema>
 
 interface LoginPageProps {
@@ -38,15 +39,20 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
     setIsLoading(true)
 
     try {
-      const response = await useAuthApi.signIn(data);
+      const response = await signIn("credentials", {
+        redirect: false,
+        email: data.email,
+        password: data.password,
+      });
       if (response.status === 200) {
         onLogin();
-        toast.success("Account created successfully!");
+        toast.success("Welcome!");
       } else {
-        toast.info("Error creating account: " + (response.message || "Unknown error"));
+        toast.info("Unable to sign in, try again?");
       }
     } catch (error) {
-      toast.error("Error creating account");
+      const err = error as unknown as IErrorProps;
+      toast.error(err.message || "Unknown error");
       console.error("Sign-in error:", error);
     } finally {
       setIsLoading(false)
@@ -59,10 +65,7 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
   }
 
   const handleGoogleLogin = () => {
-    // Simulate Google OAuth
-    setTimeout(() => {
-      onLogin()
-    }, 500)
+    signIn("google")
   }
 
   return (

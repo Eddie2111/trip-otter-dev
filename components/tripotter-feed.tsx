@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ChatPage } from "./chat-page"
 import { ShopsPage } from "./shops-page"
 import { GroupsPage } from "./groups-page"
@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { SessionProvider } from 'next-auth/react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   Heart,
@@ -132,6 +133,7 @@ const suggestedUsers = [
     mutualFollowers: 5,
   },
 ]
+import { signOut, useSession } from "next-auth/react"
 
 export function TripotterFeed() {
   const [currentPage, setCurrentPage] = useState<
@@ -150,25 +152,38 @@ export function TripotterFeed() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [authMode, setAuthMode] = useState<"login" | "signup">("login")
   const [showSearchModal, setShowSearchModal] = useState(false)
+  const { data: session, update } = useSession()
 
+  useEffect(() => {
+    if (session?.user?.email) {
+      setIsAuthenticated(true)
+    }
+  })
   const handleLogin = () => {
-    setIsAuthenticated(true)
+    console.log(session?.user?.email);
+    setIsAuthenticated(session?.user?.email ? true : false)
   }
 
   const handleSignup = () => {
-    setIsAuthenticated(true)
+    console.log(session?.user?.email);
+    setIsAuthenticated(session?.user?.email ? true : false)
   }
 
   const handleLogout = async () => {
-    const response = await useAuthApi.signOut();
-    if(response.status === 200) {
-      setIsAuthenticated(false)
-      setCurrentPage("feed")
-      toast.success("Come back soon!");
-    } else {
-      toast.error("Something went wrong. Please try again. Better if refresh the page");
-    }
+    console.log("lmao")
+    await signOut()
+    // setIsAuthenticated(false)
+    // await update();
+    // const response = await useAuthApi.signOut();
+    // if(response.status === 200) {
+    //   setIsAuthenticated(false)
+    //   setCurrentPage("feed")
+    //   toast.success("Come back soon!");
+    // } else {
+    //   toast.error("Something went wrong. Please try again. Better if refresh the page");
+    // }
   }
+  console.log(currentPage, isAuthenticated, session);
 
   const handleShopSelect = (shopId: number) => {
     setSelectedShopId(shopId)
@@ -744,5 +759,5 @@ export function TripotterFeed() {
         </div>
       </div>
     </div>
-  )
+  );
 }

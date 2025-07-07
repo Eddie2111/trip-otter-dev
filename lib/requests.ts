@@ -9,8 +9,14 @@ class AuthAPI {
   public signIn = async (data: SignInData): Promise<any> => {
     try {
       const response: AxiosResponse = await this.apiClient.post(
-        '/api/auth/signin',
-        data
+        '/api/auth/callback/credentials',
+        data,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          withCredentials: true,
+        }
       );
       return response.data;
     } catch (error) {
@@ -35,7 +41,10 @@ class AuthAPI {
   public signOut = async (): Promise<any> => {
     try {
       const response: AxiosResponse = await this.apiClient.get(
-        '/api/auth/signout'
+        '/api/auth/signout',
+        {
+          withCredentials: true,
+        }
       );
       return response.data;
     } catch (error) {

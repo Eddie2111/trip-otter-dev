@@ -27,7 +27,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new Error("Email and password are required");
         }
 
-        // Find user by email
         const user = await runDBOperation(async() =>
           await userSchema.findOne({ email: credentials.email })
         );
@@ -36,7 +35,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new Error("No user found with that email.");
         }
 
-        // Check password
         const isValid = await bcrypt.compare(credentials?.password as string ?? "", user.password);
         if (!isValid) {
           throw new Error("Incorrect password.");
@@ -75,7 +73,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               username,
               image: profile?.picture,
               agreeToTerms: true,
-              password: "fallback_hashed_password_here", // Ideally generate one or skip for OAuth-only users
+              password: "fallback_hashed_password_here",
             });
             await userData.save();
           });

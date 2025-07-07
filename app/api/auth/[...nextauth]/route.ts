@@ -1,5 +1,7 @@
 import { handlers } from '@/auth';
-export const { GET, POST } = handlers
+const { GET, POST } = handlers;
+
+export { GET, POST };
 
 export async function OPTIONS(request: Request) {
     return new Response(null, {

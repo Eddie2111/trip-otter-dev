@@ -26,13 +26,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
-        console.log(credentials);
 
         // Find user by email
         const user = await runDBOperation(async() =>
           await userSchema.findOne({ email: credentials.email })
         );
-        console.log(user);
 
         if (!user) {
           throw new Error("No user found with that email.");

@@ -73,6 +73,10 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
       console.error("Sign-up error:", error);
     } finally {
       setIsLoading(false);
+      await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+      })
     }
 
   }

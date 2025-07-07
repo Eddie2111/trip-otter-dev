@@ -60,8 +60,8 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
   }
 
   const handleDemoLogin = () => {
-    form.setValue("email", "demo@tripotter.com")
-    form.setValue("password", "demo123")
+    form.setValue("email", "test@test.com")
+    form.setValue("password", "Abcd1234..")
   }
 
   const handleGoogleLogin = () => {

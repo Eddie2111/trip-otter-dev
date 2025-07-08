@@ -4,7 +4,6 @@ import userSchema from '@/utils/schema/user-schema';
 import bcrypt from 'bcrypt';
 import { runDBOperation } from '@/lib/useDB';
 import NextAuth from "next-auth";
-import { UserDocument } from "@/types/user";
 
 export const authOptions = {
   providers: [
@@ -95,9 +94,7 @@ export const authOptions = {
       return token;
     },
     async session({ session, token }) {
-      console.log("this is session and token", session, token);
       const userExists = await runDBOperation(async () => await userSchema.findOne({ email: session?.user?.email }));
-      console.log(userExists);
       if (!userExists) return false;
       if (!userExists.active) return false;
 

@@ -10,5 +10,5 @@ export default async function ProfilePage({
   const session = await getServerSession(authOptions);
   const { id } = await params;
   console.log("ia mmm session", session);
-  return <PersonPage personId={""}/>;
+  return <PersonPage personId={id}/>;
 }

@@ -26,132 +26,34 @@ import {
   LogOut,
 } from "lucide-react"
 import Image from "next/image"
-import { ShopPage } from "./shop-page"
-import { ProductPage } from "./product-page"
 import { GroupPage } from "./group-page"
 import { PeoplePage } from "./people-page"
-import { PersonPage } from "./person-page"
-import { LoginPage } from "./login-page"
-import { SignupPage } from "./signup-page"
 import { SearchModal } from "./search-modal"
 import { signOut, useSession } from "next-auth/react"
 import { toast } from "sonner"
-
-const stories = [
-  { id: 1, username: "Your story", avatar: "/placeholder.svg?height=60&width=60", hasStory: false, isOwn: true },
-  { id: 2, username: "john_doe", avatar: "/placeholder.svg?height=60&width=60", hasStory: true },
-  { id: 3, username: "jane_smith", avatar: "/placeholder.svg?height=60&width=60", hasStory: true },
-  { id: 4, username: "travel_blog", avatar: "/placeholder.svg?height=60&width=60", hasStory: true },
-  { id: 5, username: "food_lover", avatar: "/placeholder.svg?height=60&width=60", hasStory: true },
-  { id: 6, username: "tech_news", avatar: "/placeholder.svg?height=60&width=60", hasStory: true },
-  { id: 7, username: "art_gallery", avatar: "/placeholder.svg?height=60&width=60", hasStory: true },
-  { id: 8, username: "music_vibes", avatar: "/placeholder.svg?height=60&width=60", hasStory: true },
-]
-
-const posts = [
-  {
-    id: 1,
-    username: "nature_photographer",
-    avatar: "/placeholder.svg?height=32&width=32",
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 1234,
-    caption:
-      "Golden hour magic in the mountains 🏔️✨ There's nothing quite like watching the sun set behind these majestic peaks.",
-    comments: [
-      { username: "john_doe", text: "Absolutely stunning! 😍" },
-      { username: "jane_smith", text: "This is incredible! Where was this taken?" },
-      { username: "mountain_lover", text: "I need to visit this place!" },
-    ],
-    timeAgo: "2 hours ago",
-  },
-  {
-    id: 2,
-    username: "food_enthusiast",
-    avatar: "/placeholder.svg?height=32&width=32",
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 856,
-    caption: "Homemade pasta night 🍝 Recipe in my bio! Nothing beats fresh pasta made from scratch.",
-    comments: [
-      { username: "chef_mike", text: "Looks delicious! 🤤" },
-      { username: "pasta_lover", text: "Need this recipe ASAP!" },
-    ],
-    timeAgo: "4 hours ago",
-  },
-  {
-    id: 3,
-    username: "street_artist",
-    avatar: "/placeholder.svg?height=32&width=32",
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 2156,
-    caption: "New mural downtown! Art brings life to the city 🎨 Spent 3 days working on this piece.",
-    comments: [
-      { username: "art_lover", text: "Your work is amazing!" },
-      { username: "city_explorer", text: "I saw this today, so cool!" },
-      { username: "mural_fan", text: "Best street art in the city!" },
-    ],
-    timeAgo: "6 hours ago",
-  },
-  {
-    id: 4,
-    username: "coffee_addict",
-    avatar: "/placeholder.svg?height=32&width=32",
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 543,
-    caption: "Perfect latte art to start the morning ☕️ My barista skills are finally improving!",
-    comments: [
-      { username: "coffee_lover", text: "That foam art is perfect!" },
-      { username: "morning_person", text: "Now I want coffee!" },
-    ],
-    timeAgo: "8 hours ago",
-  },
-]
-
-const suggestedUsers = [
-  {
-    username: "alex_photos",
-    name: "Alex Photography",
-    avatar: "/placeholder.svg?height=32&width=32",
-    mutualFollowers: 3,
-  },
-  {
-    username: "design_studio",
-    name: "Creative Studio",
-    avatar: "/placeholder.svg?height=32&width=32",
-    mutualFollowers: 7,
-  },
-  {
-    username: "travel_couple",
-    name: "Sarah & Mike",
-    avatar: "/placeholder.svg?height=32&width=32",
-    mutualFollowers: 12,
-  },
-  {
-    username: "fitness_guru",
-    name: "Fitness Coach",
-    avatar: "/placeholder.svg?height=32&width=32",
-    mutualFollowers: 5,
-  },
-]
+import Link from "next/link"
+import { suggestedUsers, posts, stories,} from "@/data/mocks/feed.mock";
+import { useRouter } from "next/navigation"
+import { Loading } from "./ui/loading"
+import { DesktopHeader } from "./desktop-header"
+import { DesktopSidebar } from "./desktop-sidebar"
 
 export function TripotterFeed() {
-  const [currentPage, setCurrentPage] = useState<
-    "feed" | "chat" | "shops" | "shop" | "product" | "groups" | "group" | "people" | "person" | "settings"
-  >("feed")
-  const [selectedShopId, setSelectedShopId] = useState<number | null>(null)
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
+  const router = useRouter();
+  const [currentPage, setCurrentPage] = useState<"feed" | "chat" | "shops" | "shop" | "product" | "groups" | "group" | "people" | "person" | "settings">("feed")
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
-  const [selectedPersonId, setSelectedPersonId] = useState<string>("")
   const [postComments, setPostComments] = useState<{ [key: number]: any[] }>({})
   const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({})
   const [showComments, setShowComments] = useState<{ [key: number]: boolean }>({})
   const [editingComment, setEditingComment] = useState<{ postId: number; commentIndex: number } | null>(null)
   const [editCommentText, setEditCommentText] = useState("")
 
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login")
   const [showSearchModal, setShowSearchModal] = useState(false)
 
+  // Use NextAuth session hook
   const { data: session, status } = useSession()
 
+  // Determine authentication state based on session
   const isAuthenticated = status === "authenticated" && !!session?.user
 
   const handleLogout = async () => {
@@ -168,45 +70,14 @@ export function TripotterFeed() {
     }
   }
 
-  const handleShopSelect = (shopId: number) => {
-    setSelectedShopId(shopId)
-    setCurrentPage("shop")
-  }
-
-  const handleProductSelect = (productId: number) => {
-    setSelectedProductId(productId)
-    setCurrentPage("product")
-  }
-
   const handleGroupSelect = (groupId: number) => {
     setSelectedGroupId(groupId)
     setCurrentPage("group")
   }
 
-  const handlePersonSelect = (personId: number) => {
-    setSelectedPersonId(personId.toString())
-    setCurrentPage("person")
-  }
-
-  const handleBackToShops = () => {
-    setSelectedShopId(null)
-    setSelectedProductId(null)
-    setCurrentPage("shops")
-  }
-
-  const handleBackToShop = () => {
-    setSelectedProductId(null)
-    setCurrentPage("shop")
-  }
-
   const handleBackToGroups = () => {
     setSelectedGroupId(null)
     setCurrentPage("groups")
-  }
-
-  const handleBackToPeople = () => {
-    setSelectedPersonId("")
-    setCurrentPage("people")
   }
 
   const handleAddComment = (postId: number) => {
@@ -294,22 +165,14 @@ export function TripotterFeed() {
 
   // Show loading state while session is being fetched
   if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
+    return <Loading/>
   }
 
+  // Authentication check - redirect to login if not authenticated
   if (!isAuthenticated) {
-    if (authMode === "login") {
-      return <LoginPage onSwitchToSignup={() => setAuthMode("signup")} />
-    } else {
-      return <SignupPage onSwitchToLogin={() => setAuthMode("login")} />
-    }
+    router.push("/login");
+    return <Loading/>
+
   }
 
   return (
@@ -318,57 +181,18 @@ export function TripotterFeed() {
       <SearchModal
         isOpen={showSearchModal}
         onClose={() => setShowSearchModal(false)}
-        onPersonSelect={handlePersonSelect}
+        onPersonSelect={() => {}}
         onGroupSelect={handleGroupSelect}
-        onShopSelect={handleShopSelect}
+        onShopSelect={() => {}}
       />
       {/* Desktop Header */}
-      <div className="hidden md:block sticky top-0 z-10 bg-white border-b">
-        <div className="max-w-full mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 ml-64">
-              <Camera className="w-8 h-8" />
-              <h1 className="text-2xl font-bold">Tripotter</h1>
-            </div>
-            <div className="flex-1 max-w-xs mx-8">
-              <Button
-                variant="outline"
-                className="w-full justify-start text-gray-500 bg-transparent"
-                onClick={() => setShowSearchModal(true)}
-              >
-                <Search className="w-4 h-4 mr-2" />
-                Search
-              </Button>
-            </div>
-            <div className="flex items-center gap-6 mr-8">
-              <MessageCircle className="w-6 h-6 cursor-pointer" onClick={() => setCurrentPage("chat")} />
-              <Heart className="w-6 h-6 cursor-pointer" />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Avatar className="w-8 h-8 cursor-pointer">
-                    <AvatarImage src={session?.user?.image || "/placeholder.svg?height=32&width=32"} />
-                    <AvatarFallback>{session?.user?.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-                  </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => setCurrentPage("person")} className="cursor-pointer">
-                    <User className="w-4 h-4 mr-2" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setCurrentPage("settings")} className="cursor-pointer">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </div>
+      <DesktopHeader
+        setShowSearchModal={setShowSearchModal} 
+        setCurrentPage={setCurrentPage} 
+        session={session} 
+        handleLogout={handleLogout}
+
+      />
 
       {/* Mobile Header */}
       <div className="md:hidden sticky top-0 z-10 bg-white border-b px-4 py-3">
@@ -386,109 +210,20 @@ export function TripotterFeed() {
 
       <div className="flex">
         {/* Desktop Left Sidebar - Now persistent across all pages */}
-        <div className="hidden md:block fixed left-0 top-0 h-full w-64 bg-white border-r pt-20 z-20">
-          <div className="p-4">
-            <nav className="space-y-2">
-              <Button
-                variant={currentPage === "feed" ? "default" : "ghost"}
-                className="w-full justify-start gap-3 h-12 text-base"
-                onClick={() => setCurrentPage("feed")}
-              >
-                <Home className="w-5 h-5" />
-                Home
-              </Button>
-              <Button
-                variant={currentPage === "people" || currentPage === "person" ? "default" : "ghost"}
-                className="w-full justify-start gap-3 h-12 text-base"
-                onClick={() => setCurrentPage("people")}
-              >
-                <Users className="w-5 h-5" />
-                People
-              </Button>
-              <Button
-                variant={currentPage === "groups" || currentPage === "group" ? "default" : "ghost"}
-                className="w-full justify-start gap-3 h-12 text-base"
-                onClick={() => setCurrentPage("groups")}
-              >
-                <User className="w-5 h-5" />
-                Groups
-              </Button>
-              <Button
-                variant={
-                  currentPage === "shops" || currentPage === "shop" || currentPage === "product" ? "default" : "ghost"
-                }
-                className="w-full justify-start gap-3 h-12 text-base"
-                onClick={() => setCurrentPage("shops")}
-              >
-                <ShoppingBag className="w-5 h-5" />
-                Shops
-              </Button>
-              <Button
-                variant={currentPage === "settings" ? "default" : "ghost"}
-                className="w-full justify-start gap-3 h-12 text-base"
-                onClick={() => setCurrentPage("settings")}
-              >
-                <Settings className="w-5 h-5" />
-                Settings
-              </Button>
-            </nav>
-          </div>
-          <div className="absolute bottom-4 left-4 right-4">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 h-12 text-base text-red-600"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-5 h-5" />
-              Logout
-            </Button>
-          </div>
-        </div>
+        <DesktopSidebar
+        setCurrentPage={setCurrentPage}
+        currentPage={currentPage}
+        />
 
         {/* Main Content */}
         <div className="flex-1 md:ml-64">
           {currentPage === "chat" && <ChatPage />}
-          {currentPage === "shops" && <ShopsPage onShopSelect={handleShopSelect} />}
-          {currentPage === "shop" && selectedShopId && (
-            <ShopPage shopId={selectedShopId} onBack={handleBackToShops} onProductSelect={handleProductSelect} />
-          )}
-          {currentPage === "product" && selectedProductId && (
-            <ProductPage productId={selectedProductId} onBack={handleBackToShop} />
-          )}
+          {currentPage === "shops" && <ShopsPage onShopSelect={() => {}} />}
           {currentPage === "groups" && <GroupsPage onGroupSelect={handleGroupSelect} />}
           {currentPage === "group" && selectedGroupId && (
             <GroupPage groupId={selectedGroupId} onBack={handleBackToGroups} />
           )}
-          {currentPage === "people" && <PeoplePage onPersonSelect={handlePersonSelect} />}
-
-          {currentPage === "person" && (
-            <PersonPage
-              personId={selectedPersonId || session?.user?.email}
-              onBack={selectedPersonId ? handleBackToPeople : () => setCurrentPage("feed")}
-            />
-          )}
-          {currentPage === "settings" && (
-            <div className="max-w-4xl mx-auto px-4 py-8">
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h1 className="text-2xl font-bold mb-6">Settings</h1>
-                <div className="space-y-4">
-                  <div className="p-4 border rounded-lg">
-                    <h3 className="font-semibold mb-2">Account Settings</h3>
-                    <p className="text-gray-600">Manage your account preferences and privacy settings.</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <h3 className="font-semibold mb-2">Notifications</h3>
-                    <p className="text-gray-600">Control how you receive notifications.</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <h3 className="font-semibold mb-2">Privacy</h3>
-                    <p className="text-gray-600">Manage your privacy and data settings.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
+          {currentPage === "people" && <PeoplePage onPersonSelect={() => {}} />}
           {currentPage === "feed" && (
             <div className="max-w-6xl mx-auto flex gap-8 px-4 md:px-8 py-0 md:py-8">
               {/* Feed */}
@@ -793,7 +528,7 @@ export function TripotterFeed() {
           <Button variant="ghost" size="icon" className="text-gray-400">
             <Heart className="w-6 h-6" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-gray-400" onClick={() => setCurrentPage("person")}>
+          <Button variant="ghost" size="icon" className="text-gray-400" onClick={()=>router.push("/person/me")}>
             <User className="w-6 h-6" />
           </Button>
         </div>

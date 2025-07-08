@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Star, ShoppingCart, Heart, ArrowLeft, Truck, Shield, RotateCcw, Plus, Minus } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 import { shops } from "./shops-page"
 import { shopProducts } from "./shop-page"
 
@@ -28,7 +29,9 @@ export function ProductPage({ productId, shopId, onBack }: ProductPageProps) {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
-          <Button onClick={onBack}>Go Back</Button>
+          <Link href="/">
+            <Button>Go Home</Button>
+          </Link>
         </div>
       </div>
     )
@@ -47,19 +50,23 @@ export function ProductPage({ productId, shopId, onBack }: ProductPageProps) {
       {/* Mobile Header */}
       <div className="md:hidden sticky top-0 z-10 bg-white border-b px-4 py-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="w-6 h-6" />
-          </Button>
+          <Link href={`/shop/${shopId}`}>
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="w-6 h-6" />
+            </Button>
+          </Link>
           <h1 className="text-lg font-bold truncate">Product Details</h1>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto p-4 md:p-6">
         <div className="hidden md:block mb-4">
-          <Button variant="ghost" onClick={onBack}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to {shop.name}
-          </Button>
+          <Link href={`/shop/${shopId}`}>
+            <Button variant="ghost">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to {shop.name}
+            </Button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

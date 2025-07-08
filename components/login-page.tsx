@@ -43,12 +43,7 @@ export function LoginPage({ onSwitchToSignup }: LoginPageProps) {
         email: data.email,
         password: data.password,
       });
-      console.log(response);
-      if (!response.error) {
-        toast.success("Welcome!");
-      } if (response.error) {
-        toast.info("Unable to sign in, try again?");
-      }
+      toast.success("Welcome!");
     } catch (error) {
       const err = error as unknown as IErrorProps;
       toast.error(err.message || "Unknown error");

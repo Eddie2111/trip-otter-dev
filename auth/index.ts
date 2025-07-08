@@ -4,6 +4,7 @@ import userSchema from '@/utils/schema/user-schema';
 import bcrypt from 'bcrypt';
 import { runDBOperation } from '@/lib/useDB';
 import NextAuth from "next-auth";
+import { UserDocument } from "@/types/user";
 
 export const authOptions = {
   providers: [
@@ -44,6 +45,7 @@ export const authOptions = {
 
         return {
           id: user._id.toString(),
+          serial: user.serial,
           email: user.email,
           fullName: user.fullName,
           username: user.username,
@@ -93,8 +95,16 @@ export const authOptions = {
       return token;
     },
     async session({ session, token }) {
+      console.log("this is session and token", session, token);
+      const userExists = await runDBOperation(async () => await userSchema.findOne({ email: session?.user?.email }));
+      console.log(userExists);
+      if (!userExists) return false;
+      if (!userExists.active) return false;
+
       if (session.user) {
-        session.user.id = token.id as string;
+        session.user.id = userExists.id as string;
+        session.user.username = userExists.username as string;
+        session.user.name = userExists.fullName as string;
         session.user.email = token.email as string;
         session.user.image = token.image as string | null;
       }

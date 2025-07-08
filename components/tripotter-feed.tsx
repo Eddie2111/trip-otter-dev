@@ -793,7 +793,7 @@ export function TripotterFeed() {
           <Button variant="ghost" size="icon" className="text-gray-400">
             <Heart className="w-6 h-6" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-gray-400">
+          <Button variant="ghost" size="icon" className="text-gray-400" onClick={() => setCurrentPage("person")}>
             <User className="w-6 h-6" />
           </Button>
         </div>

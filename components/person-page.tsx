@@ -21,220 +21,20 @@ import {
   Bookmark,
 } from "lucide-react"
 import Image from "next/image"
+import { UserDocument } from "@/types/user"
 
 interface PersonPageProps {
   personId: string
-  onBack: () => void
+  onBack?: () => void
 }
 
-const personData = {
-  "1": {
-    username: "alex_wanderer",
-    name: "Alex Thompson",
-    avatar: "/placeholder.svg?height=150&width=150",
-    coverImage: "/placeholder.svg?height=200&width=800",
-    followers: "125K",
-    following: "892",
-    posts: "1.2K",
-    bio: "Travel photographer & storyteller 📸\nCurrently exploring the hidden gems of Southeast Asia 🌴\nSharing stories one frame at a time ✨",
-    location: "Bali, Indonesia",
-    website: "alexwanderer.com",
-    joinDate: "March 2020",
-    verified: true,
-    category: "Travel",
-    isFollowing: false,
-    stats: {
-      totalLikes: "2.5M",
-      avgLikes: "2.1K",
-      engagement: "8.5%",
-    },
-  },
-}
-
-const posts = [
-  {
-    id: 1,
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 2156,
-    comments: [
-      { username: "sarah_explorer", text: "This is absolutely stunning! 😍" },
-      { username: "mike_photographer", text: "Amazing composition!" },
-    ],
-    caption:
-      "Golden hour magic in the rice terraces of Bali 🌅 Sometimes the best moments happen when you least expect them. This shot was completely unplanned - I was just walking back to my hotel when the light hit perfectly.",
-    timeAgo: "2 hours ago",
-    location: "Jatiluwih, Bali",
-  },
-  {
-    id: 2,
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 1834,
-    comments: [
-      { username: "foodie_emma", text: "I need this recipe! 🤤" },
-      { username: "bangkok_local", text: "Best pad thai in the city!" },
-    ],
-    caption:
-      "Street food adventures in Bangkok! This pad thai changed my life 🍜 The vendor has been perfecting this recipe for 30 years and you can taste every bit of that experience. #StreetFood #Bangkok",
-    timeAgo: "1 day ago",
-    location: "Bangkok, Thailand",
-  },
-  {
-    id: 3,
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 3421,
-    comments: [
-      { username: "hiker_tom", text: "Worth the early wake up call!" },
-      { username: "sunrise_chaser", text: "Incredible view! 🏔️" },
-      { username: "bali_guide", text: "One of the best sunrise spots!" },
-    ],
-    caption:
-      "Sunrise from Mount Batur was absolutely breathtaking! Worth every step of the 4am hike 🏔️ There's something magical about watching the world wake up from 1,717 meters above sea level.",
-    timeAgo: "3 days ago",
-    location: "Mount Batur, Bali",
-  },
-  {
-    id: 4,
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 1567,
-    comments: [
-      { username: "ocean_lover", text: "Beautiful blue hour shot!" },
-      { username: "local_fisherman", text: "Thank you for capturing our work!" },
-    ],
-    caption:
-      "Local fishermen at work during blue hour. Their dedication is truly inspiring 🎣 Started their day at 4am and still going strong as the sun sets. Respect for these hardworking souls.",
-    timeAgo: "5 days ago",
-    location: "Sanur Beach, Bali",
-  },
-  {
-    id: 5,
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 2890,
-    comments: [
-      { username: "nature_lover", text: "Hidden gems are the best! 💚" },
-      { username: "waterfall_hunter", text: "Adding this to my list!" },
-    ],
-    caption:
-      "Hidden waterfall discovered during today's jungle trek! Nature never ceases to amaze me 💚 After 3 hours of hiking through dense jungle, this was the perfect reward. The sound of the water was absolutely therapeutic.",
-    timeAgo: "1 week ago",
-    location: "Sekumpul Falls, Bali",
-  },
-  {
-    id: 6,
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 1245,
-    comments: [
-      { username: "culture_enthusiast", text: "Beautiful traditions! 🙏" },
-      { username: "temple_guide", text: "Thank you for respecting our culture" },
-    ],
-    caption:
-      "Traditional Balinese ceremony at the local temple. Such rich culture and beautiful traditions 🙏 Feeling grateful to witness and document these sacred moments with permission from the local community.",
-    timeAgo: "1 week ago",
-    location: "Tanah Lot, Bali",
-  },
-]
-const mockPosts = [
-  {
-    id: 1,
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 3420,
-    comments: 156,
-    caption:
-      "Golden hour magic at Tanah Lot Temple 🌅 The way the light dances on the ancient stones never gets old. This place holds so much history and spiritual energy.",
-    timeAgo: "2 hours ago",
-    location: "Tanah Lot, Bali",
-  },
-  {
-    id: 2,
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 2890,
-    comments: 98,
-    caption:
-      "Rice terraces of Jatiluwih - a UNESCO World Heritage site that showcases the incredible ingenuity of Balinese farmers. The morning mist makes everything look ethereal ✨",
-    timeAgo: "1 day ago",
-    location: "Jatiluwih, Bali",
-  },
-  {
-    id: 3,
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 4156,
-    comments: 234,
-    caption:
-      "Street food adventures in Ubud! This nasi gudeg from a local warung is absolutely incredible. Sometimes the best meals come from the most unexpected places 🍛",
-    timeAgo: "3 days ago",
-    location: "Ubud, Bali",
-  },
-  {
-    id: 4,
-    image: "/placeholder.svg?height=400&width=400",
-    likes: 1876,
-    comments: 67,
-    caption:
-      "Sunrise hike to Mount Batur was challenging but so worth it! Nothing beats watching the world wake up from 1,717 meters above sea level 🏔️",
-    timeAgo: "5 days ago",
-    location: "Mount Batur, Bali",
-  },
-]
-
-const mockFollowers = [
-  {
-    id: 1,
-    name: "Sarah Explorer",
-    username: "sarah_explorer",
-    avatar: "/placeholder.svg?height=40&width=40",
-    isVerified: true,
-    followers: "45K",
-    bio: "Adventure seeker & nature photographer",
-  },
-  {
-    id: 2,
-    name: "Mike Chen",
-    username: "mike_photographer",
-    avatar: "/placeholder.svg?height=40&width=40",
-    isVerified: false,
-    followers: "12K",
-    bio: "Street photographer based in Tokyo",
-  },
-  {
-    id: 3,
-    name: "Emma Wilson",
-    username: "emma_foodie",
-    avatar: "/placeholder.svg?height=40&width=40",
-    isVerified: true,
-    followers: "89K",
-    bio: "Food blogger & recipe creator",
-  },
-  {
-    id: 4,
-    name: "David Kim",
-    username: "david_traveler",
-    avatar: "/placeholder.svg?height=40&width=40",
-    isVerified: false,
-    followers: "23K",
-    bio: "Digital nomad exploring Asia",
-  },
-  {
-    id: 5,
-    name: "Lisa Rodriguez",
-    username: "lisa_yoga",
-    avatar: "/placeholder.svg?height=40&width=40",
-    isVerified: true,
-    followers: "67K",
-    bio: "Yoga instructor & wellness coach",
-  },
-]
-
-const highlights = [
-  { id: 1, title: "Bali Adventures", cover: "/placeholder.svg?height=80&width=80", count: 12 },
-  { id: 2, title: "Street Food", cover: "/placeholder.svg?height=80&width=80", count: 8 },
-  { id: 3, title: "Sunrises", cover: "/placeholder.svg?height=80&width=80", count: 15 },
-  { id: 4, title: "Local Culture", cover: "/placeholder.svg?height=80&width=80", count: 6 },
-]
-
-const mutualFollowers = [
-  { username: "sarah_explorer", avatar: "/placeholder.svg?height=32&width=32" },
-  { username: "mike_photographer", avatar: "/placeholder.svg?height=32&width=32" },
-  { username: "emma_foodie", avatar: "/placeholder.svg?height=32&width=32" },
-]
+import {     
+  personData,
+  highlights,
+  mutualFollowers,
+  mockFollowers,
+  mockPosts,
+  posts } from "@/data/mocks/person.mock";
 
 export function PersonPage({ personId, onBack }: PersonPageProps) {
   const [activeTab, setActiveTab] = useState("posts")
@@ -243,7 +43,7 @@ export function PersonPage({ personId, onBack }: PersonPageProps) {
   const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({})
   const [showComments, setShowComments] = useState<{ [key: number]: boolean }>({})
   const [likedPosts, setLikedPosts] = useState<{ [key: number]: boolean }>({})
-
+  const [profileData, setProfileData] = useState<UserDocument|null>(null);
   const person = personData[personId.toString() as keyof typeof personData] || personData[1]
 
   const handleLike = (postId: number) => {
@@ -294,13 +94,17 @@ export function PersonPage({ personId, onBack }: PersonPageProps) {
   }
   useEffect(() => {
     const fetchPosts = async () => {
-      const response = await fetch(`/api/users?id=${personId}`)
-      const data = await response.json()
-      console.log(data);
+      const response = await fetch(`/api/users?id=${personId}`);
+      const parsed_response = await response.json();
+      if (parsed_response.data) {
+        setProfileData(parsed_response.data);
+      }
+    };
+  
+    if (personId) {
+      fetchPosts();
     }
-
-    fetchPosts()
-  })
+  }, [personId]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -312,7 +116,7 @@ export function PersonPage({ personId, onBack }: PersonPageProps) {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="font-semibold">{person.name}</h1>
+              <h1 className="font-semibold">{profileData?.fullName}</h1>
               <p className="text-sm text-gray-500">{person.posts} posts</p>
             </div>
           </div>
@@ -322,7 +126,7 @@ export function PersonPage({ personId, onBack }: PersonPageProps) {
       <div className="max-w-4xl mx-auto">
         {/* Cover Image */}
         <div className="relative h-48 md:h-64 bg-gradient-to-r from-purple-400 to-pink-400">
-          <Image src={person.coverImage || "/placeholder.svg"} alt="Cover" fill className="object-cover" />
+          <Image src={profileData?.coverImage || "/placeholder.svg"} alt="Cover" fill className="object-cover" />
         </div>
 
         {/* Profile Info */}
@@ -330,7 +134,7 @@ export function PersonPage({ personId, onBack }: PersonPageProps) {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 md:-mt-20">
             <div className="flex flex-col md:flex-row md:items-end gap-4">
               <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
-                <AvatarImage src={person.avatar || "/placeholder.svg"} />
+                <AvatarImage src={profileData?.profileImage || "/placeholder.svg"} />
                 <AvatarFallback className="text-2xl">
                   {person.name
                     .split(" ")
@@ -341,10 +145,10 @@ export function PersonPage({ personId, onBack }: PersonPageProps) {
 
               <div className="md:mb-4">
                 <div className="flex items-center gap-2 mb-2 mt-12 md:mt-24">
-                  <h1 className="text-2xl font-bold">{person.name}</h1>
+                  <h1 className="text-2xl font-bold">{profileData?.fullName}</h1>
                   {person.verified && <Star className="w-5 h-5 text-blue-500 fill-current" />}
                 </div>
-                <p className="text-gray-600 mb-1">@{person.username}</p>
+                <p className="text-gray-600 mb-1">@{profileData?.username}</p>
                 <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                   <span>
                     <strong>{person.followers}</strong> followers
@@ -380,7 +184,7 @@ export function PersonPage({ personId, onBack }: PersonPageProps) {
 
           {/* Bio and Info */}
           <div className="mt-4 space-y-3">
-            <p className="whitespace-pre-line text-gray-800">{person.bio}</p>
+            <p className="whitespace-pre-line text-gray-800">{profileData?.bio}</p>
 
             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
               <div className="flex items-center gap-1">
@@ -400,7 +204,7 @@ export function PersonPage({ personId, onBack }: PersonPageProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              <Badge variant="secondary">{person.category}</Badge>
+              <Badge variant="secondary">{profileData?.role}</Badge>
               {mutualFollowers.length > 0 && (
                 <div className="flex items-center gap-1 text-sm text-gray-600">
                   <span>Followed by</span>

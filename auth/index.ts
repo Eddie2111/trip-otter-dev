@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google"
 import userSchema from '@/utils/schema/user-schema';
 import bcrypt from 'bcrypt';
 import { runDBOperation } from '@/lib/useDB';
+import NextAuth from "next-auth";
 
 export const authOptions = {
   providers: [
@@ -99,5 +100,6 @@ export const authOptions = {
     }
   },
   secret: process.env.AUTH_SECRET,
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);

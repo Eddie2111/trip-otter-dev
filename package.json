@@ -71,7 +71,7 @@
     "react-resizable-panels": "latest",
     "recharts": "latest",
     "sanity": "latest",
-    "sharp": "latest",
+    "sharp": "^0.34.2",
     "sonner": "latest",
     "styled-components": "6",
     "tailwind-merge": "^2.5.5",

@@ -29,7 +29,9 @@ export const authOptions = {
           throw new Error("Email and password are required");
         }
 
-        const user = await userSchema.findOne({ email: credentials.email });
+        const user = await runDBOperation(async () => (
+          await userSchema.findOne({ email: credentials.email })
+        ));
 
         if (!user) {
           throw new Error("No user found with that email.");

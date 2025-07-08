@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
+import type { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -14,17 +14,21 @@ import { useAuthApi } from "@/lib/requests"
 import { toast } from "sonner"
 import { signupSchema } from "@/utils/models/signup.model"
 import { signIn } from "next-auth/react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 type SignupFormValues = z.infer<typeof signupSchema>
 
 interface SignupPageProps {
+  onSignup: () => void
   onSwitchToLogin: () => void
 }
 
-export function SignupPage({ onSwitchToLogin }: SignupPageProps) {
+export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -59,32 +63,32 @@ export function SignupPage({ onSwitchToLogin }: SignupPageProps) {
     setIsLoading(true)
 
     try {
-      const response = await useAuthApi.signUp(data);
-  
+      const response = await useAuthApi.signUp(data)
+
       if (response.status === 200) {
-        toast.success("Account created successfully!");
+        toast.success("Account created successfully!")
+        await signIn("credentials", {
+          email: data.email,
+          password: data.password,
+          redirect: false,
+        })
+        router.push("/")
       } else {
-        toast.info("Error creating account: " + (response.message || "Unknown error"));
+        toast.info("Error creating account: " + (response.message || "Unknown error"))
       }
     } catch (error) {
-      toast.error("Error creating account");
-      console.error("Sign-up error:", error);
+      toast.error("Error creating account")
+      console.error("Sign-up error:", error)
     } finally {
-      setIsLoading(false);
-      await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-      })
+      setIsLoading(false)
     }
-
   }
 
   const handleGoogleSignup = () => {
-    signIn("google")
+    signIn("google", { callbackUrl: "/" })
   }
 
   const handleUsernameChange = (value: string) => {
-    // Auto-format username: lowercase, remove invalid characters
     const formatted = value.toLowerCase().replace(/[^a-z0-9_]/g, "")
     form.setValue("username", formatted)
   }
@@ -365,13 +369,9 @@ export function SignupPage({ onSwitchToLogin }: SignupPageProps) {
 
           <div className="text-center">
             <span className="text-gray-600">Already have an account? </span>
-            <Button
-              onClick={onSwitchToLogin}
-              variant="link"
-              className="px-0 text-blue-600 hover:text-blue-700 font-semibold"
-            >
+            <Link href="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
               Sign in
-            </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>

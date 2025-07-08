@@ -44,6 +44,7 @@ export const authOptions = {
 
         return {
           id: user._id.toString(),
+          serial: user.serial,
           email: user.email,
           fullName: user.fullName,
           username: user.username,
@@ -93,8 +94,14 @@ export const authOptions = {
       return token;
     },
     async session({ session, token }) {
+      const userExists = await runDBOperation(async () => await userSchema.findOne({ email: session?.user?.email }));
+      if (!userExists) return false;
+      if (!userExists.active) return false;
+
       if (session.user) {
-        session.user.id = token.id as string;
+        session.user.id = userExists.id as string;
+        session.user.username = userExists.username as string;
+        session.user.name = userExists.fullName as string;
         session.user.email = token.email as string;
         session.user.image = token.image as string | null;
       }

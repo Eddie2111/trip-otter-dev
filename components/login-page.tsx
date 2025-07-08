@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
+import type { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -12,18 +12,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Mail, Lock, Camera } from "lucide-react"
 import { toast } from "sonner"
 import { loginSchema } from "@/utils/models/signin.model"
-import { IErrorProps } from "@/types/error"
+import type { IErrorProps } from "@/types/error"
 import { signIn } from "next-auth/react"
- 
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+
 type LoginFormValues = z.infer<typeof loginSchema>
 
 interface LoginPageProps {
+  onLogin: () => void
   onSwitchToSignup: () => void
 }
 
-export function LoginPage({ onSwitchToSignup }: LoginPageProps) {
+export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -42,17 +46,17 @@ export function LoginPage({ onSwitchToSignup }: LoginPageProps) {
         redirect: false,
         email: data.email,
         password: data.password,
-      });
-      console.log(response);
-      if (!response.error) {
-        toast.success("Welcome!");
-      } if (response.error) {
-        toast.info("Unable to sign in, try again?");
+      })
+      if (response?.ok) {
+        toast.success("Welcome!")
+        router.push("/")
+      } else {
+        toast.info("Unable to sign in, try again?")
       }
     } catch (error) {
-      const err = error as unknown as IErrorProps;
-      toast.error(err.message || "Unknown error");
-      console.error("Sign-in error:", error);
+      const err = error as unknown as IErrorProps
+      toast.error(err.message || "Unknown error")
+      console.error("Sign-in error:", error)
     } finally {
       setIsLoading(false)
     }
@@ -64,11 +68,7 @@ export function LoginPage({ onSwitchToSignup }: LoginPageProps) {
   }
 
   const handleGoogleLogin = () => {
-    try {
-      signIn("google")
-    } catch(err) {
-      toast.error("Unable to sign in with Google")
-    }
+    signIn("google", { callbackUrl: "/" })
   }
 
   return (
@@ -220,13 +220,9 @@ export function LoginPage({ onSwitchToSignup }: LoginPageProps) {
 
           <div className="text-center">
             <span className="text-gray-600">Don't have an account? </span>
-            <Button
-              onClick={onSwitchToSignup}
-              variant="link"
-              className="px-0 text-purple-600 hover:text-purple-700 font-semibold"
-            >
+            <Link href="/signup" className="text-purple-600 hover:text-purple-700 font-semibold">
               Sign up
-            </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>

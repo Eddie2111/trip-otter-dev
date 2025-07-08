@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star, MapPin, Heart, Share2, Filter, ArrowLeft } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 import { shops } from "./shops-page"
 
 // Sample products for each shop
@@ -200,7 +201,9 @@ export function ShopPage({ shopId, onBack, onProductSelect }: ShopPageProps) {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Shop Not Found</h2>
-          <Button onClick={onBack}>Back to Shops</Button>
+          <Link href="/">
+            <Button>Back to Home</Button>
+          </Link>
         </div>
       </div>
     )
@@ -217,9 +220,11 @@ export function ShopPage({ shopId, onBack, onProductSelect }: ShopPageProps) {
       {/* Mobile Header */}
       <div className="md:hidden sticky top-0 z-10 bg-white border-b px-4 py-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="w-6 h-6" />
-          </Button>
+          <Link href="/">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="w-6 h-6" />
+            </Button>
+          </Link>
           <h1 className="text-lg font-bold truncate">{shop.name}</h1>
         </div>
       </div>
@@ -228,10 +233,12 @@ export function ShopPage({ shopId, onBack, onProductSelect }: ShopPageProps) {
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto p-4 md:p-6">
           <div className="hidden md:block mb-4">
-            <Button variant="ghost" onClick={onBack} className="mb-4">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Shops
-            </Button>
+            <Link href="/">
+              <Button variant="ghost" className="mb-4">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
           </div>
           <div className="flex flex-col md:flex-row gap-6">
             <Image
@@ -309,44 +316,42 @@ export function ShopPage({ shopId, onBack, onProductSelect }: ShopPageProps) {
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
           {filteredProducts.map((product) => (
-            <Card
-              key={product.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => onProductSelect(product.id)}
-            >
-              <CardContent className="p-3 md:p-4">
-                <div className="relative mb-3">
-                  <Image
-                    src={product.image || "/placeholder.svg"}
-                    alt={product.name}
-                    width={300}
-                    height={300}
-                    className="w-full h-32 md:h-40 object-cover rounded-lg"
-                  />
-                  {product.originalPrice && <Badge className="absolute top-2 left-2 bg-red-500 text-xs">Sale</Badge>}
-                  {!product.inStock && (
-                    <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-medium text-sm">Out of Stock</span>
-                    </div>
-                  )}
-                </div>
-                <h3 className="font-semibold text-sm mb-2 line-clamp-2">{product.name}</h3>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                    <span className="text-xs text-gray-600">{product.rating}</span>
-                  </div>
-                  <span className="text-xs text-gray-500">({product.reviews})</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-green-600">${product.price}</span>
-                    {product.originalPrice && (
-                      <span className="text-xs text-gray-500 line-through">${product.originalPrice}</span>
+            <Card key={product.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+              <Link href={`/product/${product.id}?shopId=${shopId}`}>
+                <CardContent className="p-3 md:p-4">
+                  <div className="relative mb-3">
+                    <Image
+                      src={product.image || "/placeholder.svg"}
+                      alt={product.name}
+                      width={300}
+                      height={300}
+                      className="w-full h-32 md:h-40 object-cover rounded-lg"
+                    />
+                    {product.originalPrice && <Badge className="absolute top-2 left-2 bg-red-500 text-xs">Sale</Badge>}
+                    {!product.inStock && (
+                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-medium text-sm">Out of Stock</span>
+                      </div>
                     )}
                   </div>
-                </div>
-              </CardContent>
+                  <h3 className="font-semibold text-sm mb-2 line-clamp-2">{product.name}</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                      <span className="text-xs text-gray-600">{product.rating}</span>
+                    </div>
+                    <span className="text-xs text-gray-500">({product.reviews})</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-green-600">${product.price}</span>
+                      {product.originalPrice && (
+                        <span className="text-xs text-gray-500 line-through">${product.originalPrice}</span>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Link>
             </Card>
           ))}
         </div>

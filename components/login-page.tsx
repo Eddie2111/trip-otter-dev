@@ -43,9 +43,10 @@ export function LoginPage({ onSwitchToSignup }: LoginPageProps) {
         email: data.email,
         password: data.password,
       });
-      if (response.status === 200) {
+      console.log(response);
+      if (!response.error) {
         toast.success("Welcome!");
-      } else {
+      } if (response.error) {
         toast.info("Unable to sign in, try again?");
       }
     } catch (error) {
@@ -63,7 +64,11 @@ export function LoginPage({ onSwitchToSignup }: LoginPageProps) {
   }
 
   const handleGoogleLogin = () => {
-    signIn("google")
+    try {
+      signIn("google")
+    } catch(err) {
+      toast.error("Unable to sign in with Google")
+    }
   }
 
   return (

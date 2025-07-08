@@ -1,11 +1,10 @@
-import { runDBOperation } from "@/lib/useDB"
-import userSchema from "@/utils/schema/user-schema"
-import NextAuth from "next-auth"
-import Google from "next-auth/providers/google"
 import Credentials from "next-auth/providers/credentials"
-import bcrypt from "bcrypt"
+import Google from "next-auth/providers/google"
+import userSchema from '@/utils/schema/user-schema';
+import bcrypt from 'bcrypt';
+import { runDBOperation } from '@/lib/useDB';
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const authOptions = {
   providers: [
     Google({
       authorization: {
@@ -15,6 +14,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           response_type: "code",
         },
       },
+      clientId: process.env.AUTH_GOOGLE_ID as string ?? "",
+      clientSecret: process.env.AUTH_GOOGLE_SECRET as string ?? ""
     }),
     Credentials({
       name: "Credentials",
@@ -27,9 +28,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new Error("Email and password are required");
         }
 
-        const user = await runDBOperation(async() =>
-          await userSchema.findOne({ email: credentials.email })
-        );
+        const user = await userSchema.findOne({ email: credentials.email });
 
         if (!user) {
           throw new Error("No user found with that email.");
@@ -71,7 +70,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               email: profile?.email,
               fullName: profile?.name,
               username,
-              image: profile?.picture,
               agreeToTerms: true,
               password: "fallback_hashed_password_here",
             });
@@ -101,4 +99,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }
   },
   secret: process.env.AUTH_SECRET,
-})
+}

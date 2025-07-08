@@ -1,7 +1,8 @@
-import { handlers } from '@/auth';
-const { GET, POST } = handlers;
+import { authOptions } from "@/auth";
+import NextAuth, { AuthOptions } from "next-auth";
 
-export { GET, POST };
+export const GET = NextAuth(authOptions as AuthOptions);
+export const POST = NextAuth(authOptions as AuthOptions);
 
 export async function OPTIONS(request: Request) {
     return new Response(null, {

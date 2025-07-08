@@ -5,7 +5,8 @@ import Google from "next-auth/providers/google"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcrypt"
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+
+export const authOptions = {
   providers: [
     Google({
       authorization: {
@@ -103,4 +104,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }
   },
   secret: process.env.AUTH_SECRET,
-})
+}
+
+export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);

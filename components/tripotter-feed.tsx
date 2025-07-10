@@ -500,7 +500,6 @@ export function TripotterFeed() {
           )}
         </div>
       </div>
-
     </div>
   )
 }

@@ -17,6 +17,5 @@ export default async function Person({ params }: PersonPageProps) {
   } else {
     personId = id;
   }
-
   return <PersonPage personId={personId} selfProfile={id==="me" ? true : false}/>
 }

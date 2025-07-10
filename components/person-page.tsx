@@ -38,6 +38,7 @@ import {
   mockFollowers,
   mockPosts,
 } from "@/data/mocks/person.mock";
+
 import { CreatePost } from "./create-post"
 
 export function PersonPage({ personId, selfProfile }: PersonPageProps) {
@@ -49,6 +50,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
 
   const person = personData[personId as keyof typeof personData] || personData[1]
   console.log(selfProfile);
+
   const handleLike = (postId: number) => {
     setLikedPosts((prev) => ({
       ...prev,

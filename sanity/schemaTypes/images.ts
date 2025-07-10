@@ -2,7 +2,7 @@ import { ImageIcon } from "@sanity/icons";
 import { defineField, defineType } from "sanity";
 
 export const imageType = defineType({
-  name: "images", // Renamed for clarity
+  name: "images",
   title: "Image with Alt Text",
   type: "document",
   icon: ImageIcon,
@@ -12,7 +12,7 @@ export const imageType = defineType({
       title: "Main Image",
       type: "image",
       options: {
-        hotspot: true, // Enables cropping and focal point adjustments
+        hotspot: true,
       },
       validation: Rule => Rule.required().error("An image is required."),
       fields: [

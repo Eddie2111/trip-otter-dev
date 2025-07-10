@@ -2,10 +2,13 @@ import { Document } from 'mongoose';
 import { UserDocument } from './user.d';
 
 export interface Post {
-  content: string;
-  mediaUrl?: string;
-  owner: string | UserDocument;
-  likesCount?: number;
+  serial: string;
+  image: string[];
+  likes: UserDocument[];
+  caption: string;
+  location: string;
+  owner: UserDocument;
+  comments: Comment[];
 }
 
 export interface PostDocument extends Post, Document {

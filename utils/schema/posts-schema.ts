@@ -1,30 +1,58 @@
 import { model, models, Schema } from 'mongoose';
-import { PostDocument } from '@/types/post.d';
+import { PostDocument } from '@/types/post';
+import { v4 } from 'uuid';
 
 const postSchema = new Schema<PostDocument>(
   {
-    content: {
+    serial: {
       type: String,
+      default: v4,
       required: true,
-      maxlength: [500, 'Post content must be less than 500 characters'],
+      unique: true,
     },
-    mediaUrl: {
+    image: [{
       type: String,
+    }],
+    likes: [{
+      type: Schema.Types.ObjectId,
+      ref: 'User',
       required: false,
+    }],
+    caption: {
+      type: String,
+    },
+    location: {
+      type: String,
     },
     owner: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-    likesCount: {
-      type: Number,
-      default: 0,
-    },
+    comments: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Comment',
+      },
+    ],
   },
   {
     timestamps: true,
   }
 );
+
+// either caption or image check
+postSchema.pre('validate', function (next) {
+  const post = this as PostDocument;
+
+  const hasCaption = typeof post.caption === 'string' && post.caption.trim().length > 0;
+  const hasImage = Array.isArray(post.image) && post.image.length > 0;
+
+  if (!hasCaption && !hasImage) {
+    next(new Error('At least one of caption or image is required'));
+  } else {
+    next();
+  }
+});
 
 export default models.Post ?? model<PostDocument>('Post', postSchema);

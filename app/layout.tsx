@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Toaster } from 'sonner'
+import { MobileNavigation } from '@/components/mobile-navigation'
+import Providers from './providers'
 
 export const metadata: Metadata = {
   title: 'TripOtter',
@@ -17,7 +19,8 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Toaster />
-        {children}
+        <Providers>{children}</Providers>
+        <MobileNavigation />
       </body>
     </html>
   )

@@ -1,5 +1,5 @@
 import { connectToDatabase } from './mongo';
-
+import mongoose from 'mongoose';
 /**
  * A utility to wrap any MongoDB operation with a database connection.
  * @param operation - A function that takes a Mongoose model and returns a promise with the result.
@@ -15,6 +15,22 @@ export async function runDBOperation<T>(
   } catch (error) {
     console.error('Database operation failed:', error);
     throw new Error('Database operation failed');
+  }
+}
+
+export async function runDBOperationWithTransaction<T>(operation: (session: mongoose.ClientSession) => Promise<T>): Promise<T> {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const result = await operation(session);
+    await session.commitTransaction();
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
 }
 

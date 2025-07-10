@@ -27,10 +27,11 @@ import { UserDocument } from "@/types/user"
 import { Loading } from "./ui/loading"
 
 interface PersonPageProps {
-  personId: number | string
+  personId: string;
+  selfProfile: boolean;
 }
 
-import { 
+import {
   personData,
   highlights,
   mutualFollowers,
@@ -38,7 +39,9 @@ import {
   mockPosts,
 } from "@/data/mocks/person.mock";
 
-export function PersonPage({ personId }: PersonPageProps) {
+import { CreatePost } from "./create-post"
+
+export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   const [currentPage, setCurrentPage] = useState<"feed" | "chat" | "shops" | "shop" | "product" | "groups" | "group" | "people" | "person" | "settings">("person")
   const [activeTab, setActiveTab] = useState("posts")
   const [isFollowing, setIsFollowing] = useState(false)
@@ -46,6 +49,7 @@ export function PersonPage({ personId }: PersonPageProps) {
   const [_personData, _setPersonData] = useState<UserDocument | null>(null);
 
   const person = personData[personId as keyof typeof personData] || personData[1]
+  console.log(selfProfile);
 
   const handleLike = (postId: number) => {
     setLikedPosts((prev) => ({
@@ -57,25 +61,24 @@ export function PersonPage({ personId }: PersonPageProps) {
   const handleFollow = () => {
     setIsFollowing(!isFollowing)
   }
-  useEffect(()=>{
+  useEffect(() => {
     async function fetchProfile() {
       const response = await fetch(`/api/users?id=${personId}`);
       const user = await response.json();
       _setPersonData(user.data);
     }
-    if(!_personData) {
+    if (!_personData) {
       fetchProfile();
     }
-  },[personId]);
+  }, [personId]);
 
-  if(!_personData) {
+  if (!_personData) {
     return <Loading />
   }
-  console.log(_personData)
   return (
-<div className="flex min-h-screen">
-  <DesktopSidebar setCurrentPage={setCurrentPage} currentPage={currentPage} />
-  <main className="md:ml-64 flex-1 bg-gray-50 overflow-auto">
+    <div className="flex min-h-screen">
+      <DesktopSidebar setCurrentPage={setCurrentPage} currentPage={currentPage} />
+      <main className="md:ml-64 flex-1 bg-gray-50 overflow-auto">
         {/* Header */}
         <div className="bg-white border-b sticky top-0 z-10">
           <div className="max-w-4xl mx-auto px-4 py-3">
@@ -133,23 +136,41 @@ export function PersonPage({ personId }: PersonPageProps) {
                 </div>
               </div>
 
-              <div className="flex gap-2 mt-4 md:mt-0 md:mb-4">
-                <Button
-                  variant={isFollowing ? "outline" : "default"}
-                  onClick={handleFollow}
-                  className="flex-1 md:flex-none"
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  {isFollowing ? "Following" : "Follow"}
-                </Button>
-                <Button variant="outline">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Message
-                </Button>
-                <Button variant="outline" size="icon">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
-              </div>
+              {
+                selfProfile ?
+                (
+                  <div className="flex gap-2 mt-4 md:mt-0 md:mb-4">
+                    <Button variant="default" className="w-full md:w-auto">
+                      Edit profile
+                    </Button>
+                    <CreatePost profileId={personId}>
+                      <Button variant="default" className="w-full md:w-auto">
+                        Create post
+                      </Button>
+                    </CreatePost>
+                  </div>
+                )
+                :
+                  (
+                    <div className="flex gap-2 mt-4 md:mt-0 md:mb-4">
+                      <Button
+                        variant={isFollowing ? "outline" : "default"}
+                        onClick={handleFollow}
+                        className="flex-1 md:flex-none"
+                      >
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        {isFollowing ? "Following" : "Follow"}
+                      </Button>
+                      <Button variant="outline">
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Message
+                      </Button>
+                      <Button variant="outline" size="icon">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )
+              }
             </div>
 
             {/* Bio and Info */}

@@ -1,7 +1,13 @@
 import sharp from "sharp";
-import { generateUniqueFilename } from "@/lib/utils";
+import {
+  generateUniqueFilename,
+  generateUniqueVideoFilename,
+} from "@/lib/utils";
 import { client } from "@/sanity/lib/client";
 import RateLimiter_Middleware from "@/lib/rate-limiter.middleware";
+import { Buffer } from "buffer";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/auth";
 
 async function fetchImageDetails(imageId: string) {
   const imageQuery = `*[_type == "images" && _id == $imageId]{
@@ -17,126 +23,211 @@ async function fetchImageDetails(imageId: string) {
       },
       alt
     }
-  }`;
+}[0]`;
 
   return await client.fetch(imageQuery, { imageId });
+}
+async function fetchVideoDetails(videoId: string) {
+  const videoQuery = `*[_type == "videos" && _id == $videoId]{
+    video {
+      asset->{
+        url
+      },
+      alt
+    }
+}[0]`;
+
+  return await client.fetch(videoQuery, { videoId });
 }
 
 export async function GET(request: Request) {
   await RateLimiter_Middleware(request);
+  const isAuthenticated = await getServerSession(authOptions);
+  if (!isAuthenticated?.user?.id) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const url = new URL(request.url);
     const imageId = url.searchParams.get("id");
 
     if (!imageId) {
-      return Response.json({ error: "Image ID is required" }, { status: 400 });
+      return Response.json({ error: "Media ID is required" }, { status: 400 });
     }
+    const resultForImage = await fetchImageDetails(imageId);
+    const resultForVideo = await fetchVideoDetails(imageId);
 
-    const result = await fetchImageDetails(imageId);
+    if (!resultForImage && !resultForVideo)
+      return Response.json({ error: "Media not found" }, { status: 404 });
 
-    if (!result || result.length === 0) {
-      return Response.json({ error: "Image not found" }, { status: 404 });
-    }
-
-    const imageData = result[0].mainImage;
+    const mediaData = resultForVideo
+      ? {
+          url: resultForVideo.video.asset.url,
+          altText: resultForVideo.video.alt,
+        }
+      : {
+          url: resultForImage.mainImage.asset.url,
+          altText: resultForImage.mainImage.alt,
+          dimensions: resultForImage.mainImage.asset.metadata.dimensions,
+        };
 
     return Response.json({
-      message: "Image retrieved successfully",
-      imageUrl: imageData.asset.url,
-      altText: imageData.alt,
-      dimensions: imageData.asset.metadata.dimensions,
+      message: "Media retrieved successfully",
+      ...mediaData
     });
   } catch (error) {
+    console.log(error)
     console.error("Error retrieving image:", error);
     return Response.json(
       { error: "Failed to retrieve image" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 export async function POST(request: Request) {
   await RateLimiter_Middleware(request);
+  const isAuthenticated = await getServerSession(authOptions);
+  if (!isAuthenticated?.user?.id) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const formData = await request.formData();
-    const file = formData.get("file");
+    const file = formData.get("file") as File;
 
     if (!file) {
       return Response.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif"];
-    const mimeType = (file as File).type;
-
-    if (!allowedMimeTypes.includes(mimeType)) {
+    const allowedMimeTypesForImage = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/jpg",
+      "image/gif",
+    ];
+    const allowedMimeTypesForVideo = [
+      "video/mp4",
+      "video/webm",
+      "video/ogg",
+      "video/mpeg",
+      "video/quicktime",
+      "video/x-msvideo",
+    ];
+    const mimeType = file.type;
+    console.log(mimeType);
+    if (
+      !allowedMimeTypesForImage.includes(mimeType) &&
+      !allowedMimeTypesForVideo.includes(mimeType)
+    ) {
       return Response.json(
         {
           error:
-            "Invalid file type. Only JPEG, PNG, WebP, GIF, JPG images are allowed.",
+            "Invalid file type. Only valid images (JPEG, PNG, WebP, GIF, JPG) and videos (MP4, WebM, Ogg, MPEG, Quicktime, AVI) are allowed.",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const arrayBuffer = await (file as File).arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    if (allowedMimeTypesForImage.includes(mimeType)) {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let imageMetadata: any;
-    try {
-      imageMetadata = await sharp(buffer).metadata();
-    } catch (error) {
-      console.log(error);
-      return Response.json(
-        { error: "Uploaded file is not a valid image." },
-        { status: 400 },
-      );
-    }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let imageMetadata: any;
+      try {
+        imageMetadata = await sharp(buffer).metadata();
+      } catch (error) {
+        console.error("Error getting image metadata:", error);
+        return Response.json(
+          { error: "Uploaded file is not a valid image or is corrupted." },
+          { status: 400 }
+        );
+      }
 
-    if (!["jpeg", "png", "webp"].includes(imageMetadata.format)) {
-      return Response.json(
+      const optimizedImageBuffer = await sharp(buffer)
+        .webp({ quality: 70, effort: 3 })
+        .toBuffer();
+
+      const uniqueFilename = generateUniqueFilename();
+
+      const assetResponse = await client.assets.upload(
+        "image",
+        optimizedImageBuffer,
         {
-          error:
-            "Unsupported image format. Only JPEG, PNG, and WebP are allowed.",
-        },
-        { status: 400 },
+          filename: uniqueFilename,
+          contentType: "image/webp",
+        }
       );
+
+      const docResponse = await client.create({
+        _type: "images",
+        mainImage: {
+          _type: "image",
+          asset: {
+            _type: "reference",
+            _ref: assetResponse._id,
+          },
+          alt: uniqueFilename.split(".")[0],
+        },
+      });
+
+      return Response.json({
+        message: "Image uploaded, optimized, and stored in Sanity successfully",
+        optimizedSize: optimizedImageBuffer.length,
+        uniqueFilename,
+        sanityAssetId: assetResponse._id,
+        mediaId: docResponse._id,
+      });
     }
 
-    const optimizedImageBuffer = await sharp(buffer)
-      .webp({ quality: 70, effort: 3 })
-      .toBuffer();
+    if (allowedMimeTypesForVideo.includes(mimeType)) {
+      console.log("mime type of video recieved", mimeType);
+      const MAX_VIDEO_SIZE_MB = 50;
+      const MAX_VIDEO_SIZE_BYTES = MAX_VIDEO_SIZE_MB * 1024 * 1024;
 
-    const uniqueFilename = generateUniqueFilename();
+      if (file.size > MAX_VIDEO_SIZE_BYTES) {
+        return Response.json(
+          {
+            error: `Video file size exceeds the ${MAX_VIDEO_SIZE_MB}MB limit.`,
+          },
+          { status: 400 }
+        );
+      }
 
-    const assetResponse = await client.assets.upload(
-      "image",
-      optimizedImageBuffer,
-      {
+      // Read the file into a Buffer
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+      const uniqueFilename = generateUniqueVideoFilename(mimeType.split("/")[1]);
+      console.log("unique file name: ", uniqueFilename);
+
+      // Upload the video to Sanity
+      const assetResponse = await client.assets.upload("file", fileBuffer, {
         filename: uniqueFilename,
-        contentType: "image/webp",
-      },
-    );
+        contentType: mimeType,
+      });
 
-    const docResponse = await client.create({
-      _type: "images",
-      mainImage: {
-        _type: "image",
-        asset: {
-          _type: "reference",
-          _ref: assetResponse._id,
+      console.log(assetResponse);
+
+      // Create the document referencing the video asset
+      const docResponse = await client.create({
+        _type: "videos",
+        video: {
+          _type: "file",
+          asset: {
+            _type: "reference",
+            _ref: assetResponse._id,
+          },
+          alt: uniqueFilename.split(".")[0],
         },
-        alt: uniqueFilename.split(".")[0],
-      },
-    });
+      });
+      console.log("this is docResponse: ", docResponse);
 
-    return Response.json({
-      message: "File uploaded, optimized, and stored in Sanity successfully",
-      optimizedSize: optimizedImageBuffer.length,
-      uniqueFilename,
-      sanityAssetId: assetResponse._id,
-      imageId: docResponse._id,
-    });
+      return Response.json({
+        message: "Video uploaded and stored in Sanity successfully",
+        sanityAssetId: assetResponse._id,
+        mediaId: docResponse._id,
+      });
+    }
   } catch (error) {
     console.error("Error processing file upload:", error);
     return Response.json({ error: "Failed to process file" }, { status: 500 });

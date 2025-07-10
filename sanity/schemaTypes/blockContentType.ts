@@ -73,4 +73,5 @@ export const blockContentType = defineType({
       ],
     }),
   ],
-});
+},
+);

@@ -34,7 +34,7 @@ import {
 import { useSession } from "next-auth/react";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { usePostApi } from "@/lib/requests";
-import { getSanityImage } from '@/lib/getSanityImage';
+import { getSanityMedia } from "@/lib/getSanityImage";
 
 
 export function CreatePost({ children, profileId }: { children: React.ReactNode, profileId: string }) {
@@ -107,6 +107,7 @@ export function CreatePostForm({
     onDrop,
     accept: {
       "image/*": [".jpeg", ".jpg", ".png", ".gif", ".webp"],
+      "video/*": [".mp4", ".mov", ".avi", ".mkv"],
     },
     maxFiles: 10,
     disabled: files.length >= 10,
@@ -136,8 +137,9 @@ export function CreatePostForm({
         }
 
         const result = await res.json();
-        const imageLink = await getSanityImage(result.imageId);
-        uploadedImageIds.push(imageLink.data.imageUrl);
+        console.log("file upload response", result);
+        const mediaLink = await getSanityMedia(result.mediaId);
+        uploadedImageIds.push(mediaLink.data.url);
       }
 
       const owner = (session?.user?.id as string) ?? "";

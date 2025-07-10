@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { generateUniqueFilename } from "@/lib/utils";
-import { client } from "@/sanity2/lib/client";
+import { client } from "@/sanity/lib/client";
 import RateLimiter_Middleware from "@/lib/rate-limiter.middleware";
 
 async function fetchImageDetails(imageId: string) {
@@ -65,14 +65,14 @@ export async function POST(request: Request) {
       return Response.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif"];
     const mimeType = (file as File).type;
 
     if (!allowedMimeTypes.includes(mimeType)) {
       return Response.json(
         {
           error:
-            "Invalid file type. Only JPEG, PNG, and WebP images are allowed.",
+            "Invalid file type. Only JPEG, PNG, WebP, GIF, JPG images are allowed.",
         },
         { status: 400 },
       );

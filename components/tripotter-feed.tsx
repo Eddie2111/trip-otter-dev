@@ -16,14 +16,7 @@ import {
   Bookmark,
   MoreHorizontal,
   Camera,
-  Home,
-  Search,
   PlusSquare,
-  User,
-  Users,
-  ShoppingBag,
-  Settings,
-  LogOut,
 } from "lucide-react"
 import Image from "next/image"
 import { GroupPage } from "./group-page"
@@ -508,31 +501,6 @@ export function TripotterFeed() {
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t">
-        <div className="flex items-center justify-around py-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className={currentPage === "feed" ? "text-black" : "text-gray-400"}
-            onClick={() => setCurrentPage("feed")}
-          >
-            <Home className="w-6 h-6" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-gray-400">
-            <Search className="w-6 h-6" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-gray-400">
-            <PlusSquare className="w-6 h-6" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-gray-400">
-            <Heart className="w-6 h-6" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-gray-400" onClick={()=>router.push("/person/me")}>
-            <User className="w-6 h-6" />
-          </Button>
-        </div>
-      </div>
     </div>
   )
 }

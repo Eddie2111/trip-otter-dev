@@ -5,7 +5,7 @@ type TImageResponse = { data: { imageUrl: string } };
 export async function getSanityImage(key: string): Promise<TImageResponse> {
   try {
     const imageLink = await axios.get<string, TImageResponse>(
-      `/api/image?id=${key}`,
+      `/api/media?id=${key}`,
     );
     return imageLink;
   } catch (err: unknown) {

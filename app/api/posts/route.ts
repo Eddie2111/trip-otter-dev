@@ -1,12 +1,26 @@
 import { runDBOperation, runDBOperationWithTransaction } from "@/lib/useDB";
 import postsSchema from "@/utils/schema/posts-schema";
 import profileSchema from "@/utils/schema/profile-schema";
+import { NextRequest } from "next/server";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+    const searchParams = request.nextUrl.searchParams;
+    const postId = searchParams.get("postId");
+    const posts = await runDBOperation(async () => {
+      return await postsSchema
+        .findById(postId)
+        .populate("owner", "_id username fullName profileImage")
+        .populate({
+          path: "likes",
+          model: "User",
+          select: "_id username fullName profileImage",
+        })
+        .exec();
+    });
     return Response.json({
         message: "Hello World",
         status: 200,
-        method: request.method,
+        data: posts,
     })
 }
   

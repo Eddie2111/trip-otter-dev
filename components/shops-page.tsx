@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Star, MapPin, Heart, Filter, Search } from "lucide-react"
 import Image from "next/image"
+import { useRouter } from "next/navigation";
 
 const trendyProducts = [
   {
@@ -135,11 +136,8 @@ const shops = [
   },
 ]
 
-interface ShopsPageProps {
-  onShopSelect: (shopId: number) => void
-}
-
-export function ShopsPage({ onShopSelect }: ShopsPageProps) {
+export function ShopsPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("")
 
   const filteredShops = shops.filter(
@@ -229,7 +227,7 @@ export function ShopsPage({ onShopSelect }: ShopsPageProps) {
                             <span className="text-xs text-gray-500 line-through">${product.originalPrice}</span>
                           )}
                         </div>
-                        <Button size="sm" className="h-7 px-3 text-xs" onClick={() => onShopSelect(product.shopId)}>
+                        <Button size="sm" className="h-7 px-3 text-xs" onClick={() => router.push(`/shop/${product.shopId}`)}>
                           View Shop
                         </Button>
                       </div>
@@ -262,7 +260,7 @@ export function ShopsPage({ onShopSelect }: ShopsPageProps) {
                 <Card
                   key={shop.id}
                   className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => onShopSelect(shop.id)}
+                  onClick={() => router.push(`/shop/${shop.id}`)}
                 >
                   <div className="relative">
                     <Image

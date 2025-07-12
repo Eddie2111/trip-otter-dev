@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ChatPage } from "./chat-page"
 import { ShopsPage } from "./shops-page"
 import { GroupsPage } from "./groups-page"
@@ -30,6 +30,7 @@ import { useRouter } from "next/navigation"
 import { Loading } from "./ui/loading"
 import { DesktopHeader } from "./desktop-header"
 import { DesktopSidebar } from "./desktop-sidebar"
+import { PostContainer } from "./post-card_v2"
 
 export function TripotterFeed() {
   const router = useRouter();
@@ -42,6 +43,14 @@ export function TripotterFeed() {
   const [editCommentText, setEditCommentText] = useState("")
 
   const [showSearchModal, setShowSearchModal] = useState(false)
+  useEffect(() => {
+    async function getFeed() { 
+      const response = await fetch('/api/feed')
+      const data = await response.json()
+      console.log(data);
+    }
+    getFeed();
+   })
 
   // Use NextAuth session hook
   const { data: session, status } = useSession()
@@ -180,11 +189,10 @@ export function TripotterFeed() {
       />
       {/* Desktop Header */}
       <DesktopHeader
-        setShowSearchModal={setShowSearchModal} 
-        setCurrentPage={setCurrentPage} 
-        session={session} 
+        setShowSearchModal={setShowSearchModal}
+        setCurrentPage={setCurrentPage}
+        session={session}
         handleLogout={handleLogout}
-
       />
 
       {/* Mobile Header */}
@@ -196,7 +204,10 @@ export function TripotterFeed() {
           </div>
           <div className="flex items-center gap-4">
             <Heart className="w-6 h-6" />
-            <MessageCircle className="w-6 h-6 cursor-pointer" onClick={() => setCurrentPage("chat")} />
+            <MessageCircle
+              className="w-6 h-6 cursor-pointer"
+              onClick={() => setCurrentPage("chat")}
+            />
           </div>
         </div>
       </div>
@@ -204,15 +215,17 @@ export function TripotterFeed() {
       <div className="flex">
         {/* Desktop Left Sidebar - Now persistent across all pages */}
         <DesktopSidebar
-        setCurrentPage={setCurrentPage}
-        currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          currentPage={currentPage}
         />
 
         {/* Main Content */}
         <div className="flex-1 md:ml-64">
           {currentPage === "chat" && <ChatPage />}
-          {currentPage === "shops" && <ShopsPage onShopSelect={() => {}} />}
-          {currentPage === "groups" && <GroupsPage onGroupSelect={handleGroupSelect} />}
+          {currentPage === "shops" && <ShopsPage />}
+          {currentPage === "groups" && (
+            <GroupsPage onGroupSelect={handleGroupSelect} />
+          )}
           {currentPage === "group" && selectedGroupId && (
             <GroupPage groupId={selectedGroupId} onBack={handleBackToGroups} />
           )}
@@ -227,7 +240,10 @@ export function TripotterFeed() {
                     <ScrollArea className="w-full">
                       <div className="flex gap-4 pb-2">
                         {stories.map((story) => (
-                          <div key={story.id} className="flex flex-col items-center gap-1 min-w-0">
+                          <div
+                            key={story.id}
+                            className="flex flex-col items-center gap-1 min-w-0"
+                          >
                             <div
                               className={`relative ${
                                 story.hasStory && !story.isOwn
@@ -236,10 +252,19 @@ export function TripotterFeed() {
                               }`}
                             >
                               <Avatar
-                                className={`w-14 h-14 ${story.hasStory && !story.isOwn ? "border-2 border-white" : ""}`}
+                                className={`w-14 h-14 ${
+                                  story.hasStory && !story.isOwn
+                                    ? "border-2 border-white"
+                                    : ""
+                                }`}
                               >
-                                <AvatarImage src={story.avatar || "/placeholder.svg"} alt={story.username} />
-                                <AvatarFallback>{story.username[0].toUpperCase()}</AvatarFallback>
+                                <AvatarImage
+                                  src={story.avatar || "/placeholder.svg"}
+                                  alt={story.username}
+                                />
+                                <AvatarFallback>
+                                  {story.username[0].toUpperCase()}
+                                </AvatarFallback>
                               </Avatar>
                               {story.isOwn && (
                                 <div className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-1">
@@ -247,7 +272,9 @@ export function TripotterFeed() {
                                 </div>
                               )}
                             </div>
-                            <span className="text-xs text-center truncate w-16">{story.username}</span>
+                            <span className="text-xs text-center truncate w-16">
+                              {story.username}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -256,233 +283,56 @@ export function TripotterFeed() {
                 </Card>
 
                 {/* Posts */}
-                <div className="space-y-0 md:space-y-6 pb-20 md:pb-0">
-                  {posts.map((post) => (
-                    <Card
-                      key={post.id}
-                      className="border-0 border-b md:border rounded-none md:rounded-lg shadow-none md:shadow-sm bg-white"
-                    >
-                      {/* Post Header */}
-                      <div className="flex items-center justify-between p-3 md:p-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-8 h-8 md:w-10 md:h-10">
-                            <AvatarImage src={post.avatar || "/placeholder.svg"} alt={post.username} />
-                            <AvatarFallback>{post.username[0].toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <span className="font-semibold text-sm md:text-base">{post.username}</span>
-                            <div className="text-xs text-gray-500">{post.timeAgo}</div>
-                          </div>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="w-8 h-8">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Save</DropdownMenuItem>
-                            <DropdownMenuItem>Report</DropdownMenuItem>
-                            <DropdownMenuItem>Unfollow</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      {/* Post Image */}
-                      <CardContent className="p-0">
-                        <Image
-                          src={post.image || "/placeholder.svg"}
-                          alt="Post image"
-                          width={400}
-                          height={400}
-                          className="w-full aspect-square object-cover"
-                        />
-                      </CardContent>
-
-                      {/* Post Actions */}
-                      <div className="p-3 md:p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-4">
-                            <Button variant="ghost" size="icon" className="w-8 h-8 p-0">
-                              <Heart className="w-6 h-6" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="w-8 h-8 p-0"
-                              onClick={() => toggleComments(post.id)}
-                            >
-                              <MessageCircle className="w-6 h-6" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="w-8 h-8 p-0">
-                              <Send className="w-6 h-6" />
-                            </Button>
-                          </div>
-                          <Button variant="ghost" size="icon" className="w-8 h-8 p-0">
-                            <Bookmark className="w-6 h-6" />
-                          </Button>
-                        </div>
-
-                        {/* Likes */}
-                        <div className="font-semibold text-sm mb-2">{post.likes.toLocaleString()} likes</div>
-
-                        {/* Caption */}
-                        <div className="text-sm mb-2">
-                          <span className="font-semibold mr-2">{post.username}</span>
-                          {post.caption}
-                        </div>
-
-                        {/* Comments */}
-                        <div className="space-y-1">
-                          {post.comments.map((comment, index) => (
-                            <div key={index} className="text-sm">
-                              <span className="font-semibold mr-2">{comment.username}</span>
-                              {comment.text}
-                            </div>
-                          ))}
-                          {postComments[post.id]?.map((comment, index) => (
-                            <div key={`new-${index}`} className="text-sm group">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <span className="font-semibold mr-2">{comment.username}</span>
-                                  {editingComment?.postId === post.id && editingComment?.commentIndex === index ? (
-                                    <div className="mt-1">
-                                      <input
-                                        type="text"
-                                        value={editCommentText}
-                                        onChange={(e) => setEditCommentText(e.target.value)}
-                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        onKeyPress={(e) => {
-                                          if (e.key === "Enter") handleSaveEdit()
-                                          if (e.key === "Escape") handleCancelEdit()
-                                        }}
-                                        autoFocus
-                                      />
-                                      <div className="flex gap-2 mt-1">
-                                        <Button onClick={handleSaveEdit} size="sm" className="h-6 px-2 text-xs">
-                                          Save
-                                        </Button>
-                                        <Button
-                                          onClick={handleCancelEdit}
-                                          variant="outline"
-                                          size="sm"
-                                          className="h-6 px-2 text-xs bg-transparent"
-                                        >
-                                          Cancel
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <>
-                                      {comment.text}
-                                      {comment.edited && <span className="text-xs text-gray-400 ml-1">(edited)</span>}
-                                      {comment.isOwn && (
-                                        <span className="text-xs text-gray-500 ml-2">{comment.timestamp}</span>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
-                                {comment.isOwn &&
-                                  !(editingComment?.postId === post.id && editingComment?.commentIndex === index) && (
-                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="w-6 h-6">
-                                            <MoreHorizontal className="w-3 h-3" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          <DropdownMenuItem
-                                            onClick={() => handleEditComment(post.id, index, comment.text)}
-                                          >
-                                            Edit
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={() => handleDeleteComment(post.id, index)}
-                                            className="text-red-600"
-                                          >
-                                            Delete
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                    </div>
-                                  )}
-                              </div>
-                            </div>
-                          ))}
-
-                          {showComments[post.id] && (
-                            <div className="mt-3 pt-3 border-t">
-                              <div className="flex items-center gap-2">
-                                <Avatar className="w-6 h-6">
-                                  <AvatarImage src={session?.user?.image || "/placeholder.svg?height=24&width=24"} />
-                                  <AvatarFallback>{session?.user?.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 relative">
-                                  <input
-                                    type="text"
-                                    placeholder="Add a comment..."
-                                    value={commentInputs[post.id] || ""}
-                                    onChange={(e) => handleCommentInputChange(post.id, e.target.value)}
-                                    onKeyPress={(e) => e.key === "Enter" && handleAddComment(post.id)}
-                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  />
-                                  {commentInputs[post.id]?.trim() && (
-                                    <Button
-                                      onClick={() => handleAddComment(post.id)}
-                                      size="sm"
-                                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600"
-                                    >
-                                      Post
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {!showComments[post.id] &&
-                            (post.comments.length > 2 || postComments[post.id]?.length > 0) && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleComments(post.id)}
-                                className="text-xs text-gray-500 mt-1 h-auto p-0"
-                              >
-                                View all {post.comments.length + (postComments[post.id]?.length || 0)} comments
-                              </Button>
-                            )}
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                <PostContainer />
               </div>
 
               {/* Right Sidebar - Suggested Users */}
               <div className="hidden lg:block w-80 space-y-6">
                 <Card className="p-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-500">Suggested for you</h3>
-                    <Button variant="ghost" size="sm" className="text-xs font-semibold">
+                    <h3 className="font-semibold text-gray-500">
+                      Suggested for you
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs font-semibold"
+                    >
                       See All
                     </Button>
                   </div>
                   <div className="space-y-3">
                     {suggestedUsers.map((user) => (
-                      <div key={user.username} className="flex items-center justify-between">
+                      <div
+                        key={user.username}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center gap-3">
                           <Avatar className="w-8 h-8">
-                            <AvatarImage src={user.avatar || "/placeholder.svg"} />
-                            <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
+                            <AvatarImage
+                              src={user.avatar || "/placeholder.svg"}
+                            />
+                            <AvatarFallback>
+                              {user.username[0].toUpperCase()}
+                            </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-semibold text-sm">{user.username}</div>
-                            <div className="text-xs text-gray-500">{user.name}</div>
-                            <div className="text-xs text-gray-400">Followed by {user.mutualFollowers} others</div>
+                            <div className="font-semibold text-sm">
+                              {user.username}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {user.name}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Followed by {user.mutualFollowers} others
+                            </div>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" className="text-blue-500 text-xs font-semibold">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-500 text-xs font-semibold"
+                        >
                           Follow
                         </Button>
                       </div>
@@ -501,5 +351,5 @@ export function TripotterFeed() {
         </div>
       </div>
     </div>
-  )
+  );
 }

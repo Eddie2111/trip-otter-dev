@@ -95,6 +95,80 @@ class MediaAPI extends BaseAPI {
   }
 }
 
+class LikeAPI extends BaseAPI {
+  public likePost = async (postId: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`/api/reaction`, { post: postId });
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public unlikePost = async (id: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`/api/posts/${id}/unlike`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public getLikes = async (id: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/posts/${id}/likes`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+}
+
+class CommentAPI extends BaseAPI {
+  public createComment = async (postId: string, comment: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`/api/comment/`, {
+        content: comment,
+        post: postId,
+      });
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public getComments = async (postId: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/posts/${postId}/comments`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public updateComment = async (commentId: string, comment: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.put(`/api/comments/${commentId}`, { comment });
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public deleteComment = async (commentId: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.delete(`/api/comments/${commentId}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+}
+
 export const useAuthApi = new AuthAPI();
 export const usePostApi = new PostAPI();
 export const useMediaApi = new MediaAPI();
+export const useLikeApi = new LikeAPI();
+export const useCommentApi = new CommentAPI();

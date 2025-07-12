@@ -75,6 +75,7 @@ export const authOptions = {
               fullName: profile?.name,
               username,
               agreeToTerms: true,
+              profileImage: profile?.image,
               password: "fallback_hashed_password_here",
             });
             await userData.save();

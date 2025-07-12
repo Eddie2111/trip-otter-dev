@@ -16,3 +16,34 @@ export interface PostDocument extends Post, Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface IPostProps {
+  __v: number;
+  _id: string;
+  caption: string;
+  comments: Array<{
+    _id: string;
+    content: string;
+    owner: {
+      _id: string;
+      username: string;
+    };
+    createdAt: string;
+  }>;
+  createdAt: string;
+  image: string[];
+  likes: Array<{
+    _id: string;
+    fullName: string;
+    username: string;
+  }>;
+  location: string;
+  owner?: {
+    _id: string;
+    fullName: string;
+    username: string;
+    profileImage?: string;
+  };
+  serial: string;
+  updatedAt: string;
+}

@@ -342,8 +342,8 @@ export function TripotterFeed() {
 
                 <div className="text-xs text-gray-400 space-y-1">
                   <div>About • Help • Press • API • Jobs • Privacy • Terms</div>
-                  <div>Locations • Language • Meta Verified</div>
-                  <div className="mt-4">© 2024 Tripotter from Meta</div>
+                  <div>Locations • Language </div>
+                  <div className="mt-4">© 2025 Tripotter</div>
                 </div>
               </div>
             </div>

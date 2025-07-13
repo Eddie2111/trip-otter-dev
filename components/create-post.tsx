@@ -48,7 +48,7 @@ export function CreatePost({ children, profileId }: { children: React.ReactNode,
     setIsSubmitting(true)
     try {
       const response = await usePostApi.createPost(data);
-      console.log("Post created:", response)
+      // console.log("Post created:", response)
 
       toast.success("Post created successfully!")
     } catch (error) {
@@ -137,7 +137,7 @@ export function CreatePostForm({
         }
 
         const result = await res.json();
-        console.log("file upload response", result);
+        // console.log("file upload response", result);
         const mediaLink = await getSanityMedia(result.mediaId);
         uploadedImageIds.push(mediaLink.data.url);
       }

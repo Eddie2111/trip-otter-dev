@@ -9,7 +9,7 @@ import {
   LogOut,
 } from "lucide-react"
 import { signOut } from "next-auth/react";
-
+import { useRouter } from "next/navigation";
 import Link from "next/link"
 import type {Dispatch, SetStateAction} from "react"
 import { toast } from "sonner";
@@ -19,7 +19,8 @@ interface IDesktopSidebarProps {
   currentPage: string
 }
 
-export function DesktopSidebar({setCurrentPage, currentPage}: IDesktopSidebarProps) {
+export function DesktopSidebar({ setCurrentPage, currentPage }: IDesktopSidebarProps) {
+  const router = useRouter();
     const handleLogout = async () => {
         try {
           await signOut({
@@ -40,7 +41,7 @@ export function DesktopSidebar({setCurrentPage, currentPage}: IDesktopSidebarPro
                 <Button
                 variant={currentPage === "feed" ? "default" : "ghost"}
                 className="w-full justify-start gap-3 h-12 text-base"
-                onClick={() => setCurrentPage("feed")}
+                onClick={() => router.push("/")}
                 >
                 <Home className="w-5 h-5" />
                 Home
@@ -48,7 +49,7 @@ export function DesktopSidebar({setCurrentPage, currentPage}: IDesktopSidebarPro
                 <Button
                 variant={currentPage === "people" ? "default" : "ghost"}
                 className="w-full justify-start gap-3 h-12 text-base"
-                onClick={() => setCurrentPage("people")}
+                onClick={() => router.push("/people")}
                 >
                 <Users className="w-5 h-5" />
                 People
@@ -56,7 +57,7 @@ export function DesktopSidebar({setCurrentPage, currentPage}: IDesktopSidebarPro
                 <Button
                 variant={currentPage === "groups" || currentPage === "group" ? "default" : "ghost"}
                 className="w-full justify-start gap-3 h-12 text-base"
-                onClick={() => setCurrentPage("groups")}
+                onClick={() => router.push("/groups")}
                 >
                 <User className="w-5 h-5" />
                 Groups
@@ -64,7 +65,7 @@ export function DesktopSidebar({setCurrentPage, currentPage}: IDesktopSidebarPro
                 <Button
                 variant={currentPage === "shops" ? "default" : "ghost"}
                 className="w-full justify-start gap-3 h-12 text-base"
-                onClick={() => setCurrentPage("shops")}
+                onClick={() => router.push("/shop")}
                 >
                 <ShoppingBag className="w-5 h-5" />
                 Shops

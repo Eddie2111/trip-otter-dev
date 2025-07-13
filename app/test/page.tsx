@@ -1,11 +1,8 @@
-import SanityImage from "@/components/sanity-image.client";
+// add the components in here that requires test
+import { PostContainer } from "@/components/post-card_v2";
 
 export default function Test() { 
     return (
-        <SanityImage
-            image="SnLCZJkXgQ6qIvyza1avEX"
-            alt="some image"
-            className="m-24"
-            />
+        <PostContainer />
     )
 }

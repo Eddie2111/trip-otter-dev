@@ -27,7 +27,7 @@ export async function uploadImages(images: File[]): Promise<string[]> {
       }),
     );
 
-    console.log("Uploaded Image URLs:", uploadedUrls);
+    // console.log("Uploaded Image URLs:", uploadedUrls);
     return uploadedUrls;
   } catch (error) {
     console.error("Error uploading images:", error);

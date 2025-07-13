@@ -31,6 +31,7 @@ dayjs.extend(relativeTime);
 
 import { IPostProps } from "@/types/post";
 import GridMedia from "./grid-media"; // Import the new GridMedia component
+import { toast } from "sonner";
 
 export function PostContainer() {
   const [posts, setPosts] = useState<IPostProps[]>([]);
@@ -195,9 +196,10 @@ export function PostCardV2({
   };
 
   const handleLike = async () => {
+    setIsLiked(true);
     if (!currentLoggedInUser) {
-      // Prevent liking if not logged in
       console.log("User not logged in. Cannot like.");
+      toast.error("You must be logged in to like a post.");
       return;
     }
 
@@ -206,17 +208,18 @@ export function PostCardV2({
         console.log("Like API response:", response);
 
       if (response.status === 200) {
-        if (response.message === "Post liked") {
-          setIsLiked(true);
+        if (response.message === "Post liked successfully") {
           setLikesCount((prev) => prev + 1);
-        } else if (response.message === "Post unliked") {
+        } else if (response.message === "Post unliked successfully") {
           setIsLiked(false);
           setLikesCount((prev) => prev - 1);
         }
       } else {
         console.error("API returned an error:", response.message);
+        setIsLiked(false);
       }
     } catch (error) {
+      setIsLiked(false);
       console.error("Error liking post:", error);
     }
   };
@@ -339,14 +342,6 @@ export function PostCardV2({
           {likesCount.toLocaleString()} likes
         </div>
 
-        {/* Original caption div removed from here as it's now above the media */}
-        {/* <div className="text-sm mb-2">
-          <span className="font-semibold mr-2">
-            {post?.owner?.username ?? ""}
-          </span>
-          {post.caption}
-        </div> */}
-
         <div className="space-y-1">
           {displayedComments.map((comment, index) => (
             <div
@@ -357,7 +352,7 @@ export function PostCardV2({
                 <div className="flex-1">
                   {/* Safely access comment.owner.username with optional chaining and fallback */}
                   <span className="font-semibold mr-2">
-                    {comment.owner?.username || "Unknown User"}
+                    {comment?.owner?.username || session?.user?.username}
                   </span>
                   {editingComment?.postId === post._id &&
                   editingComment?.commentIndex === index ? (

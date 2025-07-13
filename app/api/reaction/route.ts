@@ -1,11 +1,12 @@
 import { authOptions } from "@/auth";
 import RateLimiter_Middleware from "@/lib/rate-limiter.middleware";
-import { runDBOperation, runDBOperationWithTransaction } from "@/lib/useDB";
+import { runDBOperationWithTransaction, runDBOperation } from "@/lib/useDB";
 import Like from "@/utils/schema/like-schema";
 import Post from "@/utils/schema/posts-schema";
 import Profile from "@/utils/schema/profile-schema";
 import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
+import mongoose from "mongoose";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -32,71 +33,141 @@ export async function GET(request: NextRequest) {
   });
 }
 
-export async function POST(request: Request) {
-  const userData = await getServerSession(authOptions);
-  const userId = userData?.user?.id;
+interface LikeToggleResult {
+  isLiked: boolean;
+  likeCount: number;
+  likeId?: string;
+}
 
-  if (!userId) {
-    return Response.json(
-      { message: "Unauthorized", status: 401 },
-      { status: 401 }
-    );
-  }
-
-  await RateLimiter_Middleware(request);
-
+export async function POST(request: NextRequest): Promise<Response> {
   try {
-    const body = await request.json();
-    const { post: postId } = body;
+    // Authentication check
+    const userData = await getServerSession(authOptions);
+    const userId = userData?.user?.id;
 
-    const post = await Post.findById(postId).select("likes");
-
-    if (!post) {
+    if (!userId) {
       return Response.json(
-        { message: "Post not found", status: 404 },
-        { status: 404 }
+        { message: "Unauthorized", status: 401 },
+        { status: 401 }
       );
     }
 
-    const hasLiked = post.likes.includes(userId);
+    // Rate limiting
+    await RateLimiter_Middleware(request);
 
-    let newLike;
-    let message;
+    // Parse and validate request body
+    const body = await request.json();
+    const { post: postId } = body;
 
-    await runDBOperationWithTransaction(async () => {
-      if (hasLiked) {
-        await Post.findByIdAndUpdate(postId, { $pull: { likes: userId } });
-        await Profile.findOneAndUpdate(
-          { user: userId },
-          { $pull: { likes: postId } }
-        );
-        message = "Post unliked";
-      } else {
-        const like = new Like({ user: userId, post: postId });
-        await Post.findByIdAndUpdate(postId, { $push: { likes: userId } });
-        await Profile.findOneAndUpdate(
-          { user: userId },
-          { $push: { likes: postId } }
-        );
-        await like.save();
+    if (!postId?.trim()) {
+      return Response.json(
+        { message: "Post ID is required", status: 400 },
+        { status: 400 }
+      );
+    }
 
-        newLike = like;
-        message = "Post liked";
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      return Response.json(
+        { message: "Invalid post ID format", status: 400 },
+        { status: 400 }
+      );
+    }
+
+    const result = await runDBOperationWithTransaction(
+      async (): Promise<LikeToggleResult> => {
+        // Check if post exists and if user already liked it
+        const [post, existingLike] = await Promise.all([
+          Post.findById(postId).select("likes owner").lean() as any,
+          Like.findOne({ user: userId, post: postId }).lean() as any,
+        ]);
+
+        if (!post) {
+          throw new Error("Post not found");
+        }
+
+        const hasLiked = !!existingLike;
+
+        if (hasLiked) {
+          // Unlike: Remove like from all three places
+          await Promise.all([
+            // Remove user ID from post's likes array
+            Post.findByIdAndUpdate(postId, { $pull: { likes: userId } }),
+            // Remove like document ID from profile's likes array
+            Profile.findOneAndUpdate(
+              { user: userId },
+              { $pull: { likes: existingLike._id } }
+            ),
+            // Delete the like document
+            Like.findByIdAndDelete(existingLike._id),
+          ]);
+
+          return {
+            isLiked: false,
+            likeCount: Math.max(0, post.likes.length - 1), // Ensure non-negative count
+          };
+        } else {
+          // Like: Add like to all three places
+          const newLike = new Like({ user: userId, post: postId });
+          const savedLike = await newLike.save();
+
+          // Update post and profile in parallel
+          await Promise.all([
+            // Add user ID to post's likes array
+            Post.findByIdAndUpdate(postId, { $addToSet: { likes: userId } }),
+            // Add like document ID to profile's likes array
+            Profile.findOneAndUpdate(
+              { user: userId },
+              { $addToSet: { likes: savedLike._id } },
+              { upsert: true } // Create profile if it doesn't exist
+            ),
+          ]);
+
+          return {
+            isLiked: true,
+            likeCount: post.likes.length + 1,
+            likeId: savedLike._id.toString(),
+          };
+        }
       }
-    });
+    );
 
     return Response.json({
-      message,
+      message: result.isLiked
+        ? "Post liked successfully"
+        : "Post unliked successfully",
       status: 200,
-      data: hasLiked ? null : newLike,
+      data: {
+        isLiked: result.isLiked,
+        likeCount: result.likeCount,
+        likeId: result.likeId || null,
+      },
     });
-  } catch (err) {
-    console.error(err);
-    return Response.json({
-      message: "Error toggling like",
-      status: 500,
-      data: err,
-    });
+  } catch (error) {
+    console.error("Error toggling like:", error);
+
+    // Handle duplicate key error (race condition)
+    if (error instanceof Error && error.message.includes("duplicate key")) {
+      return Response.json(
+        {
+          message: "Like already exists",
+          status: 409,
+        },
+        { status: 409 }
+      );
+    }
+
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal server error";
+    const statusCode = errorMessage === "Post not found" ? 404 : 500;
+
+    return Response.json(
+      {
+        message: errorMessage,
+        status: statusCode,
+      },
+      { status: statusCode }
+    );
   }
 }
 

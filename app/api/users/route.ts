@@ -3,72 +3,126 @@ import postsSchema from "@/utils/schema/posts-schema";
 import profileSchema from "@/utils/schema/profile-schema";
 import userSchema from "@/utils/schema/user-schema";
 import { NextRequest } from "next/server";
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import commentsSchema from "@/utils/schema/comments-schema";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import likeSchema from "@/utils/schema/like-schema";
+// Ensure models are registered
+import "@/utils/schema/comments-schema";
+import "@/utils/schema/like-schema";
 
-export async function GET(request: NextRequest) {
-  console.log("Comment schema imported:", commentsSchema);
-  console.log("Comment model registered:", !!mongoose.models.Comment);
-  const searchParams = request.nextUrl.searchParams;
-  const email = searchParams.get("id");
-  if (!email) return new Response("Email not provided", { status: 400 });
+interface UserData {
+  _id: string;
+  username?: string;
+  fullName?: string;
+  profileImage?: string;
+  profile: {
+    posts: any[];
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
 
-  const data = await runDBOperationWithTransaction(async () => {
-    // get user data
-    let user = await userSchema.findOne({ _id: email }).lean();
+export async function GET(request: NextRequest): Promise<Response> {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const userId = searchParams.get("id");
 
-    if (!user) {
-      throw new Error("User not found");
+    if (!userId?.trim()) {
+      return new Response(
+        JSON.stringify({ message: "User ID is required", status: 400 }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    // get profile data
-    const userDetails = await profileSchema.findOne({ user: user._id });
-    let posts: any[] = [];
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return new Response(
+        JSON.stringify({ message: "Invalid user ID format", status: 400 }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-    if (userDetails && userDetails.posts && userDetails.posts.length > 0) {
-      posts = await postsSchema
-        .find({
-          _id: { $in: userDetails.posts },
-        })
-        .sort({ createdAt: -1 })
-        .populate([
-          {
-            path: "likes",
-            model: "User",
-            select: "_id username fullName profileImage",
-          },
-          {
-            path: "comments",
-            model: "Comment",
-            select: "_id content owner createdAt",
-            populate: {
+    const data = await runDBOperationWithTransaction(async () => {
+      // Parallel execution for better performance
+      const [user, userProfile] = await Promise.all([
+        userSchema.findById(userId).lean().exec() as any,
+        profileSchema.findOne({ user: userId }).lean().exec() as any,
+      ]);
+
+      if (!user) {
+        throw new Error("User not found");
+      }
+      if (!userProfile) {
+        throw new Error("Profile not found");
+      }
+
+      let posts: any[] = [];
+
+      // Only fetch posts if profile exists and has posts
+      if (userProfile?.posts?.length > 0) {
+        posts = await postsSchema
+          .find({ _id: { $in: userProfile.posts } })
+          .sort({ createdAt: -1 })
+          .populate([
+            {
               path: "owner",
               model: "User",
-              select: "_id username profileImage",
+              select: "_id username fullName profileImage bio location role",
             },
-          },
-        ])
-        .lean();
-    }
+            {
+              path: "likes",
+              model: "User",
+              select: "_id username fullName profileImage",
+            },
+            {
+              path: "comments",
+              model: "Comment",
+              select: "_id content owner createdAt",
+              populate: {
+                path: "owner",
+                model: "User",
+                select: "_id username profileImage fullName",
+              },
+            },
+          ])
+          .lean()
+          .exec();
+      }
 
-    // merge data
-    const userData = user.toObject();
-    userData.profile = userDetails ? userDetails.toObject() : {};
-    userData.profile.posts = posts;
+      // Construct response data efficiently
+      const userData: UserData = {
+        ...user,
+        profile: {
+          ...userProfile,
+          posts,
+        },
+      };
 
-    // return data
-    return userData;
-  });
+      return userData;
+    });
 
-  return Response.json({
-    message: "User data received",
-    status: 200,
-    data,
-  });
+    return Response.json({
+      message: "User data retrieved successfully",
+      status: 200,
+      data,
+    });
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal server error";
+    const statusCode = errorMessage === "User not found" ? 404 : 500;
+
+    return new Response(
+      JSON.stringify({
+        message: errorMessage,
+        status: statusCode,
+      }),
+      {
+        status: statusCode,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 }
 
 export async function POST(request: Request) {

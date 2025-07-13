@@ -31,6 +31,7 @@ dayjs.extend(relativeTime);
 
 import { IPostProps } from "@/types/post";
 import GridMedia from "./grid-media"; // Import the new GridMedia component
+import { toast } from "sonner";
 
 export function PostContainer() {
   const [posts, setPosts] = useState<IPostProps[]>([]);
@@ -42,7 +43,7 @@ export function PostContainer() {
     async function getFeed() {
       if (session?.user) {
         try {
-          const response = await fetch(`/api/users?id=${session?.user?.email}`);
+          const response = await fetch(`/api/users?id=${session?.user?.id}`);
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -52,7 +53,7 @@ export function PostContainer() {
 
           // Access the 'data' field from the API response
           if (result.status === 200 && result.data) {
-            setPosts(result.data);
+            setPosts(result.data.profile.posts);
             console.log("Fetched data:", result.data);
           } else {
             throw new Error(`API error: ${result.message || "Unknown error"}`);
@@ -67,6 +68,9 @@ export function PostContainer() {
         } finally {
           setLoading(false);
         }
+      }
+      if (posts) {
+        return;
       }
     }
 
@@ -196,9 +200,10 @@ export function PostCardV2({
   };
 
   const handleLike = async () => {
+    setIsLiked(true);
     if (!currentLoggedInUser) {
-      // Prevent liking if not logged in
       console.log("User not logged in. Cannot like.");
+      toast.error("You must be logged in to like a post.");
       return;
     }
 
@@ -207,17 +212,18 @@ export function PostCardV2({
         console.log("Like API response:", response);
 
       if (response.status === 200) {
-        if (response.message === "Post liked") {
-          setIsLiked(true);
+        if (response.message === "Post liked successfully") {
           setLikesCount((prev) => prev + 1);
-        } else if (response.message === "Post unliked") {
+        } else if (response.message === "Post unliked successfully") {
           setIsLiked(false);
           setLikesCount((prev) => prev - 1);
         }
       } else {
         console.error("API returned an error:", response.message);
+        setIsLiked(false);
       }
     } catch (error) {
+      setIsLiked(false);
       console.error("Error liking post:", error);
     }
   };
@@ -277,7 +283,7 @@ export function PostCardV2({
           </Avatar>
           <div>
             <span className="font-semibold text-sm md:text-base">
-              {post?.owner?.username}
+              @{post?.owner?.username}
             </span>
             <div className="text-xs text-gray-500">
               {dayjs(post.createdAt).fromNow()}
@@ -340,14 +346,6 @@ export function PostCardV2({
           {likesCount.toLocaleString()} likes
         </div>
 
-        {/* Original caption div removed from here as it's now above the media */}
-        {/* <div className="text-sm mb-2">
-          <span className="font-semibold mr-2">
-            {post?.owner?.username ?? ""}
-          </span>
-          {post.caption}
-        </div> */}
-
         <div className="space-y-1">
           {displayedComments.map((comment, index) => (
             <div
@@ -358,7 +356,7 @@ export function PostCardV2({
                 <div className="flex-1">
                   {/* Safely access comment.owner.username with optional chaining and fallback */}
                   <span className="font-semibold mr-2">
-                    {comment.owner?.username || "Unknown User"}
+                    {comment.owner?.username || session?.user?.username}
                   </span>
                   {editingComment?.postId === post._id &&
                   editingComment?.commentIndex === index ? (
@@ -483,7 +481,7 @@ export function PostCardV2({
                       <Button
                         onClick={() => handleAddComment(post._id)}
                         size="sm"
-                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600"
+                        className="absolute right-0 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600 rounded-full p-5 transition duration-300 ease-in-out"
                       >
                         Post
                       </Button>

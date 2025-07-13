@@ -114,11 +114,13 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   }
   useEffect(() => {
     async function fetchProfile() {
-      const response = await fetch(`/api/users?id=${personId}`);
-      const user = await response.json();
-      _setPersonData(user.data);
-      setPosts(user.data.profile.posts);
-      // console.log(user.data.profile.posts);
+      if (!_personData) {
+        const response = await fetch(`/api/users?id=${personId}`);
+        const user = await response.json();
+        _setPersonData(user.data);
+        setPosts(user.data.profile.posts);
+        // console.log(user.data.profile.posts);
+      }
     }
     if (!_personData) {
       fetchProfile();

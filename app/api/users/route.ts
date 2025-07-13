@@ -1,4 +1,4 @@
-import { runDBOperationWithTransaction } from "@/lib/useDB";
+import { runDBOperation, runDBOperationWithTransaction } from "@/lib/useDB";
 import postsSchema from "@/utils/schema/posts-schema";
 import profileSchema from "@/utils/schema/profile-schema";
 import userSchema from "@/utils/schema/user-schema";
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       );
     }
 
-    const data = await runDBOperationWithTransaction(async () => {
+    const data = await runDBOperation(async () => {
       // Parallel execution for better performance
       const [user, userProfile] = await Promise.all([
         userSchema.findById(userId).select("-password").lean().exec() as any,

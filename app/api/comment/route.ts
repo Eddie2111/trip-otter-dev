@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         data: commentsData,
     })
 }
-  
+
 export async function POST(request: Request) {
     const userData = await getServerSession(authOptions);
     const userId = userData?.user?.id;
@@ -51,9 +51,10 @@ export async function POST(request: Request) {
     
 }
 
-export async function DELETE(request: Request) {
-    const postBody = await request.json();
-    const { id } = postBody;
+export async function DELETE(request: NextRequest) {
+    const searchParams = request.nextUrl.searchParams;
+    const id = searchParams.get("id");
+
     const deletedComment = await runDBOperationWithTransaction(async () => { 
         const comment = await commentsSchema.findByIdAndDelete(id);
         return comment;

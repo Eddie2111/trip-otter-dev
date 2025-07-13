@@ -47,7 +47,7 @@ export function TripotterFeed() {
     async function getFeed() { 
       const response = await fetch('/api/feed')
       const data = await response.json()
-      console.log(data);
+      // console.log(data);
     }
     getFeed();
    })

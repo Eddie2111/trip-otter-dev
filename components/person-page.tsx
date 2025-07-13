@@ -16,9 +16,6 @@ import {
   MessageCircle,
   UserPlus,
   MoreHorizontal,
-  Heart,
-  Send,
-  Bookmark,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -64,7 +61,6 @@ import {
   highlights,
   mutualFollowers,
   mockFollowers,
-  mockPosts,
 } from "@/data/mocks/person.mock";
 
 import { CreatePost } from "./create-post"
@@ -80,18 +76,18 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   const [_personData, _setPersonData] = useState<UserDocument | null>(null);
   const [posts, setPosts] = useState<IPost[] | null>(null);
   const person = personData[personId as keyof typeof personData] || personData[1]
-  console.log(selfProfile);
+  // console.log(selfProfile);
 
   const [comment, setComment] = useState("");
 
   const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Comment submitted:", comment);
+    // console.log("Comment submitted:", comment);
     const response = await useCommentApi.createComment(
       posts[0]._id,
       comment,
     )
-    console.log(response);
+    // console.log(response);
     setComment(""); // Clear the input after submission
   };
 
@@ -103,7 +99,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
 
     try {
       const postLike = await useLikeApi.likePost(postId);
-      console.log("Like response:", postId, postLike);
+      // console.log("Like response:", postId, postLike);
     } catch (error) {
       console.error("Error toggling like:", error);
       setLikedPosts((prev) => ({
@@ -122,7 +118,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
       const user = await response.json();
       _setPersonData(user.data);
       setPosts(user.data.profile.posts);
-      console.log(user.data.profile.posts);
+      // console.log(user.data.profile.posts);
     }
     if (!_personData) {
       fetchProfile();
@@ -150,7 +146,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
               </Link>
               <div>
                 <h1 className="font-semibold">{_personData?.fullName}</h1>
-                <p className="text-sm text-gray-500">{person.posts} posts</p>
+                <p className="text-sm text-gray-500">{posts?.length} posts</p>
               </div>
             </div>
           </div>
@@ -196,13 +192,13 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                   <p className="text-gray-600 mb-1">@{_personData?.username}</p>
                   <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                     <span>
-                      <strong>{person.followers}</strong> followers
+                      <strong>{0}</strong> followers
                     </span>
                     <span>
-                      <strong>{person.following}</strong> following
+                      <strong>{0}</strong> following
                     </span>
                     <span>
-                      <strong>{person.posts}</strong> posts
+                      <strong>{posts?.length}</strong> posts
                     </span>
                   </div>
                 </div>
@@ -360,7 +356,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
             </TabsList>
 
             <TabsContent value="posts" className="mt-6">
-              <PostContainer />
+              <PostContainer userId={ personId } />
             </TabsContent>
 
             <TabsContent value="followers" className="mt-6">

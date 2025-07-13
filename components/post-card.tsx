@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,8 +16,6 @@ import {
   Send,
   Bookmark,
   MoreHorizontal,
-  Camera,
-  PlusSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { Loading } from "./ui/loading";
@@ -30,10 +27,11 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
 import { IPostProps } from "@/types/post";
-import GridMedia from "./grid-media"; // Import the new GridMedia component
+import GridMedia from "./grid-media";
 import { toast } from "sonner";
+import { PostDialog } from "./post-dialog";
 
-export function PostContainer() {
+export function PostContainer({ userId }: { userId: string }) {
   const [posts, setPosts] = useState<IPostProps[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,36 +39,28 @@ export function PostContainer() {
 
   useEffect(() => {
     async function getFeed() {
-      if (session?.user) {
-        try {
-          const response = await fetch(`/api/users?id=${session?.user?.id}`);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
+      try {
+        const response = await fetch(`/api/users?id=${userId}`);
+        if (!response.ok)
+          throw new Error(`HTTP error! status: ${response.status}`);
 
-          // Parse the JSON response
-          const result = await response.json();
+        const result = await response.json();
 
-          // Access the 'data' field from the API response
-          if (result.status === 200 && result.data) {
-            setPosts(result.data.profile.posts);
-            console.log("Fetched data:", result.data);
-          } else {
-            throw new Error(`API error: ${result.message || "Unknown error"}`);
-          }
-        } catch (err) {
-          console.error("Error fetching feed:", err);
-          setError(
-            `Failed to load posts: ${
-              err instanceof Error ? err.message : "Unknown error"
-            }`
-          );
-        } finally {
-          setLoading(false);
+        if (result.status === 200 && result.data) {
+          setPosts(result.data.profile.posts);
+          // console.log("Fetched data:", result.data);
+        } else {
+          throw new Error(`API error: ${result.message || "Unknown error"}`);
         }
-      }
-      if (posts) {
-        return;
+      } catch (err) {
+        console.error("Error fetching feed:", err);
+        setError(
+          `Failed to load posts: ${
+            err instanceof Error ? err.message : "Unknown error"
+          }`
+        );
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -93,11 +83,7 @@ export function PostContainer() {
     <div className="space-y-0 md:space-y-6 pb-20 md:pb-0">
       {posts.length > 0 ? (
         posts.map((postItem) => (
-          <PostCardV2
-            key={postItem._id}
-            post={postItem}
-            session={session} // Pass session to PostCardV2
-          />
+          <PostCard key={postItem._id} post={postItem} session={session} />
         ))
       ) : (
         <div className="flex justify-center items-center h-48 text-gray-600">
@@ -108,26 +94,22 @@ export function PostContainer() {
   );
 }
 
-export function PostCardV2({
+export function PostCard({
   post,
   session,
 }: {
   post: IPostProps;
   session: any;
 }) {
-  // Add session to props
-  // Use session.user for current logged-in user information
   const currentLoggedInUser = session?.user;
-
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>(
     {}
   );
   const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>(
     {}
   );
-  // State to manage comments displayed on the UI, including new ones
   const [displayedComments, setDisplayedComments] = useState(post.comments);
-  // State for like status and count
+
   const [isLiked, setIsLiked] = useState(
     currentLoggedInUser
       ? post.likes.some(
@@ -138,7 +120,7 @@ export function PostCardV2({
   const [likesCount, setLikesCount] = useState(post.likes.length);
 
   const [editingComment, setEditingComment] = useState<{
-    postId: string;
+    commentId: string;
     commentIndex: number;
     originalText: string;
   } | null>(null);
@@ -161,23 +143,21 @@ export function PostCardV2({
   const handleAddComment = async (postId: string) => {
     const newCommentText = commentInputs[postId]?.trim();
     if (newCommentText && currentLoggedInUser) {
-      // Ensure user is logged in
       try {
         const response = await useCommentApi.createComment(
           postId,
           newCommentText
         );
-        console.log("Comment API response:", response);
+        // console.log("Comment API response:", response);
 
         if (response.status === 200 && response.data) {
-          // Ensure owner data is present from API or use fallback
           const newComment = {
             _id: response.data._id,
             content: response.data.content,
             owner: response.data.owner || {
               _id: currentLoggedInUser.id,
               username: currentLoggedInUser.username,
-            }, // Fallback to current user
+            },
             createdAt: response.data.createdAt,
           };
           setDisplayedComments((prevComments) => [...prevComments, newComment]);
@@ -185,70 +165,111 @@ export function PostCardV2({
             ...prev,
             [postId]: "",
           }));
+          toast.success("Comment added successfully!");
         } else {
           console.error(
             "API did not return a valid comment object or status was not 200:",
             response
           );
-          // Optionally, show a user-facing error message
+          toast.error(response.message || "Failed to add comment.");
         }
       } catch (error) {
         console.error("Error adding comment:", error);
-        // Handle error, e.g., show a message to the user
+        toast.error("An error occurred while adding the comment.");
       }
+    } else if (!newCommentText) {
+      toast.error("Comment cannot be empty.");
+    } else if (!currentLoggedInUser) {
+      toast.error("You must be logged in to add a comment.");
     }
   };
 
   const handleLike = async () => {
-    setIsLiked(true);
     if (!currentLoggedInUser) {
-      console.log("User not logged in. Cannot like.");
       toast.error("You must be logged in to like a post.");
       return;
     }
 
+    const previousIsLiked = isLiked;
+    const previousLikesCount = likesCount;
+    setIsLiked(!isLiked);
+    setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
+
     try {
-        const response: any = await useLikeApi.likePost(post._id);
-        console.log("Like API response:", response);
+      const response: any = await useLikeApi.likePost(post._id);
+      // console.log("Like API response:", response);
 
       if (response.status === 200) {
-        if (response.message === "Post liked successfully") {
-          setLikesCount((prev) => prev + 1);
-        } else if (response.message === "Post unliked successfully") {
-          setIsLiked(false);
-          setLikesCount((prev) => prev - 1);
-        }
+        // API confirms the action, no further change needed if optimistic update was correct
       } else {
-        console.error("API returned an error:", response.message);
-        setIsLiked(false);
+        setIsLiked(previousIsLiked);
+        setLikesCount(previousLikesCount);
+        toast.error(response.message || "Failed to update like status.");
       }
     } catch (error) {
-      setIsLiked(false);
+      setIsLiked(previousIsLiked);
+      setLikesCount(previousLikesCount);
       console.error("Error liking post:", error);
+      toast.error("An error occurred while liking the post.");
     }
   };
 
-  const handleEditComment = (postId: string, index: number, text: string) => {
-    setEditingComment({ postId, commentIndex: index, originalText: text });
+  const handleEditComment = (
+    commentId: string,
+    index: number,
+    text: string
+  ) => {
+    setEditingComment({ commentId, commentIndex: index, originalText: text });
     setEditCommentText(text);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingComment) {
-      setDisplayedComments((prev) => {
-        const updatedComments = [...(prev || [])];
-        if (updatedComments[editingComment.commentIndex]) {
-          updatedComments[editingComment.commentIndex] = {
-            ...updatedComments[editingComment.commentIndex],
-            content: editCommentText,
-            edited: true,
-            createdAt: dayjs().toISOString(),
-          };
+      const { commentId, commentIndex, originalText } = editingComment;
+      const newContent = editCommentText.trim();
+
+      if (!newContent) {
+        toast.error("Comment cannot be empty.");
+        return;
+      }
+
+      if (newContent === originalText) {
+        toast.info("No changes made to the comment.");
+        setEditingComment(null);
+        setEditCommentText("");
+        return;
+      }
+
+      try {
+        const response = await useCommentApi.updateComment(
+          commentId,
+          newContent
+        );
+
+        if (response.status === 200 && response.data) {
+          setDisplayedComments((prev) => {
+            const updatedComments = [...(prev || [])];
+            if (updatedComments[commentIndex]) {
+              updatedComments[commentIndex] = {
+                ...updatedComments[commentIndex],
+                content: response.data.content,
+                edited: true,
+                createdAt: response.data.createdAt || dayjs().toISOString(),
+              };
+            }
+            return updatedComments;
+          });
+          toast.success("Comment updated successfully!");
+        } else {
+          toast.error(response.message || "Failed to update comment.");
         }
-        return updatedComments;
-      });
-      setEditingComment(null);
-      setEditCommentText("");
+      } catch (error) {
+        console.error("Error updating comment:", error);
+        toast.error("An error occurred while updating the comment.");
+      } finally {
+        setEditingComment(null);
+        setEditCommentText("");
+      }
     }
   };
 
@@ -257,12 +278,25 @@ export function PostCardV2({
     setEditCommentText("");
   };
 
-  const handleDeleteComment = (postId: string, index: number) => {
-    setDisplayedComments((prev) => {
-      const updatedComments = [...(prev || [])];
-      updatedComments.splice(index, 1);
-      return updatedComments;
-    });
+  const handleDeleteComment = async (commentId: string, index: number) => {
+    // Call the API to delete the comment
+    try {
+      const response = await useCommentApi.deleteComment(commentId);
+      if (response.status === 200) {
+        // Update local state only if API call is successful
+        setDisplayedComments((prev) => {
+          const updatedComments = [...(prev || [])];
+          updatedComments.splice(index, 1);
+          return updatedComments;
+        });
+        toast.success("Comment deleted successfully!");
+      } else {
+        toast.error(response.message || "Failed to delete comment.");
+      }
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast.error("An error occurred while deleting the comment.");
+    }
   };
 
   return (
@@ -297,14 +331,37 @@ export function PostCardV2({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Save</DropdownMenuItem>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              <PostDialog
+                post={{ _caption: post.caption, _location: post.location }}
+                id={post._id}
+                type={"EDIT"}
+              >
+                <Button variant="ghost">Edit Post</Button>
+              </PostDialog>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              <PostDialog id={post._id} type={"DELETE"}>
+                <Button variant="ghost" className=" text-red-600">
+                  Delete Post
+                </Button>
+              </PostDialog>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Link
+                href={`/post/${post._id}?caption=${post.caption
+                  .split(/ /g)
+                  .slice(0, 8)
+                  .join("-")}`}
+              >
+                Show post
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem>Report</DropdownMenuItem>
-            <DropdownMenuItem>Unfollow</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="ml-6">{post.caption}</div> {/* Caption remains here */}
-      {/* Conditionally render CardContent only if images exist */}
+      <div className="ml-6">{post.caption}</div>
       {post.image && post.image.length > 0 && (
         <CardContent className="p-0 relative">
           <GridMedia media={post.image} />
@@ -354,11 +411,10 @@ export function PostCardV2({
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  {/* Safely access comment.owner.username with optional chaining and fallback */}
                   <span className="font-semibold mr-2">
                     {comment.owner?.username || session?.user?.username}
                   </span>
-                  {editingComment?.postId === post._id &&
+                  {editingComment?.commentId === comment._id &&
                   editingComment?.commentIndex === index ? (
                     <div className="mt-1">
                       <input
@@ -404,11 +460,10 @@ export function PostCardV2({
                     </>
                   )}
                 </div>
-                {/* Check if the comment owner is the current logged-in user for edit/delete options */}
                 {currentLoggedInUser &&
                   comment.owner?.username === currentLoggedInUser.username &&
                   !(
-                    editingComment?.postId === post._id &&
+                    editingComment?.commentId === comment._id &&
                     editingComment?.commentIndex === index
                   ) && (
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
@@ -426,7 +481,7 @@ export function PostCardV2({
                           <DropdownMenuItem
                             onClick={() =>
                               handleEditComment(
-                                post._id,
+                                comment._id,
                                 index,
                                 comment.content
                               )
@@ -435,7 +490,9 @@ export function PostCardV2({
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleDeleteComment(post._id, index)}
+                            onClick={() =>
+                              handleDeleteComment(comment._id, index)
+                            }
                             className="text-red-600"
                           >
                             Delete
@@ -474,18 +531,17 @@ export function PostCardV2({
                       e.key === "Enter" && handleAddComment(post._id)
                     }
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    disabled={!currentLoggedInUser} // Disable if not logged in
+                    disabled={!currentLoggedInUser}
                   />
-                  {commentInputs[post._id]?.trim() &&
-                    currentLoggedInUser && ( // Only show post button if logged in
-                      <Button
-                        onClick={() => handleAddComment(post._id)}
-                        size="sm"
-                        className="absolute right-0 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600 rounded-full p-5 transition duration-300 ease-in-out"
-                      >
-                        Post
-                      </Button>
-                    )}
+                  {commentInputs[post._id]?.trim() && currentLoggedInUser && (
+                    <Button
+                      onClick={() => handleAddComment(post._id)}
+                      size="sm"
+                      className="absolute right-0 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600 rounded-full p-5 transition duration-300 ease-in-out"
+                    >
+                      Post
+                    </Button>
+                  )}
                 </div>
               </div>
               {!currentLoggedInUser && (

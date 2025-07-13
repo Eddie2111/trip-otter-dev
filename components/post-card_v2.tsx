@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,8 +17,6 @@ import {
   Send,
   Bookmark,
   MoreHorizontal,
-  Camera,
-  PlusSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { Loading } from "./ui/loading";
@@ -54,12 +52,12 @@ export function PostContainer() {
         // Access the 'data' field from the API response
         if (result.status === 200 && result.data) {
           setPosts(result.data);
-          console.log("Fetched data:", result.data);
+          // console.log("Fetched data:", result.data);
         } else {
           throw new Error(`API error: ${result.message || "Unknown error"}`);
         }
       } catch (err) {
-        console.error("Error fetching feed:", err);
+        // console.error("Error fetching feed:", err);
         setError(
           `Failed to load posts: ${
             err instanceof Error ? err.message : "Unknown error"
@@ -134,7 +132,7 @@ export function PostCardV2({
   const [likesCount, setLikesCount] = useState(post.likes.length);
 
   const [editingComment, setEditingComment] = useState<{
-    postId: string;
+    commentId: string;
     commentIndex: number;
     originalText: string;
   } | null>(null);
@@ -163,7 +161,7 @@ export function PostCardV2({
           postId,
           newCommentText
         );
-        console.log("Comment API response:", response);
+        // console.log("Comment API response:", response);
 
         if (response.status === 200 && response.data) {
           // Ensure owner data is present from API or use fallback
@@ -198,14 +196,14 @@ export function PostCardV2({
   const handleLike = async () => {
     setIsLiked(true);
     if (!currentLoggedInUser) {
-      console.log("User not logged in. Cannot like.");
+      // console.log("User not logged in. Cannot like.");
       toast.error("You must be logged in to like a post.");
       return;
     }
 
     try {
         const response: any = await useLikeApi.likePost(post._id);
-        console.log("Like API response:", response);
+        // console.log("Like API response:", response);
 
       if (response.status === 200) {
         if (response.message === "Post liked successfully") {
@@ -229,22 +227,55 @@ export function PostCardV2({
     setEditCommentText(text);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingComment) {
-      setDisplayedComments((prev) => {
-        const updatedComments = [...(prev || [])];
-        if (updatedComments[editingComment.commentIndex]) {
-          updatedComments[editingComment.commentIndex] = {
-            ...updatedComments[editingComment.commentIndex],
-            content: editCommentText,
-            edited: true,
-            createdAt: dayjs().toISOString(),
-          };
+      const { commentId, commentIndex, originalText } = editingComment;
+      const newContent = editCommentText.trim();
+
+      if (!newContent) {
+        toast.error("Comment cannot be empty.");
+        return;
+      }
+
+      if (newContent === originalText) {
+        toast.info("No changes made to the comment.");
+        setEditingComment(null);
+        setEditCommentText("");
+        return;
+      }
+
+      try {
+        // Call the API to update the comment
+        const response = await useCommentApi.updateComment(
+          commentId,
+          newContent
+        );
+
+        if (response.status === 200 && response.data) {
+          // Update the local state with the new content and mark as edited
+          setDisplayedComments((prev) => {
+            const updatedComments = [...(prev || [])];
+            if (updatedComments[commentIndex]) {
+              updatedComments[commentIndex] = {
+                ...updatedComments[commentIndex],
+                content: response.data.content, // Use content from API response
+                edited: true, // Mark as edited
+                createdAt: response.data.createdAt || dayjs().toISOString(), // Use updated timestamp from API if available
+              };
+            }
+            return updatedComments;
+          });
+          toast.success("Comment updated successfully!");
+        } else {
+          toast.error(response.message || "Failed to update comment.");
         }
-        return updatedComments;
-      });
-      setEditingComment(null);
-      setEditCommentText("");
+      } catch (error) {
+        console.error("Error updating comment:", error);
+        toast.error("An error occurred while updating the comment.");
+      } finally {
+        setEditingComment(null);
+        setEditCommentText("");
+      }
     }
   };
 
@@ -278,9 +309,9 @@ export function PostCardV2({
             </AvatarFallback>
           </Avatar>
           <div>
-            <span className="font-semibold text-sm md:text-base">
+            <Link href={`/person/${post?.owner?._id}`} className="font-semibold text-sm md:text-base">
               {post?.owner?.username}
-            </span>
+            </Link>
             <div className="text-xs text-gray-500">
               {dayjs(post.createdAt).fromNow()}
             </div>
@@ -351,9 +382,12 @@ export function PostCardV2({
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   {/* Safely access comment.owner.username with optional chaining and fallback */}
-                  <span className="font-semibold mr-2">
+                  <Link
+                    href={`person/${comment?.owner?.username ? comment?.owner?._id : "/me"}`}
+                    className="font-semibold mr-2"
+                  >
                     {comment?.owner?.username || session?.user?.username}
-                  </span>
+                  </Link>
                   {editingComment?.postId === post._id &&
                   editingComment?.commentIndex === index ? (
                     <div className="mt-1">

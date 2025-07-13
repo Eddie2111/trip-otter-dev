@@ -44,7 +44,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     const data = await runDBOperationWithTransaction(async () => {
       // Parallel execution for better performance
       const [user, userProfile] = await Promise.all([
-        userSchema.findById(userId).lean().exec() as any,
+        userSchema.findById(userId).select("-password").lean().exec() as any,
         profileSchema.findOne({ user: userId }).lean().exec() as any,
       ]);
 

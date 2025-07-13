@@ -27,7 +27,17 @@ export class AuthAPI extends BaseAPI {
 export class PostAPI extends BaseAPI {
   public getPosts = async (): Promise<AxiosResponse> => {
     try {
-      const response = await this.apiClient.get('/api/posts');
+      const response = await this.apiClient.get("/api/posts");
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public getPost = async (id: string): Promise<AxiosResponse> => {
+    if (!id) throw new Error("Post ID is required");
+    try {
+      const response = await this.apiClient.get(`/api/posts?id=${id}`);
       return response.data;
     } catch (error) {
       const axiosError = error as any;
@@ -36,31 +46,36 @@ export class PostAPI extends BaseAPI {
   };
   public createPost = async (data: any): Promise<AxiosResponse> => {
     try {
-      const response = await this.apiClient.post('/api/posts', data);
+      const response = await this.apiClient.post("/api/posts", data);
       return response.data;
     } catch (error) {
       const axiosError = error as any;
       throw axiosError.response?.data || axiosError.message;
     }
-  }
+  };
   public deletePost = async (id: string): Promise<AxiosResponse> => {
     try {
-      const response = await this.apiClient.delete(`/api/posts/${id}`);
+      const response = await this.apiClient.delete(`/api/posts?id=${id}`);
       return response.data;
     } catch (error) {
       const axiosError = error as any;
       throw axiosError.response?.data || axiosError.message;
     }
-  }
-  public updatePost = async (id: string, data: any): Promise<AxiosResponse> => {
+  };
+  public updatePost = async (
+    data: { postId: string; caption?: string; location?: string }
+  ): Promise<AxiosResponse> => {
     try {
-      const response = await this.apiClient.put(`/api/posts/${id}`, data);
+      const response = await this.apiClient.patch(`/api/posts`, data);
       return response.data;
-    } catch (error) {
-      const axiosError = error as any;
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: { data: any; status: number };
+        message: string;
+      };
       throw axiosError.response?.data || axiosError.message;
     }
-  }
+  };
 }
 
 class MediaAPI extends BaseAPI {
@@ -105,18 +120,9 @@ class LikeAPI extends BaseAPI {
       throw axiosError.response?.data || axiosError.message;
     }
   }
-  public unlikePost = async (id: string): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.post(`/api/posts/${id}/unlike`);
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  }
   public getLikes = async (id: string): Promise<AxiosResponse> => {
     try {
-      const response = await this.apiClient.get(`/api/posts/${id}/likes`);
+      const response = await this.apiClient.get(`/api/reaction?id=${id}`);
       return response.data;
     } catch (error) {
       const axiosError = error as any;
@@ -149,7 +155,7 @@ class CommentAPI extends BaseAPI {
   }
   public updateComment = async (commentId: string, comment: string): Promise<AxiosResponse> => {
     try {
-      const response = await this.apiClient.put(`/api/comments/${commentId}`, { comment });
+      const response = await this.apiClient.patch(`/api/comment`, { id: commentId, content: comment });
       return response.data;
     } catch (error) {
       const axiosError = error as any;
@@ -158,7 +164,7 @@ class CommentAPI extends BaseAPI {
   }
   public deleteComment = async (commentId: string): Promise<AxiosResponse> => {
     try {
-      const response = await this.apiClient.delete(`/api/comments/${commentId}`);
+      const response = await this.apiClient.delete(`/api/comment?id=${commentId}`);
       return response.data;
     } catch (error) {
       const axiosError = error as any;

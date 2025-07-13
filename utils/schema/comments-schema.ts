@@ -6,7 +6,7 @@ const commentSchema = new Schema<CommentDocument>(
     content: {
       type: String,
       required: true,
-      maxlength: [300, 'Comment must be less than 300 characters'],
+      maxlength: [1024, 'Comment must be less than 1024 characters'],
     },
     owner: {
       type: Schema.Types.ObjectId,

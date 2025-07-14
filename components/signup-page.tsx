@@ -19,12 +19,8 @@ import { useRouter } from "next/navigation"
 
 type SignupFormValues = z.infer<typeof signupSchema>
 
-interface SignupPageProps {
-  onSignup: () => void
-  onSwitchToLogin: () => void
-}
 
-export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
+export function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -70,9 +66,9 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
         await signIn("credentials", {
           email: data.email,
           password: data.password,
-          redirect: false,
+          redirect: true,
+          callbackUrl: "/"
         })
-        router.push("/")
       } else {
         toast.info("Error creating account: " + (response.message || "Unknown error"))
       }
@@ -137,7 +133,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">Username</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">Username (minimum 6 characters)</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">

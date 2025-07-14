@@ -24,8 +24,8 @@ export function DesktopSidebar({ setCurrentPage, currentPage }: IDesktopSidebarP
     const handleLogout = async () => {
         try {
           await signOut({
-            redirect: false,
-            callbackUrl: "/",
+            redirect: true,
+            callbackUrl: "/login",
           })
           toast.success("Come back soon!")
           setCurrentPage("feed")

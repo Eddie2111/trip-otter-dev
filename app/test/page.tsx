@@ -1,8 +1,13 @@
 // add the components in here that requires test
-import { PostContainer } from "@/components/post-card_v2";
+import { ProfileEditModal } from "@/components/profile-page/profile-edit-modal";
 
 export default function Test() { 
     return (
-        <PostContainer />
-    )
+      <div>
+        <ProfileEditModal type="BIO" />
+        <ProfileEditModal type="LOCATION" />
+        <ProfileEditModal type="SOCIALS" />
+        <ProfileEditModal type="FULLFORM" />
+      </div>
+    );
 }

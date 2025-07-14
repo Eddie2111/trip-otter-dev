@@ -321,6 +321,7 @@ export function PostCard({
             </span>
             <div className="text-xs text-gray-500">
               {dayjs(post.createdAt).fromNow()}
+              {post?.location && ` • ${post?.location}`}
             </div>
           </div>
         </div>

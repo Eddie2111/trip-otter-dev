@@ -28,14 +28,14 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
 import { IPostProps } from "@/types/post";
-import GridMedia from "./grid-media"; // Import the new GridMedia component
+import GridMedia from "./grid-media";
 import { toast } from "sonner";
 
 export function PostContainer() {
   const [posts, setPosts] = useState<IPostProps[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { data: session } = useSession(); // Get session data here
+  const { data: session } = useSession();
 
   useEffect(() => {
     async function getFeed() {
@@ -109,19 +109,11 @@ export function PostCardV2({
   post: IPostProps;
   session: any;
 }) {
-  // Add session to props
-  // Use session.user for current logged-in user information
   const currentLoggedInUser = session?.user;
 
-  const [showComments, setShowComments] = useState<{ [key: string]: boolean }>(
-    {}
-  );
-  const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>(
-    {}
-  );
-  // State to manage comments displayed on the UI, including new ones
+  const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
+  const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>({});
   const [displayedComments, setDisplayedComments] = useState(post.comments);
-  // State for like status and count
   const [isLiked, setIsLiked] = useState(
     currentLoggedInUser
       ? post.likes.some(
@@ -155,7 +147,6 @@ export function PostCardV2({
   const handleAddComment = async (postId: string) => {
     const newCommentText = commentInputs[postId]?.trim();
     if (newCommentText && currentLoggedInUser) {
-      // Ensure user is logged in
       try {
         const response = await useCommentApi.createComment(
           postId,
@@ -164,14 +155,13 @@ export function PostCardV2({
         // console.log("Comment API response:", response);
 
         if (response.status === 200 && response.data) {
-          // Ensure owner data is present from API or use fallback
           const newComment = {
             _id: response.data._id,
             content: response.data.content,
             owner: response.data.owner || {
               _id: currentLoggedInUser.id,
               username: currentLoggedInUser.username,
-            }, // Fallback to current user
+            },
             createdAt: response.data.createdAt,
           };
           setDisplayedComments((prevComments) => [...prevComments, newComment]);
@@ -184,11 +174,9 @@ export function PostCardV2({
             "API did not return a valid comment object or status was not 200:",
             response
           );
-          // Optionally, show a user-facing error message
         }
       } catch (error) {
         console.error("Error adding comment:", error);
-        // Handle error, e.g., show a message to the user
       }
     }
   };
@@ -314,6 +302,7 @@ export function PostCardV2({
             </Link>
             <div className="text-xs text-gray-500">
               {dayjs(post.createdAt).fromNow()}
+              {post?.location && ` • ${post?.location}`}
             </div>
           </div>
         </div>
@@ -330,8 +319,8 @@ export function PostCardV2({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="ml-6">{post.caption}</div> {/* Caption remains here */}
-      {/* Conditionally render CardContent only if images exist */}
+      <div className="ml-6">{post.caption}</div>
+
       {post.image && post.image.length > 0 && (
         <CardContent className="p-0 relative">
           <GridMedia media={post.image} />

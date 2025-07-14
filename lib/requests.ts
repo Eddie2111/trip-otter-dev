@@ -173,8 +173,30 @@ class CommentAPI extends BaseAPI {
   }
 }
 
+class UserAPI extends BaseAPI {
+  public getUser = async (id: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/users?id=${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public updateUser = async (data: any): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.patch(`/api/users`, data);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+}
+
 export const useAuthApi = new AuthAPI();
 export const usePostApi = new PostAPI();
 export const useMediaApi = new MediaAPI();
 export const useLikeApi = new LikeAPI();
 export const useCommentApi = new CommentAPI();
+export const useUserApi = new UserAPI();

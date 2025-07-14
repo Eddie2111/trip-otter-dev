@@ -8,6 +8,8 @@ import mongoose from "mongoose";
 // Ensure models are registered
 import "@/utils/schema/comments-schema";
 import "@/utils/schema/like-schema";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/auth";
 
 interface UserData {
   _id: string;
@@ -50,9 +52,6 @@ export async function GET(request: NextRequest): Promise<Response> {
 
       if (!user) {
         throw new Error("User not found");
-      }
-      if (!userProfile) {
-        throw new Error("Profile not found");
       }
 
       let posts: any[] = [];
@@ -133,12 +132,22 @@ export async function POST(request: Request) {
   });
 }
 
-export async function PATCH(request: Request) {
+export async function PATCH(request: NextRequest) {
+  const postBody = await request.json();
+  const userId = await getServerSession(authOptions);
+  const data = await runDBOperationWithTransaction(async (session) => {
+    const user = await userSchema.findByIdAndUpdate(
+      { _id: userId?.user?.id },
+      { $set: postBody },
+      { new: true, session }
+    );
+    return user;
+  })
   return Response.json({
-    message: "Hello World",
+    message: "Profile Updated!",
     status: 200,
-    method: request.method,
-  });
+    data,
+  })
 }
 
 export async function OPTIONS(request: Request) {

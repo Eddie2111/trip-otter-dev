@@ -1,12 +1,11 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ArrowLeft,
   MapPin,
@@ -16,12 +15,13 @@ import {
   MessageCircle,
   UserPlus,
   MoreHorizontal,
-} from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
-import { DesktopSidebar } from "./desktop-sidebar"
-import { UserDocument } from "@/types/user"
-import { Loading } from "./ui/loading"
+  Camera, // Added Camera icon for edit buttons
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { DesktopSidebar } from "./desktop-sidebar";
+import { UserDocument } from "@/types/user";
+import { Loading } from "./ui/loading";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
@@ -63,32 +63,40 @@ import {
   mockFollowers,
 } from "@/data/mocks/person.mock";
 
-import { CreatePost } from "./create-post"
-import GridMedia from "./grid-media"
-import { useCommentApi, useLikeApi } from "@/lib/requests"
-import { PostContainer } from "./post-card"
+import { CreatePost } from "./create-post";
+import GridMedia from "./grid-media";
+import { useCommentApi, useLikeApi } from "@/lib/requests";
+import { PostContainer } from "./post-card";
+import { ProfileEditModal } from "./profile-page/profile-edit-modal";
+import { ProfileEditImages } from "./profile-page/profile-edit-images";
 
 export function PersonPage({ personId, selfProfile }: PersonPageProps) {
-  const [currentPage, setCurrentPage] = useState<"feed" | "chat" | "shops" | "shop" | "product" | "groups" | "group" | "people" | "person" | "settings">("person")
-  const [activeTab, setActiveTab] = useState("posts")
-  const [isFollowing, setIsFollowing] = useState(false)
+  const [currentPage, setCurrentPage] = useState<
+    | "feed"
+    | "chat"
+    | "shops"
+    | "shop"
+    | "product"
+    | "groups"
+    | "group"
+    | "people"
+    | "person"
+    | "settings"
+  >("person");
+  const [activeTab, setActiveTab] = useState("posts");
+  const [isFollowing, setIsFollowing] = useState(false);
   const [likedPosts, setLikedPosts] = useState<{ [key: string]: boolean }>({});
   const [_personData, _setPersonData] = useState<UserDocument | null>(null);
   const [posts, setPosts] = useState<IPost[] | null>(null);
-  const person = personData[personId as keyof typeof personData] || personData[1]
-  // console.log(selfProfile);
+  const person =
+    personData[personId as keyof typeof personData] || personData[1];
 
   const [comment, setComment] = useState("");
 
-  const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // console.log("Comment submitted:", comment);
-    const response = await useCommentApi.createComment(
-      posts[0]._id,
-      comment,
-    )
-    // console.log(response);
-    setComment(""); // Clear the input after submission
+    const response = await useCommentApi.createComment(posts[0]._id, comment);
+    setComment("");
   };
 
   const handleLike = async (postId: string) => {
@@ -99,7 +107,6 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
 
     try {
       const postLike = await useLikeApi.likePost(postId);
-      // console.log("Like response:", postId, postLike);
     } catch (error) {
       console.error("Error toggling like:", error);
       setLikedPosts((prev) => ({
@@ -110,17 +117,14 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   };
 
   const handleFollow = () => {
-    setIsFollowing(!isFollowing)
-  }
+    setIsFollowing(!isFollowing);
+  };
   useEffect(() => {
     async function fetchProfile() {
-      if (!_personData) {
-        const response = await fetch(`/api/users?id=${personId}`);
-        const user = await response.json();
-        _setPersonData(user.data);
-        setPosts(user.data.profile.posts);
-        // console.log(user.data.profile.posts);
-      }
+      const response = await fetch(`/api/users?id=${personId}`);
+      const user = await response.json();
+      _setPersonData(user.data);
+      setPosts(user.data.profile.posts);
     }
     if (!_personData) {
       fetchProfile();
@@ -128,7 +132,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   }, [personId]);
 
   if (!_personData) {
-    return <Loading />
+    return <Loading />;
   }
   return (
     <div className="flex min-h-screen">
@@ -156,31 +160,52 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
 
         <div className="max-w-4xl mx-auto">
           {/* Cover Image */}
-          <div className="relative h-48 md:h-64 bg-gradient-to-r from-purple-400 to-pink-400">
+          <div className="relative h-48 md:h-64 bg-gradient-to-r from-purple-400 to-pink-400 group">
             <Image
               src={_personData?.coverImage || "/placeholder.svg"}
               alt="Cover"
               fill
               className="object-cover"
             />
+            {selfProfile && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <ProfileEditImages type="COVER">
+                  <Button variant="secondary" className="flex items-center gap-2">
+                    <Camera className="w-4 h-4" />
+                    Edit Cover Photo
+                  </Button>
+                </ProfileEditImages>
+              </div>
+            )}
           </div>
 
           {/* Profile Info */}
           <div className="bg-white px-4 pb-6 mt-0 md:mt-24">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 md:-mt-20">
               <div className="flex flex-col md:flex-row md:items-end gap-4">
-                <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
-                  <AvatarImage
-                    src={_personData?.profileImage || "/placeholder.svg"}
-                  />
-                  <AvatarFallback className="text-2xl">
-                    {_personData?.fullName ??
-                      "Test"
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative group">
+                  <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
+                    <AvatarImage
+                      src={_personData?.profileImage || "/placeholder.svg"}
+                    />
+                    <AvatarFallback className="text-2xl">
+                      {_personData?.fullName ??
+                        "Test"
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  {selfProfile && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <ProfileEditImages type="PROFILE">
+                        <Button variant="secondary" size="icon">
+                          <Camera className="w-5 h-5" />
+                        </Button>
+                      </ProfileEditImages>
+                    </div>
+                  )}
+                </div>
 
                 <div className="md:mb-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -208,9 +233,11 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
 
               {selfProfile ? (
                 <div className="flex gap-2 mt-4 md:mt-0 md:mb-4">
-                  <Button variant="default" className="w-full md:w-auto">
-                    Edit profile
-                  </Button>
+                  <ProfileEditModal type="FULLFORM" defaultData={_personData}>
+                    <Button variant="default" className="w-full md:w-auto">
+                      Edit profile
+                    </Button>
+                  </ProfileEditModal>
                   <CreatePost profileId={personId}>
                     <Button variant="default" className="w-full md:w-auto">
                       Create post
@@ -241,22 +268,51 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
             {/* Bio and Info */}
             <div className="mt-4 space-y-3">
               <p className="whitespace-pre-line text-gray-800">
-                {_personData?.bio}
+                {_personData?.bio ? (
+                  _personData?.bio
+                ) : (
+                  <ProfileEditModal type="BIO" defaultData={_personData}>
+                    <Badge variant="secondary">+ Add bio</Badge>
+                  </ProfileEditModal>
+                )}
               </p>
 
               <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
                   <MapPin className="w-4 h-4" />
-                  {person.location}
+                  {_personData.location ? (
+                    _personData.location
+                  ) : (
+                    <ProfileEditModal type="LOCATION" defaultData={_personData}>
+                      <Badge>+ Add Location</Badge>
+                    </ProfileEditModal>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
-                  <LinkIcon className="w-4 h-4" />
-                  <a
-                    href={`https://${person.website}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    {person.website}
-                  </a>
+                  {_personData.socials ? (
+                    _personData.socials.map((social, index) => {
+                      return (
+                        <div className="flex flex-row gap-1">
+                          <LinkIcon className="w-4 h-4" />
+                          <a
+                            key={index}
+                            href={social.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-500 transition ease-in-out duration-300 hover:underline"
+                          >
+                            <span className="text-gray-600">
+                              {social.platform}
+                            </span>
+                          </a>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <ProfileEditModal type="SOCIALS" defaultData={_personData}>
+                      <Badge variant="secondary">+ Add socials</Badge>
+                    </ProfileEditModal>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
@@ -313,36 +369,6 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                 </div>
               </div>
             </div>
-
-            {/* Highlights */}
-            <div className="mt-6">
-              <h3 className="font-semibold mb-3">Highlights</h3>
-              <ScrollArea className="w-full">
-                <div className="flex gap-4 pb-2">
-                  {highlights.map((highlight) => (
-                    <div
-                      key={highlight.id}
-                      className="flex flex-col items-center gap-2 min-w-0"
-                    >
-                      <div className="relative">
-                        <Avatar className="w-16 h-16 border-2 border-gray-200">
-                          <AvatarImage
-                            src={highlight.cover || "/placeholder.svg"}
-                          />
-                          <AvatarFallback>{highlight.title[0]}</AvatarFallback>
-                        </Avatar>
-                        <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {highlight.count}
-                        </div>
-                      </div>
-                      <span className="text-xs text-center truncate w-16">
-                        {highlight.title}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </div>
           </div>
 
           {/* Content Tabs */}
@@ -358,7 +384,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
             </TabsList>
 
             <TabsContent value="posts" className="mt-6">
-              <PostContainer userId={ personId } />
+              <PostContainer userId={personId} />
             </TabsContent>
 
             <TabsContent value="followers" className="mt-6">

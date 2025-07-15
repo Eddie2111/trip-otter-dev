@@ -1,5 +1,5 @@
 import { authOptions } from '@/auth';
-import { runDBOperationWithTransaction } from '@/lib/useDB';
+import { runDBOperation, runDBOperationWithTransaction } from '@/lib/useDB';
 import { reportSchema as reportSchemaValidator } from '@/utils/models/report.model';
 import profileSchema from '@/utils/schema/profile-schema';
 import reportSchema from '@/utils/schema/report-schema';
@@ -8,15 +8,22 @@ import { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const reportId = searchParams.get("id");
   const userId = await getServerSession(authOptions);
   if (!userId?.user?.id) return Response.json({
     message: "Unauthorized",
     status: 401,
   })
+  const reportId = searchParams.get("id");
+  const response = await runDBOperation(async () => { 
+    if (reportId) {
+      return await reportSchema.findById(reportId);
+    } else {
+      return await reportSchema.find({ _id: reportId });
+  }})
   return Response.json({
     message: "Report fetched",
     status: 200,
+    data: response
   });
 }
   

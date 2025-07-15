@@ -1,5 +1,5 @@
 import { model, models, Schema } from 'mongoose';
-import { ProfileDocument } from '@/types/profile.d';
+import { ProfileDocument } from '@/types/profile'
 
 const profileSchema = new Schema<ProfileDocument>(
   {

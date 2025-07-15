@@ -1,8 +1,8 @@
-import { Document } from 'mongoose';
-import { UserDocument } from './user.d';
-import { PostDocument } from './post.d';
-import { CommentDocument } from './comment.d';
-import { LikeDocument } from './like.d';
+import { Document, Types } from 'mongoose';
+import { UserDocument } from './user';
+import { PostDocument } from './post';
+import { CommentDocument } from './comment';
+import { LikeDocument } from './like';
 import { ReportDocument } from './report';
 
 export interface ProfileDocument extends Document {

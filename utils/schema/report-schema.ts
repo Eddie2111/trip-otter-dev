@@ -1,5 +1,5 @@
 import { model, models, Schema } from 'mongoose';
-import '@/types/profile.d';
+import '@/types/profile'
 import { ReportDocument } from '@/types/report';
 
 const reportSchema = new Schema<ReportDocument>(

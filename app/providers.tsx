@@ -11,5 +11,5 @@ export default function Providers({
     <SessionProvider>
       {children}
     </SessionProvider>
-  )
+  );
 }

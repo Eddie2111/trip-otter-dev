@@ -1,13 +1,21 @@
-// add the components in here that requires test
-import { ProfileEditModal } from "@/components/profile-page/profile-edit-modal";
+"use client";
+import { ReportModal } from "@/components/report-modal";
+import { useSession } from "next-auth/react";
+import { useState } from "react";
 
 export default function Test() { 
-    return (
-      <div>
-        <ProfileEditModal type="BIO" />
-        <ProfileEditModal type="LOCATION" />
-        <ProfileEditModal type="SOCIALS" />
-        <ProfileEditModal type="FULLFORM" />
-      </div>
-    );
+  const { data: session } = useSession();
+  return (
+    <div className="ml-[32vw]">
+      <ReportModal
+        reportedBy="123456"
+        reportedUser="124346"
+        relatedPostId="389rf34"
+        relatedCommentId="9843fyhg84rf9"
+      >
+        <div className="border-0 text-black dark:text-white">Report </div>
+      </ReportModal>
+    </div>
+    
+  )
 }

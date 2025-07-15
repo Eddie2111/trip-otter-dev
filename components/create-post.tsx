@@ -49,7 +49,7 @@ export function CreatePost({ children, profileId }: { children: React.ReactNode,
     try {
       const response = await usePostApi.createPost(data);
       // console.log("Post created:", response)
-
+      setIsOpen(false);
       toast.success("Post created successfully!")
     } catch (error) {
       console.error("Failed to create post:", error)
@@ -58,16 +58,22 @@ export function CreatePost({ children, profileId }: { children: React.ReactNode,
       setIsSubmitting(false)
     }
   }
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <Dialog defaultOpen={shouldAutoOpen}>
+    <Dialog defaultOpen={shouldAutoOpen} open={isOpen} onOpenChange={setIsOpen}>
       <form>
         <DialogTrigger asChild>
           {children ? children : <Button>Create Post</Button>}
         </DialogTrigger>
         <DialogContent className="sm:max-w-[625px]">
           <DialogTitle></DialogTitle>
-          <CreatePostForm onSubmit={handleSubmit} owner={profileId} isSubmitting={isSubmitting} submitState={ setIsSubmitting } />
+          <CreatePostForm
+            onSubmit={handleSubmit}
+            owner={profileId}
+            isSubmitting={isSubmitting}
+            submitState={setIsSubmitting}
+          />
         </DialogContent>
       </form>
     </Dialog>

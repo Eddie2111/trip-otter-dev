@@ -194,9 +194,58 @@ class UserAPI extends BaseAPI {
   }
 }
 
+class ReportAPI extends BaseAPI{
+  public createReport = async (data: any): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`/api/report`, { data });
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public getReports = async (): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get('/api/report');
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public getReport = async (id: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/report?id=${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public deleteReport = async (id: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.delete(`/api/report?id=${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public updateReport = async (id: string, status: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.patch(`/api/report`, { id, status });
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+}
+
 export const useAuthApi = new AuthAPI();
 export const usePostApi = new PostAPI();
 export const useMediaApi = new MediaAPI();
 export const useLikeApi = new LikeAPI();
 export const useCommentApi = new CommentAPI();
 export const useUserApi = new UserAPI();
+export const useReportApi = new ReportAPI();

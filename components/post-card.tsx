@@ -30,6 +30,7 @@ import { IPostProps } from "@/types/post";
 import GridMedia from "./grid-media";
 import { toast } from "sonner";
 import { PostDialog } from "./post-dialog";
+import { ReportModal } from "./report-modal";
 
 export function PostContainer({ userId }: { userId: string }) {
   const [posts, setPosts] = useState<IPostProps[]>([]);
@@ -139,8 +140,9 @@ export function PostCard({
       [postId]: value,
     }));
   };
-
+  const [commenting, isCommenting] = useState<boolean>(false);
   const handleAddComment = async (postId: string) => {
+    isCommenting(true);
     const newCommentText = commentInputs[postId]?.trim();
     if (newCommentText && currentLoggedInUser) {
       try {
@@ -166,7 +168,9 @@ export function PostCard({
             [postId]: "",
           }));
           toast.success("Comment added successfully!");
+          isCommenting(false);
         } else {
+          isCommenting(false);
           console.error(
             "API did not return a valid comment object or status was not 200:",
             response
@@ -174,12 +178,15 @@ export function PostCard({
           toast.error(response.message || "Failed to add comment.");
         }
       } catch (error) {
+        isCommenting(false);
         console.error("Error adding comment:", error);
         toast.error("An error occurred while adding the comment.");
       }
     } else if (!newCommentText) {
+      isCommenting(false);
       toast.error("Comment cannot be empty.");
     } else if (!currentLoggedInUser) {
+      isCommenting(false);
       toast.error("You must be logged in to add a comment.");
     }
   };
@@ -358,7 +365,15 @@ export function PostCard({
                 Show post
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>Report</DropdownMenuItem>
+            <DropdownMenuItem>
+              <ReportModal
+                reportedBy={session?.user?.id ?? ""}
+                reportedUser={post?.owner?._id ?? ""}
+                relatedPostId={post?._id ?? ""}
+              >
+                <div className="border-0">Report </div>
+              </ReportModal>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -538,9 +553,10 @@ export function PostCard({
                     <Button
                       onClick={() => handleAddComment(post._id)}
                       size="sm"
-                      className="absolute right-0 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600 rounded-full p-5 transition duration-300 ease-in-out"
+                      disabled={commenting}
+                      className="absolute right-0 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600 rounded-full p-5 transition duration-300 ease-in-out disabled:bg-blue-500/50"
                     >
-                      Post
+                      {commenting ? "Posting..." : "Post"}
                     </Button>
                   )}
                 </div>

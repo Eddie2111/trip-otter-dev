@@ -322,7 +322,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
 
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">{_personData?.role}</Badge>
-                {mutualFollowers.length > 0 && (
+                {/* {mutualFollowers.length > 0 && (
                   <div className="flex items-center gap-1 text-sm text-gray-600">
                     <span>Followed by</span>
                     <div className="flex -space-x-1">
@@ -342,7 +342,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                     </div>
                     <span>and {mutualFollowers.length} others you follow</span>
                   </div>
-                )}
+                )} */}
               </div>
             </div>
 

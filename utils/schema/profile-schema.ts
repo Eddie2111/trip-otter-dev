@@ -39,6 +39,12 @@ const profileSchema = new Schema<ProfileDocument>(
         ref: 'Like',
       },
     ],
+    report: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Report',
+      }
+    ]
   },
   {
     timestamps: true,

@@ -3,6 +3,7 @@ import './globals.css'
 import { Toaster } from 'sonner'
 import { MobileNavigation } from '@/components/mobile-navigation'
 import Providers from './providers'
+import { DesktopSidebar } from '@/components/desktop-sidebar'
 
 export const metadata: Metadata = {
   title: 'TripOtter',
@@ -19,9 +20,12 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Toaster />
-        <Providers>{children}</Providers>
-        <MobileNavigation />
+        <Providers>
+          <DesktopSidebar />
+          {children}
+          <MobileNavigation />
+        </Providers>
       </body>
     </html>
-  )
+  );
 }

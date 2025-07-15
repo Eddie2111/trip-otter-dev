@@ -30,6 +30,7 @@ dayjs.extend(relativeTime);
 import { IPostProps } from "@/types/post";
 import GridMedia from "./grid-media";
 import { toast } from "sonner";
+import { ReportModal } from "./report-modal"; // Ensure this import is correct
 
 export function PostContainer() {
   const [posts, setPosts] = useState<IPostProps[]>([]);
@@ -111,8 +112,12 @@ export function PostCardV2({
 }) {
   const currentLoggedInUser = session?.user;
 
-  const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
-  const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>({});
+  const [showComments, setShowComments] = useState<{ [key: string]: boolean }>(
+    {}
+  );
+  const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>(
+    {}
+  );
   const [displayedComments, setDisplayedComments] = useState(post.comments);
   const [isLiked, setIsLiked] = useState(
     currentLoggedInUser
@@ -143,8 +148,9 @@ export function PostCardV2({
       [postId]: value,
     }));
   };
-
+  const [commenting, isCommenting] = useState<boolean>(false);
   const handleAddComment = async (postId: string) => {
+    isCommenting(true);
     const newCommentText = commentInputs[postId]?.trim();
     if (newCommentText && currentLoggedInUser) {
       try {
@@ -155,6 +161,7 @@ export function PostCardV2({
         // console.log("Comment API response:", response);
 
         if (response.status === 200 && response.data) {
+          isCommenting(false);
           const newComment = {
             _id: response.data._id,
             content: response.data.content,
@@ -170,12 +177,14 @@ export function PostCardV2({
             [postId]: "",
           }));
         } else {
+          isCommenting(false);
           console.error(
             "API did not return a valid comment object or status was not 200:",
             response
           );
         }
       } catch (error) {
+        isCommenting(false);
         console.error("Error adding comment:", error);
       }
     }
@@ -190,8 +199,8 @@ export function PostCardV2({
     }
 
     try {
-        const response: any = await useLikeApi.likePost(post._id);
-        // console.log("Like API response:", response);
+      const response: any = await useLikeApi.likePost(post._id);
+      // console.log("Like API response:", response);
 
       if (response.status === 200) {
         if (response.message === "Post liked successfully") {
@@ -297,7 +306,10 @@ export function PostCardV2({
             </AvatarFallback>
           </Avatar>
           <div>
-            <Link href={`/person/${post?.owner?._id}`} className="font-semibold text-sm md:text-base">
+            <Link
+              href={`/person/${post?.owner?._id}`}
+              className="font-semibold text-sm md:text-base"
+            >
               {post?.owner?.username}
             </Link>
             <div className="text-xs text-gray-500">
@@ -314,7 +326,16 @@ export function PostCardV2({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem>Save</DropdownMenuItem>
-            <DropdownMenuItem>Report</DropdownMenuItem>
+            {/* Corrected ReportModal trigger for post */}
+            <ReportModal
+              reportedBy={session?.user?.id ?? ""}
+              relatedPostId={post._id}
+              reportedUser={post.owner?._id ?? ""}
+            >
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                Report
+              </DropdownMenuItem>
+            </ReportModal>
             <DropdownMenuItem>Unfollow</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -372,7 +393,9 @@ export function PostCardV2({
                 <div className="flex-1">
                   {/* Safely access comment.owner.username with optional chaining and fallback */}
                   <Link
-                    href={`person/${comment?.owner?.username ? comment?.owner?._id : "/me"}`}
+                    href={`person/${
+                      comment?.owner?.username ? comment?.owner?._id : "/me"
+                    }`}
                     className="font-semibold mr-2"
                   >
                     {comment?.owner?.username || session?.user?.username}
@@ -463,6 +486,47 @@ export function PostCardV2({
                       </DropdownMenu>
                     </div>
                   )}
+
+                {comment.owner?.username !== currentLoggedInUser.username &&
+                  !(
+                    editingComment?.postId === post._id &&
+                    editingComment?.commentIndex === index
+                  ) && (
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-6 h-6"
+                          >
+                            <MoreHorizontal className="w-3 h-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {/* Corrected ReportModal trigger for comment */}
+                          <ReportModal
+                            reportedBy={session?.user?.id ?? ""}
+                            reportedUser={comment.owner?._id ?? ""} // Corrected to use _id
+                            relatedPostId={post._id} // Corrected to use post._id
+                            relatedCommentId={comment._id}
+                          >
+                            <DropdownMenuItem
+                              onSelect={(e) => e.preventDefault()}
+                            >
+                              Report
+                            </DropdownMenuItem>
+                          </ReportModal>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteComment(post._id, index)}
+                            className="text-red-600"
+                          >
+                            Unfollow
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
               </div>
             </div>
           ))}
@@ -500,9 +564,10 @@ export function PostCardV2({
                       <Button
                         onClick={() => handleAddComment(post._id)}
                         size="sm"
-                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600"
+                        disabled={commenting}
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50"
                       >
-                        Post
+                        {commenting ? "posting..." : "post"}
                       </Button>
                     )}
                 </div>

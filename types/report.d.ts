@@ -12,7 +12,7 @@ export interface ReportDocument extends Document {
   reasonDescription?: string;
   relatedComment?: CommentDocument["_id"];
   relatedPost?: PostDocument["_id"];
-  status: "pending" | "reviewed" | "resolved";
+  status: "PENDING" | "REVIEWED" | "RESOLVED";
   createdAt: Date;
   updatedAt: Date;
 }

@@ -72,11 +72,10 @@ export function TripotterFeed() {
   const handleLogout = async () => {
     try {
       await signOut({
-        redirect: false,
+        redirect: true,
         callbackUrl: "/login",
       });
       toast.success("Come back soon!");
-      router.push("/"); // Redirect to feed page (root) after logout
     } catch (error) {
       console.error("Logout error:", error);
       toast.error("Something went wrong during logout. Please try again.");

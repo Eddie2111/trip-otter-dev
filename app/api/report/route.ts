@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     });
   // const validatedBody = reportSchemaValidator.parse(payload);
   const response = await runDBOperationWithTransaction(async () => {
-    const report = new reportSchema(payload);
+    const report = new reportSchema(payload.data);
     const profile = await profileSchema.findByIdAndUpdate(userId.user.id, { $push: { reports: report._id } }, { new: true });
     const reportResponse = await report.save();
     return { profile, reportResponse }

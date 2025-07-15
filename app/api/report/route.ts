@@ -1,5 +1,8 @@
 import { authOptions } from '@/auth';
+import { runDBOperationWithTransaction } from '@/lib/useDB';
 import { reportSchema as reportSchemaValidator } from '@/utils/models/report.model';
+import profileSchema from '@/utils/schema/profile-schema';
+import reportSchema from '@/utils/schema/report-schema';
 import { getServerSession } from 'next-auth';
 import { NextRequest } from 'next/server';
 
@@ -26,9 +29,16 @@ export async function POST(request: NextRequest) {
       status: 401,
     });
   // const validatedBody = reportSchemaValidator.parse(payload);
+  const response = await runDBOperationWithTransaction(async () => {
+    const report = new reportSchema(payload);
+    const profile = await profileSchema.findByIdAndUpdate(userId.user.id, { $push: { reports: report._id } }, { new: true });
+    const reportResponse = await report.save();
+    return { profile, reportResponse }
+  })
     return Response.json({
-        message: "Report created",
-        status: 200,
+      message: "Report created",
+      status: 200,
+      data: response
     })
 
 }

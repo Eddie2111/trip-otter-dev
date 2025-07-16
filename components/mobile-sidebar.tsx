@@ -3,17 +3,31 @@
 import React, { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
-import { Home, Users, Boxes, Settings, LogOut, Menu } from "lucide-react"
+import { Home, Users, Boxes, Settings, LogOut, Menu, Router } from "lucide-react"
 import Link from "next/link"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { signOut } from "next-auth/react"
+import { useRouter } from "next/router"
 
 export function Sidebar() {
+  const router = useRouter();
   const [open, setOpen] = useState(false)
   const isMobile = useIsMobile()
   const sidebarRef = useRef<HTMLDivElement>(null)
 
   const toggleSidebar = () => {
     setOpen((prev) => !prev)
+  }
+
+  const handleLogOut = async () => { 
+    try {
+      await signOut({
+        redirect: true,
+        callbackUrl: "/login",
+      });
+    } catch (err) {
+      router.push("/login")
+    }
   }
 
   useEffect(() => {
@@ -72,10 +86,10 @@ export function Sidebar() {
                 <Settings className="h-4 w-4" />
                 Settings
               </Link>
-              <Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-primary">
+              <Button onClick={ ()=>handleLogOut()} className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-primary">
                 <LogOut className="h-4 w-4" />
                 Logout
-              </Link>
+              </Button>
             </nav>
             <div className="mt-auto p-4 text-sm text-muted-foreground">
               &copy; {new Date().getFullYear()} Trip Otter

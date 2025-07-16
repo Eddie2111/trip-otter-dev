@@ -7,7 +7,7 @@ import { Home, Users, Boxes, Settings, LogOut, Menu, Router } from "lucide-react
 import Link from "next/link"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { signOut } from "next-auth/react"
-import { useRouter } from "next/router"
+import { useRouter } from "next/navigation"
 
 export function Sidebar() {
   const router = useRouter();

@@ -1,5 +1,6 @@
 import { authOptions } from '@/auth';
 import { runDBOperation, runDBOperationWithTransaction } from '@/lib/useDB';
+import { ReportDocument } from '@/types/report';
 import { reportSchema as reportSchemaValidator } from '@/utils/models/report.model';
 import profileSchema from '@/utils/schema/profile-schema';
 import reportSchema from '@/utils/schema/report-schema';
@@ -29,25 +30,45 @@ export async function GET(request: NextRequest) {
   
 export async function POST(request: NextRequest) {
   const payload = await request.json();
-  const userId = await getServerSession(authOptions);
-  if (!userId?.user?.id)
-    return Response.json({
-      message: "Unauthorized",
-      status: 401,
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id)
+    return Response.json({ message: "Unauthorized", status: 401 });
+
+  try {
+    const response = await runDBOperationWithTransaction(async () => {
+      // ["PENDING", "REVIEWED", "RESOLVED"]
+      const data = {
+        reportedBy: session.user.id,
+        reportedUser: payload.data.reportedUser,
+        scope: payload.data.scope,
+        reason: payload.data.reason,
+        reasonDescription: payload.data.reasonDescription || undefined,
+        relatedComment: payload.data.relatedComment || undefined,
+        relatedPost: payload.data.relatedPost || undefined,
+        status: "PENDING",
+      };
+      const report = new reportSchema(data);
+
+      const profile = await profileSchema.findByIdAndUpdate(
+        session.user.id,
+        { $push: { reports: report._id } },
+        { new: true }
+      );
+
+      const reportResponse = await report.save();
+      return { profile, reportResponse };
     });
-  // const validatedBody = reportSchemaValidator.parse(payload);
-  const response = await runDBOperationWithTransaction(async () => {
-    const report = new reportSchema(payload.data);
-    const profile = await profileSchema.findByIdAndUpdate(userId.user.id, { $push: { reports: report._id } }, { new: true });
-    const reportResponse = await report.save();
-    return { profile, reportResponse }
-  })
+
     return Response.json({
       message: "Report created",
       status: 200,
-      data: response
-    })
-
+      data: response,
+    });
+  } catch (error) {
+    console.error("Error creating report:", error);
+    return Response.json({ message: "Internal server error", status: 500 });
+  }
 }
 
 export async function PATCH(request: NextRequest) {

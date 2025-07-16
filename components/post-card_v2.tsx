@@ -289,6 +289,9 @@ export function PostCardV2({
     });
   };
 
+  // Helper to check if a string is non-empty
+  const isValidId = (id?: string) => id && id.length > 0;
+
   return (
     <Card
       key={post._id}
@@ -326,16 +329,18 @@ export function PostCardV2({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem>Save</DropdownMenuItem>
-            {/* Corrected ReportModal trigger for post */}
-            <ReportModal
-              reportedBy={session?.user?.id ?? ""}
-              relatedPostId={post._id}
-              reportedUser={post.owner?._id ?? ""}
-            >
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                Report
-              </DropdownMenuItem>
-            </ReportModal>
+            {/* Conditionally render ReportModal for post */}
+            {isValidId(session?.user?.id) && isValidId(post.owner?._id) && (
+              <ReportModal
+                reportedBy={session.user.id}
+                relatedPostId={post._id}
+                reportedUser={post.owner._id}
+              >
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  Report
+                </DropdownMenuItem>
+              </ReportModal>
+            )}
             <DropdownMenuItem>Unfollow</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -487,7 +492,10 @@ export function PostCardV2({
                     </div>
                   )}
 
+                {/* Conditionally render ReportModal for comment */}
                 {comment.owner?.username !== currentLoggedInUser.username &&
+                  isValidId(session?.user?.id) &&
+                  isValidId(comment.owner?._id) &&
                   !(
                     editingComment?.postId === post._id &&
                     editingComment?.commentIndex === index
@@ -504,11 +512,10 @@ export function PostCardV2({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {/* Corrected ReportModal trigger for comment */}
                           <ReportModal
-                            reportedBy={session?.user?.id ?? ""}
-                            reportedUser={comment.owner?._id ?? ""} // Corrected to use _id
-                            relatedPostId={post._id} // Corrected to use post._id
+                            reportedBy={session.user.id}
+                            reportedUser={comment.owner._id}
+                            relatedPostId={post._id}
                             relatedCommentId={comment._id}
                           >
                             <DropdownMenuItem

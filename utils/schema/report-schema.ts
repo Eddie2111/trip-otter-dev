@@ -39,7 +39,6 @@ const reportSchema = new Schema<ReportDocument>(
     },
     status: {
       type: String,
-      enum: ["PENDING", "REVIEWED", "RESOLVED"],
       default: "PENDING",
     },
   },

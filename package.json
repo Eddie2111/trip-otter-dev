@@ -64,6 +64,7 @@
     "next-auth": "latest",
     "next-sanity": "latest",
     "next-themes": "latest",
+    "nextjs-progressbar": "^0.0.16",
     "nodemailer": "latest",
     "react": "^19",
     "react-day-picker": "latest",

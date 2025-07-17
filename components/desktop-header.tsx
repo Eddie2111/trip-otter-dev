@@ -25,12 +25,14 @@ interface IDesktopHeader {
   // setCurrentPage is removed as routing will now be handled by next/link
   session: any;
   handleLogout: () => void;
+  userData: any;
 }
 
 export function DesktopHeader({
   setShowSearchModal,
   session,
   handleLogout,
+  userData
 }: IDesktopHeader) {
   return (
     <div className="hidden md:block sticky top-0 z-10 bg-white border-b">
@@ -66,8 +68,7 @@ export function DesktopHeader({
                 <Avatar className="w-8 h-8 cursor-pointer">
                   <AvatarImage
                     src={
-                      session?.user?.image ||
-                      "/placeholder.svg?height=32&width=32"
+                      userData?.profileImage ?? userData?.image
                     }
                   />
                   <AvatarFallback>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import type { z } from "zod"
@@ -13,7 +13,7 @@ import { Eye, EyeOff, Mail, Lock, Camera } from "lucide-react"
 import { toast } from "sonner"
 import { loginSchema } from "@/utils/models/signin.model"
 import type { IErrorProps } from "@/types/error"
-import { signIn } from "next-auth/react"
+import { signIn, useSession } from "next-auth/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -28,7 +28,12 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-
+  const { data: session } = useSession();
+  useEffect(() => { 
+    if (session) {
+      router.push("/");
+    }
+  })
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {

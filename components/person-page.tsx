@@ -1,6 +1,7 @@
 "use client";
-
 import { useEffect, useState } from "react";
+import type React from "react";
+
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -15,16 +16,20 @@ import {
   MessageCircle,
   UserPlus,
   MoreHorizontal,
-  Camera, // Added Camera icon for edit buttons
+  Camera,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { DesktopSidebar } from "./desktop-sidebar";
-import { UserDocument } from "@/types/user";
+import type { UserDocument } from "@/types/user";
 import { Loading } from "./ui/loading";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
+
+// Import useSession for client-side authentication
+import { useSession } from "next-auth/react";
+
 interface PersonPageProps {
   personId: string;
   selfProfile: boolean;
@@ -56,21 +61,17 @@ interface IPost {
   __v: number;
 }
 
-import {
-  personData,
-  highlights,
-  mutualFollowers,
-  mockFollowers,
-} from "@/data/mocks/person.mock";
-
+import { personData } from "@/data/mocks/person.mock"; // Keep mock data if still used elsewhere
 import { CreatePost } from "./create-post";
-import GridMedia from "./grid-media";
-import { useCommentApi, useLikeApi } from "@/lib/requests";
+import { useCommentApi, useLikeApi, useFollowApi } from "@/lib/requests";
 import { PostContainer } from "./post-card";
 import { ProfileEditModal } from "./profile-page/profile-edit-modal";
 import { ProfileEditImages } from "./profile-page/profile-edit-images";
 
 export function PersonPage({ personId, selfProfile }: PersonPageProps) {
+  const { data: session } = useSession(); // Get logged-in user session
+  const currentLoggedInUserId = session?.user?.id; // Get logged-in user ID
+
   const [currentPage, setCurrentPage] = useState<
     | "feed"
     | "chat"
@@ -88,18 +89,29 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   const [likedPosts, setLikedPosts] = useState<{ [key: string]: boolean }>({});
   const [_personData, _setPersonData] = useState<UserDocument | null>(null);
   const [posts, setPosts] = useState<IPost[] | null>(null);
+  const [followersList, setFollowersList] = useState<UserDocument[]>([]);
+  const [followingList, setFollowingList] = useState<UserDocument[]>([]);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
   const person =
-    personData[personId as keyof typeof personData] || personData[1];
+    personData[personId as keyof typeof personData] || personData[1]; // Keep for mock data if needed
 
   const [comment, setComment] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const response = await useCommentApi.createComment(posts[0]._id, comment);
-    setComment("");
+    // Ensure posts is not null and has at least one element before accessing posts[0]._id
+    if (posts && posts.length > 0) {
+      const response = await useCommentApi.createComment(posts[0]._id, comment);
+      setComment("");
+    } else {
+      console.warn("Cannot submit comment: No posts available.");
+    }
   };
 
   const handleLike = async (postId: string) => {
+    // Optimistic update
     setLikedPosts((prev) => ({
       ...prev,
       [postId]: !prev[postId],
@@ -107,8 +119,11 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
 
     try {
       const postLike = await useLikeApi.likePost(postId);
+      // If API returns actual status, update based on that
+      // For now, assuming optimistic update is sufficient or API confirms it.
     } catch (error) {
       console.error("Error toggling like:", error);
+      // Revert optimistic update on error
       setLikedPosts((prev) => ({
         ...prev,
         [postId]: !prev[postId],
@@ -116,30 +131,114 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
     }
   };
 
-  const handleFollow = () => {
-    setIsFollowing(!isFollowing);
+  const handleFollow = async () => {
+    if (!_personData?._id) {
+      console.error("Person data not loaded yet.");
+      return;
+    }
+
+    // Optimistic update
+    setIsFollowing((prev) => !prev);
+    setFollowersCount((prev) => (isFollowing ? prev - 1 : prev + 1));
+
+    try {
+      const response = await useFollowApi.toggleFollow(_personData._id);
+      // Update state based on actual response from API
+      setIsFollowing(response.data.isFollowing);
+      setFollowersCount(response.data.followersCount);
+      setFollowingCount(response.data.followingCount); // This is the logged-in user's following count
+    } catch (error) {
+      console.error("Error toggling follow:", error);
+      // Revert optimistic update on error
+      setIsFollowing((prev) => !prev);
+      setFollowersCount((prev) => (isFollowing ? prev + 1 : prev - 1));
+      // Potentially show an error message to the user
+    }
   };
+
+  // Effect to fetch initial profile data and determine initial follow status
   useEffect(() => {
-    async function fetchProfile() {
+    async function fetchProfileAndFollowStatus() {
       const response = await fetch(`/api/users?id=${personId}`);
       const user = await response.json();
       _setPersonData(user.data);
       setPosts(user.data.profile.posts);
+
+      // Initialize counts from fetched profile data
+      // Assuming user.data.profile.followers and following are arrays of IDs or populated User objects
+      setFollowersCount(user.data.profile.followers?.length || 0);
+      setFollowingCount(user.data.profile.following?.length || 0);
+
+      // Determine initial isFollowing state for the logged-in user
+      if (
+        currentLoggedInUserId &&
+        user.data.profile.followers &&
+        Array.isArray(user.data.profile.followers)
+      ) {
+        // If followers are populated User objects, map to IDs for comparison
+        const followerIds = user.data.profile.followers.map((f: any) => f._id);
+        setIsFollowing(followerIds.includes(currentLoggedInUserId));
+      } else if (
+        currentLoggedInUserId &&
+        user.data.profile.followers &&
+        !Array.isArray(user.data.profile.followers)
+      ) {
+        // If followers is an array of just IDs (not populated)
+        setIsFollowing(
+          user.data.profile.followers.includes(currentLoggedInUserId)
+        );
+      } else {
+        setIsFollowing(false);
+      }
     }
-    if (!_personData) {
-      fetchProfile();
+
+    // Only fetch if _personData is null AND currentLoggedInUserId is available (for initial follow status check)
+    // or if the personId changes
+    if (!_personData && currentLoggedInUserId) {
+      fetchProfileAndFollowStatus();
     }
-  }, [personId]);
+  }, [personId, _personData, currentLoggedInUserId]); // Add currentLoggedInUserId to dependencies
+
+  // Effect to fetch followers/following lists when tabs change
+  useEffect(() => {
+    async function fetchTabContent() {
+      if (!_personData?._id) return; // Ensure person data is loaded
+
+      if (activeTab === "followers") {
+        try {
+          const response = await useFollowApi.getFollowersOrFollowing(
+            _personData._id,
+            "followers"
+          );
+          setFollowersList(response.data);
+        } catch (error) {
+          console.error("Error fetching followers:", error);
+          setFollowersList([]);
+        }
+      } else if (activeTab === "following") {
+        try {
+          const response = await useFollowApi.getFollowersOrFollowing(
+            _personData._id,
+            "following"
+          );
+          setFollowingList(response.data);
+        } catch (error) {
+          console.error("Error fetching following:", error);
+          setFollowingList([]);
+        }
+      }
+    }
+
+    fetchTabContent();
+  }, [activeTab, _personData?._id]); // Re-fetch when tab changes or person data loads
 
   if (!_personData) {
     return <Loading />;
   }
+
   return (
     <div className="flex min-h-screen">
-      <DesktopSidebar
-        setCurrentPage={setCurrentPage}
-        currentPage={currentPage}
-      />
+      <DesktopSidebar />
       <main className="md:ml-64 flex-1 bg-gray-50 overflow-auto">
         {/* Header */}
         <div className="bg-white border-b sticky top-0 z-10">
@@ -170,7 +269,10 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
             {selfProfile && (
               <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <ProfileEditImages type="COVER">
-                  <Button variant="secondary" className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    className="flex items-center gap-2"
+                  >
                     <Camera className="w-4 h-4" />
                     Edit Cover Photo
                   </Button>
@@ -219,10 +321,10 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                   <p className="text-gray-600 mb-1">@{_personData?.username}</p>
                   <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                     <span>
-                      <strong>{0}</strong> followers
+                      <strong>{followersCount}</strong> followers
                     </span>
                     <span>
-                      <strong>{0}</strong> following
+                      <strong>{followingCount}</strong> following
                     </span>
                     <span>
                       <strong>{posts?.length}</strong> posts
@@ -267,7 +369,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
 
             {/* Bio and Info */}
             <div className="mt-4 space-y-3">
-              <p className="whitespace-pre-line text-gray-800">
+              <div className="whitespace-pre-line text-gray-800">
                 {_personData?.bio ? (
                   _personData?.bio
                 ) : (
@@ -275,8 +377,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                     <Badge variant="secondary">+ Add bio</Badge>
                   </ProfileEditModal>
                 )}
-              </p>
-
+              </div>
               <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
                   <MapPin className="w-4 h-4" />
@@ -292,10 +393,9 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                   {_personData.socials ? (
                     _personData.socials.map((social, index) => {
                       return (
-                        <div className="flex flex-row gap-1">
+                        <div className="flex flex-row gap-1" key={index}>
                           <LinkIcon className="w-4 h-4" />
                           <a
-                            key={index}
                             href={social.url}
                             target="_blank"
                             rel="noreferrer"
@@ -319,7 +419,6 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                   Joined {_personData?.createdAt.toString().split("T")[0]}
                 </div>
               </div>
-
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">{_personData?.role}</Badge>
                 {/* {mutualFollowers.length > 0 && (
@@ -391,42 +490,55 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    Followers ({person.followers.toLocaleString()})
+                    Followers ({followersCount.toLocaleString()})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {mockFollowers.map((follower) => (
-                      <div
-                        key={follower.id}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-10 h-10">
-                            <AvatarImage
-                              src={follower.avatar || "/placeholder.svg"}
-                            />
-                            <AvatarFallback>{follower.name[0]}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">
-                                {follower.name}
+                    {followersList.length > 0 ? (
+                      followersList.map((follower) => (
+                        <div
+                          key={follower._id}
+                          className="flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-10 h-10">
+                              <AvatarImage
+                                src={
+                                  follower.profileImage || "/placeholder.svg"
+                                }
+                              />
+                              <AvatarFallback>
+                                {follower.fullName
+                                  ? follower.fullName[0]
+                                  : follower.username[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">
+                                  {follower.fullName}
+                                </span>
+                                {/* Assuming UserDocument has a verified field or similar */}
+                                {/* {follower.isVerified && (
+                                  <Star className="w-4 h-4 text-blue-500 fill-current" />
+                                )} */}
+                              </div>
+                              <span className="text-sm text-gray-600">
+                                @{follower.username}
                               </span>
-                              {follower.isVerified && (
-                                <Star className="w-4 h-4 text-blue-500 fill-current" />
-                              )}
                             </div>
-                            <span className="text-sm text-gray-600">
-                              @{follower.username}
-                            </span>
                           </div>
+                          {/* You might want to add a follow/unfollow button here as well,
+                              checking if the current logged-in user is following this follower */}
+                          {/* <Button variant="outline" size="sm">
+                            Follow
+                          </Button> */}
                         </div>
-                        <Button variant="outline" size="sm">
-                          Follow
-                        </Button>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-gray-500">No followers yet.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -436,42 +548,52 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    Following ({person.following.toLocaleString()})
+                    Following ({followingCount.toLocaleString()})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {mockFollowers.map((following) => (
-                      <div
-                        key={following.id}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-10 h-10">
-                            <AvatarImage
-                              src={following.avatar || "/placeholder.svg"}
-                            />
-                            <AvatarFallback>{following.name[0]}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">
-                                {following.name}
+                    {followingList.length > 0 ? (
+                      followingList.map((following) => (
+                        <div
+                          key={following._id}
+                          className="flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-10 h-10">
+                              <AvatarImage
+                                src={
+                                  following.profileImage || "/placeholder.svg"
+                                }
+                              />
+                              <AvatarFallback>
+                                {following.fullName
+                                  ? following.fullName[0]
+                                  : following.username[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">
+                                  {following.fullName}
+                                </span>
+                                {/* {following.isVerified && (
+                                  <Star className="w-4 h-4 text-blue-500 fill-current" />
+                                )} */}
+                              </div>
+                              <span className="text-sm text-gray-600">
+                                @{following.username}
                               </span>
-                              {following.isVerified && (
-                                <Star className="w-4 h-4 text-blue-500 fill-current" />
-                              )}
                             </div>
-                            <span className="text-sm text-gray-600">
-                              @{following.username}
-                            </span>
                           </div>
+                          {/* <Button variant="outline" size="sm">
+                            Following
+                          </Button> */}
                         </div>
-                        <Button variant="outline" size="sm">
-                          Following
-                        </Button>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-gray-500">Not following anyone yet.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>

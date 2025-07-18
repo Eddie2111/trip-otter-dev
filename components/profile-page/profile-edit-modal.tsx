@@ -1,90 +1,52 @@
 "use client";
-import { Button } from "@/components/ui/button";
+
+import { useState, useEffect, useRef } from "react";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+  type FullFormData,
+  fullFormSchema,
+  type LocationFormData,
+} from "@/lib/validations/profile";
+import { useUserApi } from "@/hooks/use-user-api";
+import { useLocationApi } from "@/hooks/use-location-api";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
-import { z } from "zod";
-import {
-  Plus,
-  Minus,
-  User,
-  Mail,
-  Lock,
-  Text,
-  MapPin,
-  Link,
-  AtSign,
-} from "lucide-react";
-import { Badge } from "../ui/badge";
-import { useUserApi } from "@/lib/requests";
+import { Input } from "@/components/ui/input";
+import { MapPin, Loader2 } from "lucide-react";
 
-type ModalType = "LOCATION" | "SOCIALS" | "BIO" | "FULLFORM";
+interface ProfileEditModalProps {
+  defaultData: any;
+  type: "QUICKFORM" | "FULLFORM";
+  onClose: () => void;
+}
 
-import {
-  passwordSchema,
-  bioSchema,
-  locationSchema,
-  socialsSchema,
-  fullNameSchema,
-  usernameSchema,
-  emailSchema,
-  fullFormSchema
-} from "./profile-edit-validation";
-
-import type {
-  BioFormData,
-  LocationFormData,
-  SocialsFormData,
-  FullNameFormData,
-  UsernameFormData,
-  EmailFormData,
-  PasswordFormData,
-  FullFormData
-} from "./profile-edit-validation";
-
-export function ProfileEditModal({
-  type,
-  children,
+const ProfileEditModal = ({
   defaultData,
-}: {
-  type: ModalType;
-  children?: React.ReactNode;
-  defaultData?: any;
-}) {
-  const [bioData, setBioData] = useState<BioFormData>({
-    bio: defaultData?.bio || "",
+  type,
+  onClose,
+}: ProfileEditModalProps) => {
+  const [fullNameData, setFullNameData] = useState({
+    fullName: defaultData?.fullName || "",
   });
+  const [usernameData, setUsernameData] = useState({
+    username: defaultData?.username || "",
+  });
+  const [emailData, setEmailData] = useState({
+    email: defaultData?.email || "",
+  });
+  const [bioData, setBioData] = useState({ bio: defaultData?.bio || "" });
   const [locationData, setLocationData] = useState<LocationFormData>({
     location: defaultData?.location || "",
   });
-  const [socialsData, setSocialsData] = useState<SocialsFormData>({
+  const [socialsData, setSocialsData] = useState({
     socials:
       defaultData?.socials && defaultData.socials.length > 0
         ? defaultData.socials
         : [{ platform: "", url: "" }],
   });
-  const [fullNameData, setFullNameData] = useState<FullNameFormData>({
-    fullName: defaultData?.fullName || "",
-  });
-  const [usernameData, setUsernameData] = useState<UsernameFormData>({
-    username: defaultData?.username || "",
-  });
-  const [emailData, setEmailData] = useState<EmailFormData>({
-    email: defaultData?.email || "",
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [locationSearchLoading, setLocationSearchLoading] = useState(false);
+  const [locationSearchResults, setLocationSearchResults] = useState([]);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [errors, setErrors] = useState({});
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setBioData({ bio: defaultData?.bio || "" });
@@ -100,101 +62,122 @@ export function ProfileEditModal({
     setEmailData({ email: defaultData?.email || "" });
   }, [defaultData, type]);
 
-  const getModalConfig = () => {
-    switch (type) {
-      case "BIO":
-        return {
-          title: "Edit Bio",
-          description: "Update your bio information. Maximum 300 characters.",
-          triggerText: "Edit Bio",
-        };
-      case "LOCATION":
-        return {
-          title: "Edit Location",
-          description: "Update your location. Maximum 30 characters.",
-          triggerText: "Edit Location",
-        };
-      case "SOCIALS":
-        return {
-          title: "Edit Social Links",
-          description:
-            "Add or remove your social media links. Maximum 5 links.",
-          triggerText: "Edit Socials",
-        };
-      case "FULLFORM":
-        return {
-          title: "Edit Full Profile",
-          description: "Update all your profile details.",
-          triggerText: "Edit Profile",
-        };
-      default:
-        return {
-          title: "Edit Profile",
-          description: "Make changes to your profile here.",
-          triggerText: "Edit Profile",
-        };
+  useEffect(() => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
     }
-  };
-
-  const addSocialInput = () => {
-    if (socialsData.socials.length < 5) {
-      setSocialsData({
-        socials: [...socialsData.socials, { platform: "", url: "" }],
-      });
-    }
-  };
-
-  const removeSocialInput = (index: number) => {
-    if (socialsData.socials.length > 1) {
-      setSocialsData({
-        socials: socialsData.socials.filter((_, i) => i !== index),
-      });
-    } else if (socialsData.socials.length === 1) {
-      setSocialsData({ socials: [{ platform: "", url: "" }] });
-    }
-  };
-
-  const updateSocialInput = (
-    index: number,
-    field: "platform" | "url",
-    value: string
-  ) => {
-    const newSocials = [...socialsData.socials];
-    newSocials[index] = { ...newSocials[index], [field]: value };
-    setSocialsData({ socials: newSocials });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({});
-
-    try {
-      let validatedData: any;
-      let payload: any;
-
-      switch (type) {
-        case "BIO":
-          validatedData = bioSchema.parse(bioData);
-          payload = { bio: validatedData.bio };
-          await useUserApi.updateUser(payload);
-          // console.log("Bio form submitted:", validatedData);
-          break;
-        case "LOCATION":
-          validatedData = locationSchema.parse(locationData);
-          payload = { location: validatedData.location };
-          await useUserApi.updateUser(payload);
-          // console.log("Location form submitted:", validatedData);
-          break;
-        case "SOCIALS":
-          const filteredSocials = socialsData.socials.filter(
-            (social) =>
-              social.platform.trim() !== "" || social.url.trim() !== ""
+    if (locationData.location && locationData.location.trim().length > 2) {
+      // Only search if input is not empty and has at least 3 characters
+      setLocationSearchLoading(true);
+      setShowLocationDropdown(true); // Show dropdown when loading
+      debounceTimeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await useLocationApi.getLocations(
+            locationData.location ?? ""
           );
-          validatedData = socialsSchema.parse({ socials: filteredSocials });
-          payload = { socials: validatedData.socials };
-          await useUserApi.updateUser(payload);
-          // console.log("Socials form submitted:", validatedData);
-          break;
+          if (response.status === 200 && response.data) {
+            setLocationSearchResults(response.data);
+          } else {
+            setLocationSearchResults([]);
+          }
+        } catch (error) {
+          console.error("Error fetching locations:", error);
+          setLocationSearchResults([]);
+        } finally {
+          setLocationSearchLoading(false);
+        }
+      }, 2000); // 2-second debounce
+    } else {
+      setLocationSearchResults([]);
+      setLocationSearchLoading(false);
+      setShowLocationDropdown(false); // Hide dropdown if search query is too short or empty
+    }
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [locationData.location]);
+
+  const renderLocationForm = () => (
+    <div className="grid gap-3 relative">
+      <Label htmlFor="location-input" className="flex items-center gap-2">
+        <MapPin className="h-4 w-4" />
+        Location
+      </Label>
+      <Input
+        id="location-input"
+        name="location"
+        value={locationData.location}
+        onChange={(e) => setLocationData({ location: e.target.value })}
+        placeholder="Enter your location..."
+        maxLength={30}
+        onFocus={() => setShowLocationDropdown(true)}
+        onBlur={() => setTimeout(() => setShowLocationDropdown(false), 200)}
+      />
+      <div className="flex justify-between text-sm text-gray-500">
+        <span>{locationData.location?.length || 0}/30 characters</span>
+        {errors.location && (
+          <span className="text-red-500">{errors.location}</span>
+        )}
+      </div>
+      {/* Location Search Results Dropdown */}
+      {showLocationDropdown &&
+        (locationSearchLoading || locationSearchResults.length > 0) && (
+          <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-40 overflow-y-auto mt-1">
+            {locationSearchLoading ? (
+              <div className="p-2 flex items-center justify-center text-gray-500">
+                <Loader2 className="animate-spin mr-2" /> Searching...
+              </div>
+            ) : locationSearchResults.length > 0 ? (
+              <ul className="divide-y divide-gray-100">
+                {locationSearchResults.map((result) => (
+                  <li
+                    key={result._id}
+                    className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setLocationData({ location: result.Location });
+                      setLocationSearchResults([]);
+                      setShowLocationDropdown(false);
+                    }}
+                  >
+                    {result.Location}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="p-2 text-gray-500 text-sm">
+                No locations found.
+              </div>
+            )}
+          </div>
+        )}
+    </div>
+  );
+
+  // Function to handle location input change
+  const handleLocationInputChange = (event) => {
+    const newLocation = event.target.value;
+    setLocationData({ location: newLocation });
+
+    if (newLocation.trim().length > 2) {
+      // Only search if input is not empty and has at least 3 characters
+      setLocationSearchLoading(true);
+      setShowLocationDropdown(true); // Show dropdown when loading
+      // ... rest of your logic
+    } else {
+      setLocationSearchLoading(false);
+      setShowLocationDropdown(false); // Hide dropdown if input is too short
+    }
+  };
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    let validatedData;
+    let payload;
+    try {
+      switch (type) {
         case "FULLFORM":
           const fullFormData: FullFormData = {
             fullName: fullNameData.fullName,
@@ -210,247 +193,36 @@ export function ProfileEditModal({
           validatedData = fullFormSchema.parse(fullFormData);
           payload = validatedData;
           await useUserApi.updateUser(payload);
-          // console.log("Full form submitted:", validatedData);
           break;
+        case "QUICKFORM":
+          break;
+        default:
+          throw new Error("Invalid form type");
       }
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const fieldErrors: Record<string, string> = {};
-        error.errors.forEach((err) => {
-          const field = err.path.join(".");
-          fieldErrors[field] = err.message;
-        });
-        setErrors(fieldErrors);
-      } else {
-        console.error("An unexpected error occurred:", error);
+      onClose();
+    } catch (error: any) {
+      console.error("Validation Error:", error.errors);
+      // Extract errors from ZodError and set them to state
+      const validationErrors = {};
+      for (const issue of error.errors) {
+        validationErrors[issue.path[0]] = issue.message;
       }
-    }
-  };
-
-  const config = getModalConfig();
-
-  const renderBioForm = () => (
-    <div className="grid gap-3">
-      <Label htmlFor="bio-input" className="flex items-center gap-2">
-        <Text className="h-4 w-4" />
-        Bio
-      </Label>
-      <Textarea
-        id="bio-input"
-        name="bio"
-        value={bioData.bio}
-        onChange={(e) => setBioData({ bio: e.target.value })}
-        placeholder="Tell us about yourself..."
-        maxLength={300}
-        className="min-h-[100px]"
-      />
-      <div className="flex justify-between text-sm text-gray-500">
-        <span>{bioData.bio?.length || 0}/300 characters</span>
-        {errors.bio && <span className="text-red-500">{errors.bio}</span>}
-      </div>
-    </div>
-  );
-
-  const renderLocationForm = () => (
-    <div className="grid gap-3">
-      <Label htmlFor="location-input" className="flex items-center gap-2">
-        <MapPin className="h-4 w-4" />
-        Location
-      </Label>
-      <Input
-        id="location-input"
-        name="location"
-        value={locationData.location}
-        onChange={(e) => setLocationData({ location: e.target.value })}
-        placeholder="Enter your location..."
-        maxLength={30}
-      />
-      <div className="flex justify-between text-sm text-gray-500">
-        <span>{locationData.location?.length || 0}/30 characters</span>
-        {errors.location && (
-          <span className="text-red-500">{errors.location}</span>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderSocialsForm = () => (
-    <div className="grid gap-3">
-      <div className="flex items-center justify-between">
-        <Label className="flex items-center gap-2">
-          <Link className="h-4 w-4" />
-          Social Links
-        </Label>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={addSocialInput}
-          disabled={socialsData.socials.length >= 5}
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Add
-        </Button>
-      </div>
-      {socialsData.socials.map((social, index) => (
-        <div key={index} className="flex flex-col gap-2 p-2 border rounded-md">
-          <div className="grid gap-1">
-            <Label
-              htmlFor={`platform-${index}`}
-              className="flex items-center gap-2"
-            >
-              Platform
-            </Label>
-            <Input
-              id={`platform-${index}`}
-              value={social.platform}
-              onChange={(e) =>
-                updateSocialInput(index, "platform", e.target.value)
-              }
-              placeholder="e.g., Twitter, LinkedIn"
-            />
-            {errors[`socials.${index}.platform`] && (
-              <span className="text-red-500 text-sm">
-                {errors[`socials.${index}.platform`]}
-              </span>
-            )}
-          </div>
-          <div className="grid gap-1">
-            <Label htmlFor={`url-${index}`} className="flex items-center gap-2">
-              URL
-            </Label>
-            <Input
-              id={`url-${index}`}
-              value={social.url}
-              onChange={(e) => updateSocialInput(index, "url", e.target.value)}
-              placeholder="https://..."
-            />
-            {errors[`socials.${index}.url`] && (
-              <span className="text-red-500 text-sm">
-                {errors[`socials.${index}.url`]}
-              </span>
-            )}
-          </div>
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => removeSocialInput(index)}
-              disabled={
-                socialsData.socials.length === 1 &&
-                social.platform === "" &&
-                social.url === ""
-              }
-            >
-              <Minus className="h-4 w-4 text-red-500" />
-            </Button>
-          </div>
-        </div>
-      ))}
-      {errors.socials && (
-        <span className="text-red-500 text-sm">{errors.socials}</span>
-      )}
-    </div>
-  );
-
-  const renderFullFormContent = () => (
-    <>
-      <div className="grid gap-3">
-        <Label htmlFor="full-name-input" className="flex items-center gap-2">
-          <User className="h-4 w-4" />
-          Full Name
-        </Label>
-        <Input
-          id="full-name-input"
-          name="fullName"
-          value={fullNameData.fullName}
-          onChange={(e) => setFullNameData({ fullName: e.target.value })}
-          placeholder="Your full name"
-        />
-        {errors.fullName && (
-          <span className="text-red-500 text-sm">{errors.fullName}</span>
-        )}
-      </div>
-
-      <div className="grid gap-3">
-        <Label htmlFor="username-input" className="flex items-center gap-2">
-          <AtSign className="h-4 w-4" />
-          Username
-        </Label>
-        <Input
-          id="username-input"
-          name="username"
-          value={usernameData.username}
-          onChange={(e) => setUsernameData({ username: e.target.value })}
-          placeholder="Your username"
-        />
-        {errors.username && (
-          <span className="text-red-500 text-sm">{errors.username}</span>
-        )}
-      </div>
-
-      <div className="grid gap-3">
-        <Label htmlFor="email-input" className="flex items-center gap-2">
-          <Mail className="h-4 w-4" />
-          Email
-        </Label>
-        <Input
-          id="email-input"
-          name="email"
-          type="email"
-          value={emailData.email}
-          onChange={(e) => setEmailData({ email: e.target.value })}
-          placeholder="your@email.com"
-        />
-        {errors.email && (
-          <span className="text-red-500 text-sm">{errors.email}</span>
-        )}
-      </div>
-
-      {renderBioForm()}
-      {renderLocationForm()}
-      {renderSocialsForm()}
-    </>
-  );
-
-  const renderFormContent = () => {
-    switch (type) {
-      case "BIO":
-        return renderBioForm();
-      case "LOCATION":
-        return renderLocationForm();
-      case "SOCIALS":
-        return renderSocialsForm();
-      case "FULLFORM":
-        return renderFullFormContent();
-      default:
-        return null;
+      setErrors(validationErrors);
     }
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        {children || <Badge>{config.triggerText}</Badge>}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] h-[65vh] overflow-y-auto">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>{config.title}</DialogTitle>
-            <DialogDescription>{config.description}</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">{renderFormContent()}</div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button type="submit">Save changes</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <div>
+      <input
+        type="text"
+        value={locationData.location}
+        onChange={handleLocationInputChange}
+        placeholder="Enter your location"
+      />
+      {locationSearchLoading && <div>Loading...</div>}
+      {showLocationDropdown && <div>Location Dropdown</div>}
+    </div>
   );
-}
+};
+
+export default ProfileEditModal;

@@ -173,6 +173,49 @@ class CommentAPI extends BaseAPI {
   }
 }
 
+class FollowAPI extends BaseAPI {
+  /**
+   * Toggles the follow status for a given target user.
+   * If the current user is already following, it unfollows. If not, it follows.
+   * @param {string} targetUserId - The ID of the user to follow/unfollow.
+   * @returns {Promise<AxiosResponse>} The API response indicating the new follow status and counts.
+   */
+  public toggleFollow = async (
+    targetUserId: string
+  ): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`/api/followers`, {
+        targetUserId,
+      });
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+
+  /**
+   * Retrieves the list of followers or users being followed for a given profile.
+   * @param {string} profileId - The ID of the profile to retrieve data for.
+   * @param {'followers' | 'following'} type - Specifies whether to retrieve 'followers' or 'following' list.
+   * @returns {Promise<AxiosResponse>} The API response containing the list of users.
+   */
+  public getFollowersOrFollowing = async (
+    profileId: string,
+    type: "followers" | "following"
+  ): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(
+        `/api/followers?profileId=${profileId}&type=${type}`
+      );
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+}
+
 class UserAPI extends BaseAPI {
   public getUser = async (id: string): Promise<AxiosResponse> => {
     try {
@@ -190,6 +233,18 @@ class UserAPI extends BaseAPI {
     } catch (error) {
       const axiosError = error as any;
       throw axiosError.response?.data || axiosError.message;
+    }
+  }
+}
+
+class LocationAPI extends BaseAPI {
+  public getLocations = async (location: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/locations?location=${location}`);
+      return response.data;
+    } catch (err) {
+        const axiosError = err as any;
+        throw axiosError.response?.data || axiosError.message;
     }
   }
 }
@@ -249,3 +304,5 @@ export const useLikeApi = new LikeAPI();
 export const useCommentApi = new CommentAPI();
 export const useUserApi = new UserAPI();
 export const useReportApi = new ReportAPI();
+export const useLocationApi = new LocationAPI();
+export const useFollowApi = new FollowAPI();

@@ -1,11 +1,9 @@
-import { LoadingScreen } from "@/components/ui/loading-splash";
-
-
-
-export default function Test() { 
-
+export default function Test() {
   return (
-  <LoadingScreen/>    
-    
-  )
+    <>
+      <div className="ml-[1200px]">
+
+      </div>
+    </>
+  );
 }

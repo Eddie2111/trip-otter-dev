@@ -109,6 +109,10 @@ export const authOptions = {
       return session;
     }
   },
+  pages: {
+    signIn: '/login',
+    error: '/login',
+  },
   secret: process.env.AUTH_SECRET,
 }
 

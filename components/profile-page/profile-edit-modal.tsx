@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { z } from "zod";
 import {
   Plus,
@@ -25,9 +25,29 @@ import {
   MapPin,
   Link,
   AtSign,
+  Check,
+  ChevronsUpDown,
+  Loader2,
+  Router,
 } from "lucide-react";
 import { Badge } from "../ui/badge";
-import { useUserApi } from "@/lib/requests";
+import { useLocationApi, useUserApi } from "@/lib/requests";
+
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type ModalType = "LOCATION" | "SOCIALS" | "BIO" | "FULLFORM";
 
@@ -52,6 +72,7 @@ import type {
   PasswordFormData,
   FullFormData
 } from "./profile-edit-validation";
+import { useRouter } from "next/navigation";
 
 export function ProfileEditModal({
   type,
@@ -62,6 +83,7 @@ export function ProfileEditModal({
   children?: React.ReactNode;
   defaultData?: any;
 }) {
+  const router = useRouter();
   const [bioData, setBioData] = useState<BioFormData>({
     bio: defaultData?.bio || "",
   });
@@ -86,6 +108,15 @@ export function ProfileEditModal({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // State for location combobox
+  const [openLocationCombobox, setOpenLocationCombobox] = useState(false);
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [isSearchingLocations, setIsSearchingLocations] = useState(false);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // State to control the Dialog's open/close state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   useEffect(() => {
     setBioData({ bio: defaultData?.bio || "" });
     setLocationData({ location: defaultData?.location || "" });
@@ -99,6 +130,47 @@ export function ProfileEditModal({
     setUsernameData({ username: defaultData?.username || "" });
     setEmailData({ email: defaultData?.email || "" });
   }, [defaultData, type]);
+
+  // Effect for debounced location API call
+  useEffect(() => {
+    // Clear previous debounce timeout if exists
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    // Only search if location input is not empty
+    if (locationData?.location.trim() !== "") {
+      setIsSearchingLocations(true);
+      debounceTimeoutRef.current = setTimeout(async () => {
+        try {
+          // Assuming useLocationApi.getLocations expects a string query
+          const response = await useLocationApi.getLocations(locationData.location ?? "");
+          if (response && response.data) {
+            const suggestions = response.data.map((item: any) => item.Location);
+            setLocationSuggestions(suggestions);
+          } else {
+            setLocationSuggestions([]);
+          }
+        } catch (error) {
+          console.error("Error fetching locations:", error);
+          setLocationSuggestions([]);
+        } finally {
+          setIsSearchingLocations(false);
+        }
+      }, 2000); // 2 seconds debounce
+    } else {
+      setLocationSuggestions([]); // Clear suggestions if input is empty
+      setIsSearchingLocations(false);
+    }
+
+    // Cleanup on unmount or dependency change
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [locationData.location]);
+
 
   const getModalConfig = () => {
     switch (type) {
@@ -177,13 +249,13 @@ export function ProfileEditModal({
           validatedData = bioSchema.parse(bioData);
           payload = { bio: validatedData.bio };
           await useUserApi.updateUser(payload);
-          // console.log("Bio form submitted:", validatedData);
+          toast.success("Bio updated successfully!");
           break;
         case "LOCATION":
           validatedData = locationSchema.parse(locationData);
           payload = { location: validatedData.location };
           await useUserApi.updateUser(payload);
-          // console.log("Location form submitted:", validatedData);
+          toast.success("Location updated successfully!");
           break;
         case "SOCIALS":
           const filteredSocials = socialsData.socials.filter(
@@ -193,7 +265,7 @@ export function ProfileEditModal({
           validatedData = socialsSchema.parse({ socials: filteredSocials });
           payload = { socials: validatedData.socials };
           await useUserApi.updateUser(payload);
-          // console.log("Socials form submitted:", validatedData);
+          toast.success("Socials updated successfully!");
           break;
         case "FULLFORM":
           const fullFormData: FullFormData = {
@@ -210,9 +282,11 @@ export function ProfileEditModal({
           validatedData = fullFormSchema.parse(fullFormData);
           payload = validatedData;
           await useUserApi.updateUser(payload);
-          // console.log("Full form submitted:", validatedData);
+          toast.success("Profile updated successfully!");
           break;
       }
+      setIsModalOpen(false); // Close the modal on successful submission
+      router.refresh();
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
@@ -223,6 +297,7 @@ export function ProfileEditModal({
         setErrors(fieldErrors);
       } else {
         console.error("An unexpected error occurred:", error);
+        toast.error("An unexpected error occurred. Please try again.");
       }
     }
   };
@@ -257,14 +332,74 @@ export function ProfileEditModal({
         <MapPin className="h-4 w-4" />
         Location
       </Label>
-      <Input
-        id="location-input"
-        name="location"
-        value={locationData.location}
-        onChange={(e) => setLocationData({ location: e.target.value })}
-        placeholder="Enter your location..."
-        maxLength={30}
-      />
+      <Popover open={openLocationCombobox} onOpenChange={setOpenLocationCombobox}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={openLocationCombobox}
+            className="w-full justify-between"
+          >
+            {locationData.location
+              ? locationSuggestions.find(
+                  (location) => location === locationData.location
+                ) || locationData.location
+              : "Select location..."}
+            {isSearchingLocations ? (
+              <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin" />
+            ) : (
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+          <Command>
+            <CommandInput
+              placeholder="Search location..."
+              value={locationData.location}
+              onValueChange={(value) => {
+                setLocationData({ location: value });
+              }}
+            />
+            <CommandList>
+              {isSearchingLocations && locationData.location.trim() !== "" ? (
+                <CommandEmpty className="flex items-center justify-center p-4">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching...
+                </CommandEmpty>
+              ) : (
+                <CommandEmpty>Search for a location</CommandEmpty>
+              )}
+              <CommandGroup>
+                {locationSuggestions.map((location) => (
+                  <CommandItem
+                    key={location}
+                    value={location}
+                    onSelect={(currentValue) => {
+                      setLocationData({
+                        location:
+                          currentValue === locationData.location
+                            ? ""
+                            : currentValue,
+                      });
+                      setOpenLocationCombobox(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        locationData.location === location
+                          ? "opacity-100"
+                          : "opacity-0"
+                      )}
+                    />
+                    {location}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
       <div className="flex justify-between text-sm text-gray-500">
         <span>{locationData.location?.length || 0}/30 characters</span>
         {errors.location && (
@@ -430,7 +565,7 @@ export function ProfileEditModal({
   };
 
   return (
-    <Dialog>
+    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
       <DialogTrigger asChild>
         {children || <Badge>{config.triggerText}</Badge>}
       </DialogTrigger>

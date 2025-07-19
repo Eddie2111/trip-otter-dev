@@ -68,7 +68,7 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
   }
 
   const handleDemoLogin = () => {
-    form.setValue("email", "test@test.com")
+    form.setValue("email", "test@user.com")
     form.setValue("password", "Abcd1234..")
   }
 
@@ -219,7 +219,7 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
 
           <div className="text-center space-y-2">
             <Button onClick={handleDemoLogin} variant="ghost" className="text-sm text-gray-600 hover:text-gray-800">
-              Try Demo Account (demo@tripotter.com / demo123)
+              Try Demo Account / I'm Feeling Lucky
             </Button>
           </div>
 

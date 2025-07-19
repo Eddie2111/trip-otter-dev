@@ -27,74 +27,53 @@ interface FollowToggleResult {
  * @returns {Response} A JSON response containing the list of followers/following or an error message.
  */
 export async function GET(request: NextRequest): Promise<Response> {
-  const searchParams = request.nextUrl.searchParams;
-  const profileId = searchParams.get("profileId");
-  const type = searchParams.get("type"); // 'followers' or 'following'
+ const searchParams = request.nextUrl.searchParams;
+ const profileId = searchParams.get("profileId");
 
-  // Validate profileId format
-  if (!profileId || !mongoose.Types.ObjectId.isValid(profileId)) {
-    return Response.json(
-      { message: "Invalid or missing profile ID", status: 400 },
-      { status: 400 }
-    );
-  }
+ // Validate profileId format
+ if (!profileId || !mongoose.Types.ObjectId.isValid(profileId)) {
+   return Response.json(
+     { message: "Invalid or missing profile ID", status: 400 },
+     { status: 400 }
+   );
+ }
 
-  try {
-    const profileData = await runDBOperation(async () => {
-      let profileQuery = Profile.findById(profileId);
+ try {
+   const profileData = await runDBOperation(async () => {
+     let profileQuery = await Profile.findOne({ user: profileId}).populate([
+       {
+         path: "followers",
+         select: "username fullName location profileImage",
+         model: "User",
+       },
+       {
+         path: "following",
+         select: "username fullName location profileImage",
+         model: "User",
+       }
+     ]).select("following followers");
+     console.log(profileQuery)
+     return profileQuery;
+   });
 
-      if (type === "followers") {
-        profileQuery = profileQuery.populate({
-          path: "followers",
-          select: "username fullName profileImage", // Select relevant user fields
-          model: "User",
-        });
-      } else if (type === "following") {
-        profileQuery = profileQuery.populate({
-          path: "following",
-          select: "username fullName profileImage", // Select relevant user fields
-          model: "User",
-        });
-      } else {
-        // Default to followers if type is not specified or invalid
-        profileQuery = profileQuery.populate({
-          path: "followers",
-          select: "username fullName profileImage",
-          model: "User",
-        });
-      }
+   console.log(profileData);
 
-      const profile = await profileQuery.exec();
-      return profile;
-    });
-
-    if (!profileData) {
-      return Response.json(
-        { message: "Profile not found", status: 404 },
-        { status: 404 }
-      );
-    }
-
-    const dataToSend =
-      type === "following" ? profileData.following : profileData.followers;
-
-    return Response.json({
-      message: `Retrieved ${type || "followers"} successfully`,
-      status: 200,
-      data: dataToSend,
-    });
-  } catch (error) {
-    console.error("Error retrieving followers/following:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Internal server error";
-    return Response.json(
-      {
-        message: errorMessage,
-        status: 500,
-      },
-      { status: 500 }
-    );
-  }
+   return Response.json({
+     message: `Retrieved successfully`,
+     status: 200,
+   });
+ } catch (error) {
+   console.error("Error retrieving followers/following:", error);
+   const errorMessage =
+     error instanceof Error ? error.message : "Internal server error";
+   return Response.json(
+     {
+       message: errorMessage,
+       status: 500,
+     },
+     { status: 500 }
+   );
+ }
 }
 
 /**

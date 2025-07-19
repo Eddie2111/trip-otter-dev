@@ -67,6 +67,7 @@ import { useCommentApi, useLikeApi, useFollowApi } from "@/lib/requests";
 import { PostContainer } from "./post-card";
 import { ProfileEditModal } from "./profile-page/profile-edit-modal";
 import { ProfileEditImages } from "./profile-page/profile-edit-images";
+import { FollowModal } from "./follow-modal";
 
 export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   const { data: session } = useSession(); // Get logged-in user session
@@ -320,12 +321,16 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                   </div>
                   <p className="text-gray-600 mb-1">@{_personData?.username}</p>
                   <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                    <span>
-                      <strong>{followersCount}</strong> followers
-                    </span>
-                    <span>
-                      <strong>{followingCount}</strong> following
-                    </span>
+                    <FollowModal type="Followers" userId={_personData._id ?? ""}>
+                      <span className="underline">
+                        <strong>{followersCount}</strong> followers
+                      </span>
+                    </FollowModal>
+                    <FollowModal type="Following" userId={_personData._id ?? ""}>
+                      <span className="underline">
+                        <strong>{followingCount}</strong> following
+                      </span>
+                    </FollowModal>
                     <span>
                       <strong>{posts?.length}</strong> posts
                     </span>

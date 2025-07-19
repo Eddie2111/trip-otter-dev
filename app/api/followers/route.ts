@@ -52,15 +52,13 @@ export async function GET(request: NextRequest): Promise<Response> {
          model: "User",
        }
      ]).select("following followers");
-     console.log(profileQuery)
      return profileQuery;
    });
-
-   console.log(profileData);
 
    return Response.json({
      message: `Retrieved successfully`,
      status: 200,
+     data: profileData,
    });
  } catch (error) {
    console.error("Error retrieving followers/following:", error);

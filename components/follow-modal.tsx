@@ -9,114 +9,149 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import axios from "axios";
-import { useEffect, useState } from "react";
+import { getInitials } from "@/lib/name-format"
+import { useFollowApi } from "@/lib/requests"
+import axios from "axios"
+import { useEffect, useState } from "react"
 
-interface User {
-  id: string;
-  name: string;
-  avatar: string;
-  location: string;
-  isFollowing?: boolean;
+interface IResponseUser {
+  _id: string
+  fullName: string
+  username: string
+  profileImage?: string
+  location?: string
+  isFollowing?: boolean
 }
 
 interface FollowModalProps {
-  type: 'Following' | 'Followers';
-  users: User[];
-  onFollow?: (userId: string) => void;
-  onUnfollow?: (userId: string) => void;
-  children: React.ReactNode;
-  userId?: string;
+  type: 'Following' | 'Followers'
+  children: React.ReactNode
+  userId?: string
+  currentLoggedInUserId?: string;
 }
 
-interface INextAuthUserProps {
-  id: string;
-  name: string;
-  email: string;
-  image?: string;
-  location: string;
-}
+export function FollowModal({ type, children, userId, currentLoggedInUserId }: FollowModalProps) {
+  const [users, setUsers] = useState<IResponseUser[]>([])
+  const [isUpdating, setIsUpdating] = useState(false)
 
-export function FollowModal({ type, users, onFollow, onUnfollow, children, userId }: FollowModalProps) {
-  const [user, setUser] = useState<INextAuthUserProps | null>(null);
-  const [ followers, setFollowers ] = useState<any | null>(null);
-  useEffect(()=>{
-    async function fetchData () {
-      const followers = await axios.get(`/api/followers?profileId=${userId}`);
-      console.log(followers.data);
+  useEffect(() => {
+    async function fetchData() {
+      console.log('Fetching data for userId:', userId, 'and type:', type); // Debugging log
+      if (!userId) {
+        setUsers([]);
+        console.log('userId is empty, setting users to empty array.'); // Debugging log
+        return;
+      }
+      try {
+        const response = await axios.get(`/api/followers?profileId=${userId}`);
+        console.log('API Response:', response.data); // Debugging log for raw API response
+        const data = response.data.data;
+
+        if (type === 'Following') {
+          const mappedUsers = data.following.map((u: IResponseUser) => ({ ...u, isFollowing: true }));
+          setUsers(mappedUsers);
+          console.log('Set users for Following:', mappedUsers); // Debugging log
+        } else {
+          setUsers(data.followers);
+          console.log('Set users for Followers:', data.followers); // Debugging log
+        }
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      }
     }
     fetchData();
-  },[])
-  const handleFollow = (userId: string) => {
-    onFollow?.(userId);
-  };
+  }, [userId, type]);
 
-  const handleUnfollow = (userId: string) => {
-    onUnfollow?.(userId);
-  };
+  const handleToggleFollow = async (userIdToToggle: string, isCurrentlyFollowing: boolean) => {
+    setIsUpdating(true)
+    try {
+      const response = await useFollowApi.toggleFollow(userIdToToggle)
+
+      if (response.status === 200) {
+        setUsers(prevUsers =>
+          prevUsers.map(user =>
+            user._id === userIdToToggle
+              ? { ...user, isFollowing: !isCurrentlyFollowing }
+              : user
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Failed to toggle follow status:", error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
+      <DialogTrigger>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] max-h-[600px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[600px] flex flex-col">
         <DialogHeader>
           <DialogTitle>{type}</DialogTitle>
           <DialogDescription>
-            {type === 'Following' 
-              ? 'Users you are following' 
-              : 'Users who follow you'
+            {type === 'Following'
+              ? 'Users you are currently following.'
+              : 'Users who are following this profile.'
             }
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="flex flex-col gap-4 max-h-[400px] overflow-y-auto">
+
+        <div className="flex flex-col gap-4 max-h-[400px] overflow-y-auto py-2">
           {users.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
-              {type === 'Following' ? 'Not following anyone yet' : 'No followers yet'}
+              {type === 'Following' ? 'Not following anyone yet.' : 'No followers yet.'}
             </div>
           ) : (
             users.map((user) => (
-              <div key={user.id} className="flex items-center justify-between p-3 rounded-lg border">
+              <div key={user._id} className="flex items-center justify-between p-3 rounded-lg border">
                 <div className="flex items-center gap-3">
-                  <img 
-                    src={user.avatar} 
-                    alt={user.name}
+                  <img
+                    src={user.profileImage || `https://placehold.co/40x40/E0E0E0/333333?text=${getInitials(user.fullName)}`}
+                    alt={user.fullName}
                     className="w-10 h-10 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = `https://placehold.co/40x40/E0E0E0/333333?text=${getInitials(user.fullName)}`;
+                    }}
                   />
                   <div className="flex flex-col">
-                    <span className="font-medium text-sm">{user.name}</span>
-                    <span className="text-xs text-gray-500">{user.location}</span>
+                    <span className="font-medium text-sm">{user.fullName}</span>
+                    {user.location && <span className="text-xs text-gray-500">{user.location}</span>}
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2">
-                  {type === 'Following' ? (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleUnfollow(user.id)}
-                    >
-                      Unfollow
-                    </Button>
-                  ) : (
-                    <Button 
-                      variant={user.isFollowing ? "outline" : "default"}
-                      size="sm"
-                      onClick={() => user.isFollowing ? handleUnfollow(user.id) : handleFollow(user.id)}
-                    >
-                      {user.isFollowing ? 'Unfollow' : 'Follow'}
-                    </Button>
+                  {user._id !== currentLoggedInUserId && (
+                    user.isFollowing ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleFollow(user._id, true)}
+                        disabled={isUpdating}
+                      >
+                        Unfollow
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleToggleFollow(user._id, false)}
+                        disabled={isUpdating}
+                      >
+                        Follow
+                      </Button>
+                    )
                   )}
                 </div>
               </div>
             ))
           )}
         </div>
-        
-        <div className="flex justify-end">
-          <DialogClose asChild>
+
+        <div className="flex justify-end pt-4">
+          <DialogClose>
             <Button variant="outline">Close</Button>
           </DialogClose>
         </div>

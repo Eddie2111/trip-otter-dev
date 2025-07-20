@@ -12,6 +12,18 @@ export class BaseAPI {
   }
 }
 
+export class AnalyticsAPI extends BaseAPI {
+  public getAnalytics = async (): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get("/api/analytics");
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+}
+
 export class AuthAPI extends BaseAPI {
   public signUp = async (data: SignUpData): Promise<AxiosResponse> => {
     try {
@@ -306,3 +318,4 @@ export const useUserApi = new UserAPI();
 export const useReportApi = new ReportAPI();
 export const useLocationApi = new LocationAPI();
 export const useFollowApi = new FollowAPI();
+export const useAnalyticsApi = new AnalyticsAPI();

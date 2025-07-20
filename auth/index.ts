@@ -4,7 +4,7 @@ import userSchema from '@/utils/schema/user-schema';
 import bcrypt from 'bcrypt';
 import { runDBOperation } from '@/lib/useDB';
 import NextAuth from "next-auth";
-
+import { v4 } from "uuid";
 export const authOptions = {
   providers: [
     Google({
@@ -76,7 +76,7 @@ export const authOptions = {
               username,
               agreeToTerms: true,
               profileImage: profile?.image,
-              password: "fallback_hashed_password_here",
+              password: v4(),
             });
             await userData.save();
           });

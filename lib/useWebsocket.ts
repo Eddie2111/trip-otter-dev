@@ -10,16 +10,9 @@ export const NODE_ENV = process.env["NODE_ENV"] as
   | "production"
   | "development"
   | "local";
-export const WS_BASE_URL = "http://localhost:5000" // process.env["NEXT_PUBLIC_WS_BASE_URL"];
-
-
-// export const setInLocalStorage = <T>(keyName: string, data: T) =>
-//   window.localStorage.setItem(keyName, JSON.stringify(data));
-
-// export const getFromLocalStorage = <T>(keyName: string): T | null => {
-//   const data = window.localStorage.getItem(keyName);
-//   return data ? (JSON.parse(data) as T) : null;
-// };
+export const WS_BASE_URL =
+  process.env["NEXT_PUBLIC_WS_BASE_URL"] ??
+  "https://1nhpw6xx-5000.asse.devtunnels.ms";
 
 
 export const useWebsocket = ({

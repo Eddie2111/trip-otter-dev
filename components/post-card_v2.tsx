@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Loading } from "./ui/loading";
-import { useCommentApi, useLikeApi } from "@/lib/requests";
+import { useCommentApi, useLikeApi, useUserApi } from "@/lib/requests";
 import { useSession } from "next-auth/react";
 
 import dayjs from "dayjs";
@@ -32,6 +32,11 @@ import GridMedia from "./grid-media";
 import { toast } from "sonner";
 import { ReportModal } from "./report-modal";
 import { User } from "./feed/postCardV2/user";
+import { useWebsocket } from "@/lib/useWebsocket";
+import { Socket } from "socket.io-client";
+
+const MAX_RETRIES = 5;
+const RETRY_DELAY_MS = 3000;
 
 export function PostContainer() {
   const [posts, setPosts] = useState<IPostProps[]>([]);
@@ -39,62 +44,128 @@ export function PostContainer() {
   const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
 
+  const [isConnected, setIsConnected] = useState(false);
+  const socket = useWebsocket({
+    path: "/notification",
+    shouldAuthenticate: true,
+    autoConnect: true,
+  });
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("connect", () => {
+        setIsConnected(true);
+      });
+      socket.on("disconnect", () => {
+        setIsConnected(false);
+      });
+
+      return () => {
+        socket.off("connect");
+        socket.off("disconnect");
+      };
+    }
+  }, [socket]);
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [postsPerPage] = useState<number>(10); // Default to 10 posts per page
+  const [postsPerPage] = useState<number>(10);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
+
+  // Retry mechanism states
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Ref for the element to observe for infinite scrolling
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  const getFeed = useCallback(async (page: number, limit: number) => {
-    if (page === 1) {
-      setLoading(true); // Show full loading spinner for the first page
-    } else {
-      setLoadingMore(true); // Show loading indicator for subsequent pages
-    }
-    try {
-      const response = await fetch(`/api/feed?page=${page}&limit=${limit}`);
+  const getFeed = useCallback(
+    async (page: number, limit: number, currentRetry: number = 0) => {
+      // Clear any existing retry timeout
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (page === 1 && currentRetry === 0) {
+        setLoading(true); // Show full loading spinner for the first page, initial attempt
+      } else if (page > 1) {
+        setLoadingMore(true); // Show loading indicator for subsequent pages
       }
-      const result = await response.json();
-      if (result.status === 200 && result.data) {
-        setPosts((prevPosts) => {
-          // Filter out duplicates in case of quick scrolling/re-renders
-          const newPosts = result.data.filter(
-            (newPost: IPostProps) =>
-              !prevPosts.some((prevPost) => prevPost._id === newPost._id)
-          );
-          return [...prevPosts, ...newPosts];
-        });
-        setHasMore(result.pagination.hasMore);
-      } else {
-        throw new Error(`API error: ${result.message || "Unknown error"}`);
-      }
-    } catch (err) {
-      setError(
-        `Failed to load posts: ${
+
+      setError(null); // Clear previous errors before a new attempt
+
+      try {
+        const response = await fetch(`/api/feed?page=${page}&limit=${limit}`);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const result = await response.json();
+        if (result.status === 200 && result.data) {
+          setPosts((prevPosts) => {
+            // Filter out duplicates in case of quick scrolling/re-renders
+            const newPosts = result.data.filter(
+              (newPost: IPostProps) =>
+                !prevPosts.some((prevPost) => prevPost._id === newPost._id)
+            );
+            return [...prevPosts, ...newPosts];
+          });
+          setHasMore(result.pagination.hasMore);
+          setRetryCount(0); // Reset retry count on successful fetch
+        } else {
+          throw new Error(`API error: ${result.message || "Unknown error"}`);
+        }
+      } catch (err) {
+        const errorMessage = `Failed to load posts: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
-      );
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, []);
+        }`;
+        setError(errorMessage);
+        console.error("Error fetching feed:", errorMessage);
+
+        // Implement retry logic only for initial load (page 1)
+        if (page === 1 && currentRetry < MAX_RETRIES) {
+          console.log(
+            `Retrying fetch in ${RETRY_DELAY_MS / 1000} seconds... (Attempt ${
+              currentRetry + 1
+            }/${MAX_RETRIES})`
+          );
+          setRetryCount(currentRetry + 1);
+          retryTimeoutRef.current = setTimeout(() => {
+            getFeed(page, limit, currentRetry + 1);
+          }, RETRY_DELAY_MS);
+        } else if (page === 1 && currentRetry >= MAX_RETRIES) {
+          console.log("Max retries reached. Stopping attempts.");
+          setLoading(false); // Stop loading after max retries
+        }
+      } finally {
+        if (page === 1 && currentRetry >= retryCount) {
+          // Only set loading to false if not retrying
+          setLoading(false);
+        }
+        setLoadingMore(false);
+      }
+    },
+    [retryCount] // Depend on retryCount to ensure useCallback updates
+  );
 
   // Initial load
   useEffect(() => {
     getFeed(1, postsPerPage);
+    // Cleanup timeout on component unmount
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
   }, [getFeed, postsPerPage]);
 
   // Infinite scroll logic using Intersection Observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
+        // Only load more if the target is intersecting, there's more data, and not already loading
         if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
           setCurrentPage((prevPage) => prevPage + 1);
         }
@@ -121,32 +192,38 @@ export function PostContainer() {
   }, [currentPage, getFeed, postsPerPage]);
 
   if (loading && posts.length === 0) {
-    // Show full loading spinner only if no posts are loaded yet
+    // Show full loading spinner only if no posts are loaded yet and it's the initial fetch or retrying
     return <Loading />;
   }
 
-  if (error) {
+  if (error && posts.length === 0 && retryCount >= MAX_RETRIES) {
+    // Show error message only if max retries reached and no posts were loaded
     return (
       <div className="flex justify-center items-center h-48 text-red-600">
         Error: {error}
+        <p className="ml-2">Please try refreshing the page.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-0 md:space-y-6 pb-20 md:pb-0">
-      {posts.length > 0 ? (
-        posts.map((postItem) => (
-          <PostCardV2 key={postItem._id} post={postItem} session={session} />
-        ))
-      ) : (
-        <div className="flex justify-center items-center h-48 text-gray-600">
-          No posts available.
-        </div>
-      )}
+      {posts.length > 0
+        ? posts.map((postItem) => (
+          <PostCardV2 key={postItem._id} post={postItem} session={session} socket={socket} isSocketConnected={ isConnected } />
+          ))
+        : // Only show "No posts available" if not loading and no error (or error but still trying)
+          !loading &&
+          !loadingMore &&
+          !error && (
+            <div className="flex justify-center items-center h-48 text-gray-600">
+              No posts available.
+            </div>
+          )}
       {hasMore && (
         <div ref={observerTarget} className="flex justify-center mt-6 p-4">
           {loadingMore && <Loading />}{" "}
+          {/* Show loading spinner for loading more posts */}
         </div>
       )}
       {!hasMore && posts.length > 0 && (
@@ -154,6 +231,12 @@ export function PostContainer() {
           You've reached the end of the feed. How about creating a post?
         </div>
       )}
+      {error &&
+        posts.length > 0 && ( // Show error if there's an error but some posts are already loaded
+          <div className="flex justify-center mt-6 text-red-600">
+            Error loading more posts: {error}
+          </div>
+        )}
     </div>
   );
 }
@@ -161,9 +244,21 @@ export function PostContainer() {
 export function PostCardV2({
   post,
   session,
+  socket,
+  isSocketConnected,
 }: {
   post: IPostProps;
-  session: any;
+  session: {
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      image?: string;
+      username: string;
+    };
+  };
+  socket: Socket<any, any>;
+  isSocketConnected: boolean;
 }) {
   const currentLoggedInUser = session?.user;
 
@@ -210,6 +305,25 @@ export function PostCardV2({
       [postId]: value,
     }));
   };
+
+  const createNotification = async (content: string, type:string, postUrl: string) => {
+    console.log("event emitted");
+    const getUser = await useUserApi.getUser(
+      session?.user?.id ?? ""
+    );
+    console.log(getUser, getUser?.data?.profile?._id);
+    if (socket) {
+      socket.emit("createNotification", {
+        createdBy: getUser?.data?.profile?._id,
+        receiver: post?.owner?._id,
+        content,
+        type,
+        postUrl,
+        isRead: false,
+      });
+    }
+  };
+  
   const [commenting, isCommenting] = useState<boolean>(false);
   const handleAddComment = async (postId: string) => {
     isCommenting(true);
@@ -233,23 +347,13 @@ export function PostCardV2({
             },
             createdAt: response.data.createdAt,
           };
-          // Directly update post.comments to reflect the new comment
-          // This assumes post.comments is mutable or you re-render the PostCardV2
-          // For a more robust solution, you might want to lift this state up
-          // or have a mechanism to update the parent's posts array.
-          // For now, we'll simulate by adding to a local copy if needed for immediate display.
-          // Since PostCardV2 receives 'post' as a prop, we need to update the comments directly on the post object
-          // or manage a separate state for comments within PostCardV2.
-          // Let's use a local state for comments for easier management within PostCardV2.
-          post.comments.push(newComment); // Directly modify the prop for simplicity, but ideally avoid
-          // If you want to re-render the comments section, you might need a local state for comments
-          // For now, let's assume the map will pick up the change.
+          post.comments.push(newComment);
           setCommentInputs((prev) => ({
             ...prev,
             [postId]: "",
           }));
-          // After adding a new comment, ensure all comments are shown
           setShowAllComments(true);
+          await createNotification("commented on your post", "COMMENT", `/post/${postId}`);
         } else {
           isCommenting(false);
           console.error(
@@ -279,6 +383,11 @@ export function PostCardV2({
       if (response.status === 200) {
         if (response.message === "Post liked successfully") {
           setLikesCount((prev) => prev + 1);
+          await createNotification(
+            "liked your post",
+            "LIKE",
+            `/post/${post._id}`
+          );
         } else if (response.message === "Post unliked successfully") {
           setIsLiked(false);
           setLikesCount((prev) => prev - 1);
@@ -335,11 +444,15 @@ export function PostCardV2({
             };
             // Force a re-render to reflect the change if not automatically happening
             // by updating a dummy state or by using a key change.
-            // For now, assuming direct modification will work with React's reconciliation.
             // A better way would be to create a new array and set it.
             // setDisplayedComments([...post.comments]); // If using local state for comments
           }
           toast.success("Comment updated successfully!");
+          await createNotification(
+            "updated comment on your post",
+            "COMMENT",
+            `/post/${post._id}`
+          );
         } else {
           toast.error(response.message || "Failed to update comment.");
         }

@@ -1,16 +1,12 @@
-"use client"
-import { useWebsocket } from "@/lib/useWebsocket";
+"use client";
+
+import { NotificationContainer } from "@/components/notification-container";
+
 export default function Test() {
-  const socket = useWebsocket({
-    path: "/chat", // This MUST match the path defined in your NestJS @WebSocketGateway decorator
-    shouldAuthenticate: true, // Set to true if your gateway expects authentication
-    autoConnect: true, // Automatically connect when the component mounts
-  });
-  console.log(socket);
+
   return (
-    <>
-      <div className="ml-[400px]">
-      </div>
-    </>
+    <div className="md:ml-[300px] mx-auto p-4 sm:p-6 lg:p-8 font-inter bg-gray-50 min-h-screen">
+      <NotificationContainer />
+    </div>
   );
 }

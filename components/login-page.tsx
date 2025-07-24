@@ -167,9 +167,9 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
                   )}
                 />
 
-                <Button variant="link" className="px-0 text-purple-600 hover:text-purple-700">
+                <Link href="/forgot-password" className="px-0 text-purple-600 hover:text-purple-700 text-sm hover:underline">
                   Forgot password?
-                </Button>
+                </Link>
               </div>
 
               <Button

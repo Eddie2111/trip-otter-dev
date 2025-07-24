@@ -15,7 +15,7 @@ export default async function Page({
     const { data: session } = await getServerSession(authOptions);
     if (postData) {
       return (
-        <div>
+        <div className="md:ml-[300px] mx-10">
           <h1>Post</h1>
           <PostCard key={postData._id} post={postData} session={session} />
         </div>

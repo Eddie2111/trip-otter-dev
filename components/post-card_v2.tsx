@@ -505,6 +505,9 @@ export function PostCardV2({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem>
+              <Link href={`/post/${post._id}/`} className="w-full">See post</Link>
+            </DropdownMenuItem>
             <DropdownMenuItem>Save</DropdownMenuItem>
             {/* Conditionally render ReportModal for post */}
             {isValidId(session?.user?.id) && isValidId(post.owner?._id) && (

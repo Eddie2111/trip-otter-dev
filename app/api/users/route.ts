@@ -1,24 +1,27 @@
+import { NextRequest } from "next/server";
 import { runDBOperation, runDBOperationWithTransaction } from "@/lib/useDB";
-import postsSchema from "@/utils/schema/posts-schema";
+
 import profileSchema from "@/utils/schema/profile-schema";
 import userSchema from "@/utils/schema/user-schema";
-import { NextRequest } from "next/server";
 import mongoose from "mongoose";
 
-// Ensure models are registered
-import "@/utils/schema/comments-schema";
-import "@/utils/schema/like-schema";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 
-interface UserData {
+import "@/utils/schema/comments-schema";
+import "@/utils/schema/like-schema";
+import "@/utils/schema/posts-schema";
+
+interface UserDataOptimized {
   _id: string;
   username?: string;
   fullName?: string;
   profileImage?: string;
   profile: {
-    posts: any[];
-    [key: string]: any;
+    postsCount: number;
+    commentsCount: number;
+    followersCount: number;
+    followingCount: number;
   };
   [key: string]: any;
 }
@@ -44,55 +47,48 @@ export async function GET(request: NextRequest): Promise<Response> {
     }
 
     const data = await runDBOperation(async () => {
-      // Parallel execution for better performance
       const [user, userProfile] = await Promise.all([
-        userSchema.findById(userId).select("-password").lean().exec() as any,
-        profileSchema.findOne({ user: userId }).lean().exec() as any,
+        userSchema
+          .findById(userId)
+          .select(
+            "username fullName profileImage coverImage _id bio location socials email active role createdAt updatedAt"
+          )
+          .lean()
+          .exec() as any,
+
+        profileSchema
+          .aggregate([
+            { $match: { user: new mongoose.Types.ObjectId(userId) } },
+            {
+              $project: {
+                _id: 0,
+                postsCount: { $size: "$posts" },
+                commentsCount: { $size: "$comments" },
+                followersCount: { $size: "$followers" },
+                followingCount: { $size: "$following" },
+                createdAt: 1,
+                updatedAt: 1,
+              },
+            },
+          ])
+          .exec(),
       ]);
 
       if (!user) {
         throw new Error("User not found");
       }
 
-      let posts: any[] = [];
+      const profileCounts = userProfile[0] || {};
 
-      // Only fetch posts if profile exists and has posts
-      if (userProfile?.posts?.length > 0) {
-        posts = await postsSchema
-          .find({ _id: { $in: userProfile.posts } })
-          .sort({ createdAt: -1 })
-          .populate([
-            {
-              path: "owner",
-              model: "User",
-              select: "_id username fullName profileImage bio location role",
-            },
-            {
-              path: "likes",
-              model: "User",
-              select: "_id username fullName profileImage",
-            },
-            {
-              path: "comments",
-              model: "Comment",
-              select: "_id content owner createdAt",
-              populate: {
-                path: "owner",
-                model: "User",
-                select: "_id username profileImage fullName",
-              },
-            },
-          ])
-          .lean()
-          .exec();
-      }
-
-      // Construct response data efficiently
-      const userData: UserData = {
+      const userData: UserDataOptimized = {
         ...user,
         profile: {
-          ...userProfile,
-          posts,
+          postsCount: profileCounts.postsCount || 0,
+          commentsCount: profileCounts.commentsCount || 0,
+          followersCount: profileCounts.followersCount || 0,
+          followingCount: profileCounts.followingCount || 0,
+          createdAt: profileCounts.createdAt,
+          updatedAt: profileCounts.updatedAt,
         },
       };
 
@@ -142,12 +138,12 @@ export async function PATCH(request: NextRequest) {
       { new: true, session }
     );
     return user;
-  })
+  });
   return Response.json({
     message: "Profile Updated!",
     status: 200,
     data,
-  })
+  });
 }
 
 export async function OPTIONS(request: Request) {

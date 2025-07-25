@@ -1,7 +1,15 @@
-import { PostCard } from "@/components/post-card";
 import GetPost from "./action";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
+import dynamic from "next/dynamic";
+import { Loading } from "@/components/ui/loading";
+
+const PostCard = dynamic(
+  () => import("@/components/post-card").then((mod) => mod.PostCard),
+  {
+    loading: () => <Loading />,
+  }
+);
 
 export default async function Page({
   params,
@@ -9,14 +17,12 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  // console.log(id);
   try {
     const postData = await GetPost(id);
     const { data: session } = await getServerSession(authOptions);
     if (postData) {
       return (
         <div className="md:ml-[300px] mx-10">
-          <h1>Post</h1>
           <PostCard key={postData._id} post={postData} session={session} />
         </div>
       );
@@ -27,7 +33,6 @@ export default async function Page({
         </div>
       );
     }
-    
   } catch (error) {
     // console.log(error);
   }

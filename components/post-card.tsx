@@ -33,32 +33,43 @@ import { PostDialog } from "./post-dialog";
 import { ReportModal } from "./report-modal";
 
 const MAX_RETRIES = 5;
-const RETRY_DELAY_MS = 3000;
+const RETRY_DELAY_MS = 5000;
+const POSTS_PER_PAGE = 10;
 
-export function PostContainer({ userId }: { userId: string }) {
+export function PostContainer({ profileId }: { profileId: string }) {
   const [posts, setPosts] = useState<IPostProps[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
 
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+
   const [retryCount, setRetryCount] = useState<number>(0);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const observerRef = useRef<HTMLDivElement | null>(null);
 
   const getFeed = useCallback(
-    async (currentRetry: number = 0) => {
+    async (currentPage: number, currentRetry: number = 0) => {
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
         retryTimeoutRef.current = null;
       }
 
-      if (currentRetry === 0) {
+      // Only show full loading spinner for initial load or if there are no posts yet
+      if (currentPage === 1 && posts.length === 0) {
+        setLoading(true);
+      } else if (hasMore) {
+        // For subsequent pages, show a smaller loading indicator (managed by IntersectionObserver)
         setLoading(true);
       }
 
       setError(null);
 
       try {
-        const response = await fetch(`/api/users?id=${userId}`);
+        const response = await fetch(
+          `/api/feed?id=${profileId}&page=${currentPage}&limit=${POSTS_PER_PAGE}`
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -66,8 +77,16 @@ export function PostContainer({ userId }: { userId: string }) {
         const result = await response.json();
 
         if (result.status === 200 && result.data) {
-          setPosts(result.data.profile.posts);
-          setRetryCount(0);
+          setPosts((prevPosts) => {
+            // Filter out duplicates to avoid issues if the same post is returned
+            const newPosts = result.data.filter(
+              (newItem: IPostProps) =>
+                !prevPosts.some((prevItem) => prevItem._id === newItem._id)
+            );
+            return [...prevPosts, ...newPosts];
+          });
+          setHasMore(result.pagination.hasMore);
+          setRetryCount(0); // Reset retry count on successful fetch
         } else {
           throw new Error(`API error: ${result.message || "Unknown error"}`);
         }
@@ -86,36 +105,75 @@ export function PostContainer({ userId }: { userId: string }) {
           );
           setRetryCount(currentRetry + 1);
           retryTimeoutRef.current = setTimeout(() => {
-            getFeed(currentRetry + 1);
+            getFeed(currentPage, currentRetry + 1);
           }, RETRY_DELAY_MS);
         } else {
           console.log("Max retries reached. Stopping attempts.");
-          setLoading(false);
+          setLoading(false); // Stop loading if max retries reached
         }
       } finally {
+        // Ensure loading is set to false once the fetch attempt (including retries) is complete
         if (currentRetry >= MAX_RETRIES || !retryTimeoutRef.current) {
           setLoading(false);
         }
       }
     },
-    [userId]
+    // IMPORTANT FIX: Removed `posts.length` and `hasMore` from dependencies.
+    // `getFeed` only needs to be re-created if `profileId` changes.
+    // `setPosts` uses a functional update to get the latest `prevPosts`.
+    // `hasMore` is read as a state variable inside the IntersectionObserver.
+    [profileId]
   );
 
+  // Initial fetch for the first page
   useEffect(() => {
-    getFeed();
+    getFeed(1);
     return () => {
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
       }
     };
-  }, [getFeed]);
+  }, [getFeed]); // Depend on getFeed to re-run if profileId changes
 
+  // Effect for infinite scrolling using IntersectionObserver
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // If the observer target is intersecting, there's more data,
+        // and not currently loading or in an error state, increment page.
+        if (entries[0].isIntersecting && hasMore && !loading && !error) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      },
+      { threshold: 0.5 } // Trigger when 50% of the target is visible
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [loading, hasMore, error]); // Dependencies ensure observer reacts to these states
+
+  // Effect to fetch new data when page number changes
+  useEffect(() => {
+    if (page > 1) {
+      // Only fetch if page is greater than 1 (initial fetch is handled by the first useEffect)
+      getFeed(page);
+    }
+  }, [page, getFeed]); // Depend on page and a stable getFeed
+
+  // Show full-page loading spinner only if no posts have been loaded yet
   if (loading && posts.length === 0) {
     return <Loading />;
   }
 
+  // Show error message if initial load failed after max retries
   if (error && posts.length === 0 && retryCount >= MAX_RETRIES) {
-    // Show error message only if max retries reached and no posts were loaded
     return (
       <div className="flex justify-center items-center h-48 text-red-600">
         Error: {error}
@@ -130,19 +188,32 @@ export function PostContainer({ userId }: { userId: string }) {
         ? posts.map((postItem) => (
             <PostCard key={postItem._id} post={postItem} session={session} />
           ))
-        :
+        : // Show "No posts available" only if not loading and no error, and no posts exist
           !loading &&
           !error && (
             <div className="flex justify-center items-center h-48 text-gray-600">
               No posts available.
             </div>
           )}
-      {error &&
-        posts.length > 0 && (
-          <div className="flex justify-center mt-6 text-red-600">
-            Error loading posts: {error}
-          </div>
-        )}
+
+      {hasMore && (
+        <div ref={observerRef} className="flex justify-center py-4">
+          {/* Show loading spinner at the bottom when fetching more posts */}
+          {loading && <Loading />}
+        </div>
+      )}
+
+      {!hasMore && posts.length > 0 && !loading && (
+        <div className="flex justify-center py-4 text-gray-500">
+          You've reached the end of the posts.
+        </div>
+      )}
+
+      {error && posts.length > 0 && (
+        <div className="flex justify-center mt-6 text-red-600">
+          Error loading more posts: {error}
+        </div>
+      )}
     </div>
   );
 }
@@ -202,7 +273,6 @@ export function PostCard({
           postId,
           newCommentText
         );
-        // console.log("Comment API response:", response);
 
         if (response.status === 200 && response.data) {
           const newComment = {
@@ -256,10 +326,8 @@ export function PostCard({
 
     try {
       const response: any = await useLikeApi.likePost(post._id);
-      // console.log("Like API response:", response);
 
       if (response.status === 200) {
-        // API confirms the action, no further change needed if optimistic update was correct
       } else {
         setIsLiked(previousIsLiked);
         setLikesCount(previousLikesCount);
@@ -338,11 +406,9 @@ export function PostCard({
   };
 
   const handleDeleteComment = async (commentId: string, index: number) => {
-    // Call the API to delete the comment
     try {
       const response = await useCommentApi.deleteComment(commentId);
       if (response.status === 200) {
-        // Update local state only if API call is successful
         setDisplayedComments((prev) => {
           const updatedComments = [...(prev || [])];
           updatedComments.splice(index, 1);
@@ -365,19 +431,23 @@ export function PostCard({
     >
       <div className="flex items-center justify-between p-3 md:p-4">
         <div className="flex items-center gap-3">
-          <Avatar className="w-8 h-8 md:w-10 md:h-10">
-            <AvatarImage
-              src={post?.owner?.profileImage || "/placeholder.svg"}
-              alt={post?.owner?.username}
-            />
-            <AvatarFallback>
-              {post?.owner?.username?.[0]?.toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
+          <Link href={`/profile/${post?.owner?._id}`}>
+            <Avatar className="w-8 h-8 md:w-10 md:h-10">
+              <AvatarImage
+                src={post?.owner?.profileImage || "/placeholder.svg"}
+                alt={post?.owner?.username}
+              />
+              <AvatarFallback>
+                {post?.owner?.username?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
           <div>
-            <span className="font-semibold text-sm md:text-base">
-              @{post?.owner?.username}
-            </span>
+            <Link href={`/profile/${post?.owner?._id}`}>
+              <span className="font-semibold text-sm md:text-base">
+                @{post?.owner?.username}
+              </span>
+            </Link>
             <div className="text-xs text-gray-500">
               {dayjs(post.createdAt).fromNow()}
               {post?.location && ` • ${post?.location}`}

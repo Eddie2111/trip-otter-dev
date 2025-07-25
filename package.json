@@ -46,6 +46,7 @@
     "@sanity/types": "latest",
     "@sanity/ui": "latest",
     "@sanity/vision": "latest",
+    "@tanstack/react-query": "^5.83.0",
     "autoprefixer": "^10.4.20",
     "axios": "latest",
     "bcrypt": "^6.0.0",
@@ -88,6 +89,7 @@
     "zod": "latest"
   },
   "devDependencies": {
+    "@tanstack/eslint-plugin-query": "^5.81.2",
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22",

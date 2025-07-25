@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/path/to/your/tripotter/logo.webp",
+        url: "/logo.webp",
         width: 600,
         height: 600,
         alt: "Tripotter Logo",

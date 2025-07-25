@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type ModalType = "LOCATION" | "SOCIALS" | "BIO" | "FULLFORM";
 
@@ -59,7 +60,7 @@ import {
   fullNameSchema,
   usernameSchema,
   emailSchema,
-  fullFormSchema
+  fullFormSchema,
 } from "./profile-edit-validation";
 
 import type {
@@ -69,8 +70,7 @@ import type {
   FullNameFormData,
   UsernameFormData,
   EmailFormData,
-  PasswordFormData,
-  FullFormData
+  FullFormData,
 } from "./profile-edit-validation";
 import { useRouter } from "next/navigation";
 
@@ -84,6 +84,8 @@ export function ProfileEditModal({
   defaultData?: any;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient(); // Initialize query client
+
   const [bioData, setBioData] = useState<BioFormData>({
     bio: defaultData?.bio || "",
   });
@@ -144,7 +146,9 @@ export function ProfileEditModal({
       debounceTimeoutRef.current = setTimeout(async () => {
         try {
           // Assuming useLocationApi.getLocations expects a string query
-          const response = await useLocationApi.getLocations(locationData.location ?? "");
+          const response = await useLocationApi.getLocations(
+            locationData.location ?? ""
+          );
           if (response && response.data) {
             const suggestions = response.data.map((item: any) => item.Location);
             setLocationSuggestions(suggestions);
@@ -170,7 +174,6 @@ export function ProfileEditModal({
       }
     };
   }, [locationData.location]);
-
 
   const getModalConfig = () => {
     switch (type) {
@@ -236,6 +239,31 @@ export function ProfileEditModal({
     setSocialsData({ socials: newSocials });
   };
 
+  // TanStack Query Mutation for profile updates
+  const profileUpdateMutation = useMutation({
+    mutationFn: async (payload: Partial<FullFormData>) => {
+      const response = await useUserApi.updateUser(payload);
+      if (response.status !== 200) {
+        throw new Error(response.message || "Failed to update profile.");
+      }
+      return response.data;
+    },
+    onSuccess: (data) => {
+      toast.success("Profile updated successfully!");
+      // Invalidate the 'user' query for the specific user ID to refetch latest data
+      queryClient.invalidateQueries({ queryKey: ["user", defaultData?._id] });
+      setIsModalOpen(false); // Close the modal on successful submission
+    },
+    onError: (error) => {
+      console.error("Error updating profile:", error);
+      toast.error(error.message || "An error occurred while updating profile.");
+    },
+    onSettled: () => {
+      // Optional: Invalidate again on settled to ensure consistency, though onSuccess already does it
+      queryClient.invalidateQueries({ queryKey: ["user", defaultData?._id] });
+    },
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -248,14 +276,10 @@ export function ProfileEditModal({
         case "BIO":
           validatedData = bioSchema.parse(bioData);
           payload = { bio: validatedData.bio };
-          await useUserApi.updateUser(payload);
-          toast.success("Bio updated successfully!");
           break;
         case "LOCATION":
           validatedData = locationSchema.parse(locationData);
           payload = { location: validatedData.location };
-          await useUserApi.updateUser(payload);
-          toast.success("Location updated successfully!");
           break;
         case "SOCIALS":
           const filteredSocials = socialsData.socials.filter(
@@ -264,8 +288,6 @@ export function ProfileEditModal({
           );
           validatedData = socialsSchema.parse({ socials: filteredSocials });
           payload = { socials: validatedData.socials };
-          await useUserApi.updateUser(payload);
-          toast.success("Socials updated successfully!");
           break;
         case "FULLFORM":
           const fullFormData: FullFormData = {
@@ -281,12 +303,12 @@ export function ProfileEditModal({
           };
           validatedData = fullFormSchema.parse(fullFormData);
           payload = validatedData;
-          await useUserApi.updateUser(payload);
-          toast.success("Profile updated successfully!");
           break;
+        default:
+          return; // Should not happen
       }
-      setIsModalOpen(false); // Close the modal on successful submission
-      router.refresh();
+      // Trigger the mutation
+      profileUpdateMutation.mutate(payload);
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
@@ -332,7 +354,10 @@ export function ProfileEditModal({
         <MapPin className="h-4 w-4" />
         Location
       </Label>
-      <Popover open={openLocationCombobox} onOpenChange={setOpenLocationCombobox}>
+      <Popover
+        open={openLocationCombobox}
+        onOpenChange={setOpenLocationCombobox}
+      >
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -578,11 +603,23 @@ export function ProfileEditModal({
           <div className="grid gap-4 py-4">{renderFormContent()}</div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={profileUpdateMutation.isPending}
+              >
                 Cancel
               </Button>
             </DialogClose>
-            <Button type="submit">Save changes</Button>
+            <Button type="submit" disabled={profileUpdateMutation.isPending}>
+              {profileUpdateMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                "Save changes"
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

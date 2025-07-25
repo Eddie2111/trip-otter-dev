@@ -88,7 +88,9 @@ export function PostCardV2({
       [postId]: value,
     }));
   };
+
   const [commenting, isCommenting] = useState<boolean>(false);
+
   const handleAddComment = async (postId: string) => {
     isCommenting(true);
     const newCommentText = commentInputs[postId]?.trim();

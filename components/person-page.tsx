@@ -73,7 +73,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
     },
     // Query is enabled only when personId is available AND session is loaded (not 'loading')
     enabled: !!personId && sessionStatus !== "loading",
-    staleTime: 1000 * 60 * 5, // Data considered stale after 5 minutes
+    staleTime: 1000 * 60 * 15, // Data considered stale after 5 minutes
   });
 
   // Derive states from personProfile (TanStack Query data)
@@ -81,6 +81,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   const posts = _personData?.profile?.posts || [];
   const followersCount = _personData?.profile?.followersCount || 0;
   const followingCount = _personData?.profile?.followingCount || 0;
+  const postsCount = _personData?.profile?.postsCount || 0;
 
   // Determine if the current user is following this profile
   const isFollowingInitial =
@@ -214,6 +215,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
               ...old.profile,
               followersCount: context.previousFollowersCount,
               followers: revertedFollowers,
+              postsCount: old.profile.postsCount,
             },
           };
         });
@@ -406,7 +408,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                       </span>
                     </FollowModal>
                     <span>
-                      <strong>{posts?.length}</strong> posts
+                      <strong>{postsCount}</strong> posts
                     </span>
                   </div>
                 </div>

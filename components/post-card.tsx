@@ -34,7 +34,7 @@ import { ReportModal } from "./report-modal";
 
 const MAX_RETRIES = 5;
 const RETRY_DELAY_MS = 5000;
-const POSTS_PER_PAGE = 10;
+const POSTS_PER_PAGE = 6;
 
 export function PostContainer({ profileId }: { profileId: string }) {
   const [posts, setPosts] = useState<IPostProps[]>([]);

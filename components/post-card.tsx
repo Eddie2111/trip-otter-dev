@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,65 +32,117 @@ import { toast } from "sonner";
 import { PostDialog } from "./post-dialog";
 import { ReportModal } from "./report-modal";
 
+const MAX_RETRIES = 5;
+const RETRY_DELAY_MS = 3000;
+
 export function PostContainer({ userId }: { userId: string }) {
   const [posts, setPosts] = useState<IPostProps[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
 
-  useEffect(() => {
-    async function getFeed() {
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const getFeed = useCallback(
+    async (currentRetry: number = 0) => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+
+      if (currentRetry === 0) {
+        setLoading(true);
+      }
+
+      setError(null);
+
       try {
         const response = await fetch(`/api/users?id=${userId}`);
-        if (!response.ok)
+        if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
         const result = await response.json();
 
         if (result.status === 200 && result.data) {
           setPosts(result.data.profile.posts);
-          // console.log("Fetched data:", result.data);
+          setRetryCount(0);
         } else {
           throw new Error(`API error: ${result.message || "Unknown error"}`);
         }
       } catch (err) {
-        console.error("Error fetching feed:", err);
-        setError(
-          `Failed to load posts: ${
-            err instanceof Error ? err.message : "Unknown error"
-          }`
-        );
+        const errorMessage = `Failed to load posts: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`;
+        setError(errorMessage);
+        console.error("Error fetching feed:", errorMessage);
+
+        if (currentRetry < MAX_RETRIES) {
+          console.log(
+            `Retrying fetch in ${RETRY_DELAY_MS / 1000} seconds... (Attempt ${
+              currentRetry + 1
+            }/${MAX_RETRIES})`
+          );
+          setRetryCount(currentRetry + 1);
+          retryTimeoutRef.current = setTimeout(() => {
+            getFeed(currentRetry + 1);
+          }, RETRY_DELAY_MS);
+        } else {
+          console.log("Max retries reached. Stopping attempts.");
+          setLoading(false);
+        }
       } finally {
-        setLoading(false);
+        if (currentRetry >= MAX_RETRIES || !retryTimeoutRef.current) {
+          setLoading(false);
+        }
       }
-    }
+    },
+    [userId]
+  );
 
+  useEffect(() => {
     getFeed();
-  }, [session]);
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, [getFeed]);
 
-  if (loading) {
+  if (loading && posts.length === 0) {
     return <Loading />;
   }
 
-  if (error) {
+  if (error && posts.length === 0 && retryCount >= MAX_RETRIES) {
+    // Show error message only if max retries reached and no posts were loaded
     return (
       <div className="flex justify-center items-center h-48 text-red-600">
         Error: {error}
+        <p className="ml-2">Please try refreshing the page.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-0 md:space-y-6 pb-20 md:pb-0">
-      {posts.length > 0 ? (
-        posts.map((postItem) => (
-          <PostCard key={postItem._id} post={postItem} session={session} />
-        ))
-      ) : (
-        <div className="flex justify-center items-center h-48 text-gray-600">
-          No posts available.
-        </div>
-      )}
+      {posts.length > 0
+        ? posts.map((postItem) => (
+            <PostCard key={postItem._id} post={postItem} session={session} />
+          ))
+        :
+          !loading &&
+          !error && (
+            <div className="flex justify-center items-center h-48 text-gray-600">
+              No posts available.
+            </div>
+          )}
+      {error &&
+        posts.length > 0 && (
+          <div className="flex justify-center mt-6 text-red-600">
+            Error loading posts: {error}
+          </div>
+        )}
     </div>
   );
 }

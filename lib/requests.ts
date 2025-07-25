@@ -309,6 +309,43 @@ class ReportAPI extends BaseAPI{
   }
 }
 
+class ResetPasswordAPI extends BaseAPI {
+  public async createEmail(payload: { email: string; reason: 'PASSWORD_RESET' }) {
+    try {
+      const link =
+        process.env.PULSE_BASE_URL ?? process.env.NEXT_PUBLIC_PULSE_BASE_URL;
+      const response = await this.apiClient.post(`${link}api/email`, payload);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public async verifyRequest(token: string) {
+    try {
+      // const link = "http://localhost:10000/api/verification";
+      // process.env.PULSE_BASE_URL ?? process.env.NEXT_PUBLIC_PULSE_BASE_URL;
+      console.log(`"http://localhost:10000/api/verification/"${token}`);
+      const response = await this.apiClient.post(
+        `http://localhost:10000/api/verification/${token}`
+      );
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public async changePassword(email: string, password: string) {
+    try {
+      const response = await this.apiClient.patch('/api/auth/signup', { email, password });
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+}
+
 export const useAuthApi = new AuthAPI();
 export const usePostApi = new PostAPI();
 export const useMediaApi = new MediaAPI();
@@ -319,3 +356,4 @@ export const useReportApi = new ReportAPI();
 export const useLocationApi = new LocationAPI();
 export const useFollowApi = new FollowAPI();
 export const useAnalyticsApi = new AnalyticsAPI();
+export const useResetPasswordAPI = new ResetPasswordAPI();

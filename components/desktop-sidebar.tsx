@@ -22,7 +22,13 @@ export function DesktopSidebar() {
   };
 
   // Condition to not render if the pathname is /login OR /signup
-  if (pathname === "/login" || pathname === "/signup") {
+  if (
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/forgot-password" ||
+    pathname.includes("verify") ||
+    pathname.includes("api")
+  ) {
     return null; // Do not render the sidebar on login or signup pages
   }
 

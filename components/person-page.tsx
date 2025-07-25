@@ -63,11 +63,12 @@ interface IPost {
 
 import { personData } from "@/data/mocks/person.mock"; // Keep mock data if still used elsewhere
 import { CreatePost } from "./create-post";
-import { useCommentApi, useLikeApi, useFollowApi } from "@/lib/requests";
+import { useCommentApi, useLikeApi, useFollowApi, useUserApi } from "@/lib/requests";
 import { PostContainer } from "./post-card";
 import { ProfileEditModal } from "./profile-page/profile-edit-modal";
 import { ProfileEditImages } from "./profile-page/profile-edit-images";
 import { FollowModal } from "./follow-modal";
+import { useWebsocket } from "@/lib/useWebsocket";
 
 export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   const { data: session } = useSession(); // Get logged-in user session
@@ -110,7 +111,44 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
       console.warn("Cannot submit comment: No posts available.");
     }
   };
+    const [isConnected, setIsConnected] = useState(false);
+    const socket = useWebsocket({
+      path: "/notification",
+      shouldAuthenticate: true,
+      autoConnect: true,
+    });
+  
+    useEffect(() => {
+      if (socket) {
+        socket.on("connect", () => {
+          setIsConnected(true);
+        });
+        socket.on("disconnect", () => {
+          setIsConnected(false);
+        });
+  
+        return () => {
+          socket.off("connect");
+          socket.off("disconnect");
+        };
+      }
+    }, [socket]);
 
+  const createNotification = async () => { 
+    console.log("event emitted");
+    const getUser = await useUserApi.getUser(session?.user?.id ?? "");
+    console.log(getUser, getUser?.data?.profile?._id);
+    if (socket) {
+      socket.emit("createNotification", {
+        createdBy: getUser?.data?.profile?._id,
+        receiver: _personData?._id ?? "",
+        content: "followed you",
+        type: "FOLLOW",
+        postUrl: `/person/${getUser?.data?.profile?._id ?? ""}`,
+        isRead: false,
+      });
+    }
+  }
   const handleLike = async (postId: string) => {
     // Optimistic update
     setLikedPosts((prev) => ({
@@ -144,6 +182,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
 
     try {
       const response = await useFollowApi.toggleFollow(_personData._id);
+      await createNotification();
       // Update state based on actual response from API
       setIsFollowing(response.data.isFollowing);
       setFollowersCount(response.data.followersCount);

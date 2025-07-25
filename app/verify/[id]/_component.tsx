@@ -1,0 +1,200 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Lock, Camera } from "lucide-react";
+import { toast } from "sonner";
+import Link from "next/link";
+import { useRouter } from "next/navigation"; // Import useRouter
+import axios from "axios";
+import { Loading } from "@/components/ui/loading";
+import { useResetPasswordAPI } from "@/lib/requests";
+
+// Define Zod schema for password reset input
+const resetPasswordSchema = z
+  .object({
+    newPassword: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters" }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+
+interface ResetPasswordPageProps {
+  id: string; // The ID from the URL params
+}
+
+export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    async function fetchData(id: string) {
+      const response = await axios.get(`/api/auth/verification?id=${id}`);
+      setUserData(response.data.data);
+      if (response.data.status === 400) {
+        router.push("/login");
+        toast.error("Please try again with a new valid token to reset password");
+      }
+    }
+    fetchData(id);
+  }, []);
+
+  const resetPasswordForm = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  const handleResetPasswordSubmit = async (data: ResetPasswordFormValues) => {
+    setIsLoading(true);
+
+    try {
+      const response = await useResetPasswordAPI.changePassword(userData?.email, data.newPassword);
+      console.log(response);
+
+      toast.success("Password has been reset successfully!");
+      router.push("/login"); // Redirect to login page after successful reset
+    } catch (error) {
+      console.error("Password reset error:", error);
+      toast.error(
+        "Unable to reset password. Please try again or request a new link."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 p-4">
+      <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl">
+        <CardHeader className="text-center space-y-4">
+          <div className="flex items-center justify-center gap-3">
+            <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full">
+              <Camera className="w-8 h-8 text-white" />
+            </div>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Tripotter
+            </CardTitle>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {userData ? (
+            <Card>
+              <CardContent>
+                <div className="flex flex-row mt-5 p-auto justify-center items-center">
+                  <img
+                    src={userData?.image ?? "/placeholder.jpg"}
+                    height="50"
+                    width="50"
+                    className="rounded-full"
+                  />
+                  <div className="flex flex-col justify-center ml-4">
+                    <h1 className="text-md font-bold">{ userData?.fullName ?? "" }</h1>
+                    <p className="text-gray-500 text-sm">{ userData?.location ?? "" }</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+              <Loading />
+          )
+        }
+          <Form {...resetPasswordForm}>
+            <form
+              onSubmit={resetPasswordForm.handleSubmit(
+                handleResetPasswordSubmit
+              )}
+              className="space-y-4"
+            >
+              <FormField
+                control={resetPasswordForm.control}
+                name="newPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700 font-medium">
+                      New Password
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Input
+                          {...field}
+                          type="password"
+                          placeholder="Enter your new password"
+                          className="pl-10 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={resetPasswordForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700 font-medium">
+                      Confirm New Password
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Input
+                          {...field}
+                          type="password"
+                          placeholder="Confirm your new password"
+                          className="pl-10 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button
+                type="submit"
+                className="w-full h-12 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                disabled={isLoading}
+              >
+                {isLoading ? "Setting New Password..." : "Set New Password"}
+              </Button>
+            </form>
+          </Form>
+
+          <div className="text-center">
+            <Link
+              href="/login"
+              className="text-purple-600 hover:text-purple-700 font-semibold"
+            >
+              Back to Login
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

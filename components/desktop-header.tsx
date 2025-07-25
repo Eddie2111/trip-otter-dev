@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { Dispatch, SetStateAction } from "react";
+import { NotificationContainer } from "./notification-container";
 
 interface IDesktopHeader {
   setShowSearchModal: (showSearchModal: boolean) => void;
@@ -62,7 +63,7 @@ export function DesktopHeader({
             </Link>
             {/* Assuming Heart icon might also lead to a page, e.g., /likes or /notifications */}
             {/* If it's just an icon without navigation, it can remain as is or be wrapped in a Link if needed */}
-            <Heart className="w-6 h-6 cursor-pointer" />
+            <NotificationContainer/>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar className="w-8 h-8 cursor-pointer">

@@ -8,12 +8,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { X, Upload, ImageIcon, MapPin, Type } from "lucide-react";
 import Image from "next/image";
+import * as nsfwjs from 'nsfwjs';
 
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -36,6 +37,13 @@ import { DialogTitle } from "@radix-ui/react-dialog";
 import { usePostApi } from "@/lib/requests";
 import { getSanityMedia } from "@/lib/getSanityImage";
 
+// Load the NSFWJS model once
+let nsfwModel: nsfwjs.NSFWJS | null = null;
+const loadNsfwModel = async () => {
+  if (!nsfwModel) {
+    nsfwModel = await nsfwjs.load();
+  }
+};
 
 export function CreatePost({ children, profileId }: { children: React.ReactNode, profileId: string }) {
   const searchParams = useSearchParams();
@@ -89,6 +97,10 @@ export function CreatePostForm({
   const [files, setFiles] = useState<File[]>([]);
   const { data: session } = useSession();
 
+  useEffect(() => {
+    loadNsfwModel();
+  }, []);
+
   const form = useForm<PostCreateInput>({
     resolver: zodResolver(postCreateSchema),
     defaultValues: {
@@ -103,7 +115,45 @@ export function CreatePostForm({
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      const newFiles = acceptedFiles.slice(0, 10 - files.length);
+      const filteredFiles: File[] = [];
+      const imagePromises = acceptedFiles.map(async (file) => {
+        // Only check images
+        if (!file.type.startsWith('image/')) {
+          filteredFiles.push(file);
+          return;
+        }
+
+        const img = document.createElement('img');
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+
+        return new Promise<void>((resolve) => {
+          reader.onload = async (e) => {
+            img.src = e.target?.result as string;
+            img.onload = async () => {
+              if (nsfwModel) {
+                const predictions = await nsfwModel.classify(img);
+                // Check if any of 'Porn', 'Sexy', or 'Hentai' classes have a probability above 50%
+                const isExplicit = predictions.some(p =>
+                  (p.className === 'Porn' || p.className === 'Sexy' || p.className === 'Hentai') && p.probability > 0.5
+                );
+
+                if (isExplicit) {
+                  toast.error("Explicit image detected, please keep the platform safe for everyone.");
+                  URL.revokeObjectURL(img.src); // Clean up the object URL
+                } else {
+                  filteredFiles.push(file);
+                }
+              }
+              resolve();
+            };
+          };
+        });
+      });
+
+      await Promise.all(imagePromises);
+
+      const newFiles = filteredFiles.slice(0, 10 - files.length);
       setFiles((prev) => [...prev, ...newFiles]);
     },
     [files.length]
@@ -121,8 +171,9 @@ export function CreatePostForm({
 
   const handleSubmit = async (data: PostCreateInput) => {
     submitState(true);
-    if (files.length === 0 && !caption?.trim()) {
+    if (files.length === 0 && !data.caption?.trim()) {
       toast.error("Please add a caption or at least one image");
+      submitState(false);
       return;
     }
     try {
@@ -156,11 +207,12 @@ export function CreatePostForm({
       });
 
       setFiles([]);
-      toast.success("Post created successfully!");
+      form.reset();
     } catch (error) {
       console.error("Error submitting post:", error);
       toast.error("Failed to create post. Please try again.");
     } finally {
+      submitState(false);
     }
   };
   const caption = form.watch("caption");

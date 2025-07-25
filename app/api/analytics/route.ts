@@ -118,11 +118,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const payload = await request.json();
+  console.log(payload);
   return Response.json({
     message: "Posted analytics",
     status: 200,
-    method: request.method,
   });
 }
 

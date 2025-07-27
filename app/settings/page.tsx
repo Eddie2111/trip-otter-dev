@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function Settings() {
   return (
@@ -25,15 +25,21 @@ export default function Settings() {
           <CardContent className="space-y-6">
             <div className="p-4 border rounded-lg">
               <h3 className="font-semibold mb-2">Account Settings</h3>
-              <p className="text-gray-600">Manage your account preferences and privacy settings.</p>
+              <p className="text-gray-600">
+                Manage your account preferences and privacy settings.
+              </p>
             </div>
             <div className="p-4 border rounded-lg">
               <h3 className="font-semibold mb-2">Notifications</h3>
-              <p className="text-gray-600">Control how you receive notifications.</p>
+              <p className="text-gray-600">
+                Control how you receive notifications.
+              </p>
             </div>
             <div className="p-4 border rounded-lg">
               <h3 className="font-semibold mb-2">Privacy</h3>
-              <p className="text-gray-600">Manage your privacy and data settings.</p>
+              <p className="text-gray-600">
+                Manage your privacy and data settings.
+              </p>
             </div>
             <div className="p-4 border rounded-lg">
               <h3 className="font-semibold mb-2">Theme</h3>
@@ -41,7 +47,32 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="text-2xl">Others</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+
+            <Link href="/settings/analytics">
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Analytics</h3>
+                <p className="text-gray-600">Check the platforms analytics</p>
+              </div>
+            </Link>
+
+            <Link href="/settings/reviews">
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Reviews and Issues</h3>
+                <p className="text-gray-600">
+                  Check what users are saying and updates of the created issues.
+                </p>
+              </div>
+            </Link>
+
+          </CardContent>
+        </Card>
       </div>
     </div>
-  )
+  );
 }

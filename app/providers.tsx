@@ -6,23 +6,7 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
-
-/*
-utilization 
-  const queryClient = useQueryClient()
-
-  // Queries
-  const query = useQuery({ queryKey: ['todos'], queryFn: getTodos })
-
-  // Mutations
-  const mutation = useMutation({
-    mutationFn: postTodo,
-    onSuccess: () => {
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['todos'] })
-    },
-  })
-*/
+import { FeedbackFormContainer } from "@/components/feedback-container";
 
 export default function Providers({
   children,
@@ -42,6 +26,7 @@ export default function Providers({
           options={{ easing: "ease", speed: 500, showSpinner: true }}
         />
         {children}
+        <FeedbackFormContainer />
       </QueryClientProvider>
     </SessionProvider>
   );

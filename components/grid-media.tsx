@@ -1,11 +1,10 @@
 "use client";
-import { useState } from "react"; // No need for useEffect for Modal.setAppElement anymore
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogTrigger, // Not directly used for programmatic open, but good to import
   DialogClose,
-} from "@/components/ui/dialog"; // Import Dialog components
+} from "@/components/ui/dialog";
 import {
   Carousel,
   CarouselContent,
@@ -15,11 +14,10 @@ import {
 } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { Button } from "@/components/ui/button"; // Ensure Button is imported
+import { Button } from "@/components/ui/button";
 
-export default function GridMedia({ media }: { media: string[] }) {
+export default function GridMedia({ media, className }: { media: string[], className?: string }) {
   let mediaLinks: string[] = [];
-  // Filter out null or invalid media links
   media.forEach((item) => {
     if (typeof item === "string" && item.includes("https://")) {
       mediaLinks.push(item);
@@ -30,33 +28,28 @@ export default function GridMedia({ media }: { media: string[] }) {
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 
   if (mediaLinks.length === 0) {
-    return <div>&nbsp;</div>; // Return empty div if no valid media
+    return <div>&nbsp;</div>;
   }
 
-  // Helper function to open the modal
   const openModal = (index: number) => {
     setSelectedMediaIndex(index);
     setModalIsOpen(true);
   };
 
-  // Helper function to close the modal
   const closeModal = () => {
     setModalIsOpen(false);
   };
 
-  // Helper function to navigate to the next media item in the modal
   const goToNext = () => {
     setSelectedMediaIndex((prevIndex) => (prevIndex + 1) % mediaLinks.length);
   };
 
-  // Helper function to navigate to the previous media item in the modal
   const goToPrevious = () => {
     setSelectedMediaIndex(
       (prevIndex) => (prevIndex - 1 + mediaLinks.length) % mediaLinks.length
     );
   };
 
-  // Helper function to render image or video
   const renderMediaItem = (
     item: string,
     index: number,
@@ -88,13 +81,10 @@ export default function GridMedia({ media }: { media: string[] }) {
   };
 
   return (
-    <>
+    <div className={ className ? className : ""}>
       {mediaLinks.length === 1 ? (
-        // If only one media item, show it full width
         <div className="w-full">{renderMediaItem(mediaLinks[0], 0)}</div>
       ) : mediaLinks.length >= 5 ? (
-        // If 5 or more media items, show in a carousel
-        // Added 'relative' to the Carousel component to contain the absolute positioned arrows
         <Carousel className="w-full mt-4 relative">
           <CarouselContent className="-ml-1">
             {mediaLinks.map((item, index) => (
@@ -116,13 +106,10 @@ export default function GridMedia({ media }: { media: string[] }) {
               </CarouselItem>
             ))}
           </CarouselContent>
-          {/* Adjusted positioning for CarouselPrevious to be inside */}
           <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 z-10" />
-          {/* Adjusted positioning for CarouselNext to be inside */}
           <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 z-10" />
         </Carousel>
       ) : (
-        // For 2, 3, or 4 media items, use the existing grid layout
         <div className="grid grid-cols-2 gap-4 mt-4">
           {mediaLinks.map((item, index) => (
             <div key={index} className="relative aspect-square">
@@ -132,12 +119,9 @@ export default function GridMedia({ media }: { media: string[] }) {
         </div>
       )}
 
-      {/* Lightbox Dialog */}
       <Dialog open={modalIsOpen} onOpenChange={setModalIsOpen}>
-        {/* DialogTrigger is not used here as we open the dialog programmatically */}
         <DialogContent className="sm:max-w-[calc(100vw-40px)] md:max-w-[calc(100vw-80px)] lg:max-w-[calc(100vw-120px)] xl:max-w-[calc(100vw-160px)] max-h-[90vh] p-0 border-none bg-transparent flex items-center justify-center">
           <div className="relative w-full h-full flex items-center justify-center">
-            {/* Close Button */}
             <DialogClose asChild>
               <Button
                 className="absolute top-4 right-4 z-50 bg-gray-800 text-white rounded-full p-2 hover:bg-gray-700"
@@ -147,7 +131,6 @@ export default function GridMedia({ media }: { media: string[] }) {
               </Button>
             </DialogClose>
 
-            {/* Previous Button */}
             {mediaLinks.length > 1 && (
               <Button
                 onClick={goToPrevious}
@@ -158,7 +141,6 @@ export default function GridMedia({ media }: { media: string[] }) {
               </Button>
             )}
 
-            {/* Current Media */}
             <div className="max-w-full max-h-full flex items-center justify-center">
               {renderMediaItem(
                 mediaLinks[selectedMediaIndex],
@@ -168,7 +150,6 @@ export default function GridMedia({ media }: { media: string[] }) {
               )}
             </div>
 
-            {/* Next Button */}
             {mediaLinks.length > 1 && (
               <Button
                 onClick={goToNext}
@@ -181,6 +162,6 @@ export default function GridMedia({ media }: { media: string[] }) {
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }

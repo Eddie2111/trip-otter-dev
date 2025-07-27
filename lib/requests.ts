@@ -346,6 +346,58 @@ class ResetPasswordAPI extends BaseAPI {
   }
 }
 
+class ReviewAPI extends BaseAPI {
+  public getReviewById = async (id: string): Promise<any> => {
+    try {
+      const response = await this.apiClient.get(`/api/review?id=${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+
+  public getReviews = async (page: number, limit: number): Promise<any> => {
+    try {
+      const response = await this.apiClient.get(`/api/review?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+
+  public createReview = async (data: any): Promise<any> => {
+    try {
+      const response = await this.apiClient.post(`/api/review`, data);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+
+  public updateReview = async (id: string, data: any): Promise<any> => {
+    try {
+      const response = await this.apiClient.patch(`/api/review?id=${id}`, data);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+
+  public deleteReview = async (id: string): Promise<any> => {
+    try {
+      const response = await this.apiClient.delete(`/api/review?id=${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+}
+
 export const useAuthApi = new AuthAPI();
 export const usePostApi = new PostAPI();
 export const useMediaApi = new MediaAPI();
@@ -357,3 +409,4 @@ export const useLocationApi = new LocationAPI();
 export const useFollowApi = new FollowAPI();
 export const useAnalyticsApi = new AnalyticsAPI();
 export const useResetPasswordAPI = new ResetPasswordAPI();
+export const useReviewAPI = new ReviewAPI();

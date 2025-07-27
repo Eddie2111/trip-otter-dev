@@ -31,7 +31,7 @@ export const connectToDatabase = async () => {
     serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 45000,
     connectTimeoutMS: 30000,
-    maxPoolSize: 100,
+    maxPoolSize: 400,
     minPoolSize: 20,
     maxIdleTimeMS: 30000,
     waitQueueTimeoutMS: 10000,

@@ -1,4 +1,3 @@
-// deprecated
 "use client";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -110,31 +109,6 @@ export function ChatPage() {
       };
     };
 
-    // --- Login Handlers ---
-    const handleLoginSuccess = (payload: {
-      userId: string;
-      username: string;
-    }) => {
-      console.log(
-        `Login successful for ${payload.username} (${payload.userId})`
-      );
-      setIsLoggedIn(true);
-      setError(null);
-      // Fetch initial data after successful login
-      socket.emit("getOnlineUsers");
-      socket.emit("getGroups");
-      // If global chat is currently selected, fetch its history
-      if (selectedChatType === "global") {
-        socket.emit("getGlobalMessages");
-      }
-    };
-
-    const handleLoginFailure = (errorMessage: string) => {
-      console.error("Login failed:", errorMessage);
-      setIsLoggedIn(false);
-      setError(`Login failed: ${errorMessage}`);
-    };
-
     const handlePrivateMessage = (message: any) => {
       setPrivateMessages((prevMessages) => [
         ...prevMessages,
@@ -168,13 +142,12 @@ export function ChatPage() {
       }
     };
 
-    // Handler for new incoming global messages (live updates)
-    const handleNewGlobalMessage = (message: any) => {
+    const handleGlobalMessage = (message: any) => {
       setGlobalMessages((prevMessages) => [
         ...prevMessages,
         mapBackendMessageToFrontend(message),
       ]);
-      console.log("New global message received:", message);
+      console.log(message);
       // Increment unread count if global chat is not active
       if (selectedChatType !== "global") {
         setUnreadCounts((prev) => {
@@ -183,19 +156,6 @@ export function ChatPage() {
           return newMap;
         });
       }
-    };
-
-    // Handler for fetching global messages history
-    const handleGlobalMessagesHistory = (messages: any[]) => {
-      console.log("Global messages history received:", messages);
-      const mappedMessages = messages.map(mapBackendMessageToFrontend);
-      setGlobalMessages(mappedMessages);
-      // Clear unread count when global history is fetched (i.e., chat is opened)
-      setUnreadCounts((prev) => {
-        const newMap = new Map(prev);
-        newMap.set("global-chat", 0);
-        return newMap;
-      });
     };
 
     const handleGroupMessage = (message: any) => {
@@ -314,6 +274,24 @@ export function ChatPage() {
       });
     };
 
+    const handleGroupHistory = (payload: {
+      groupId: string;
+      messages: any[];
+    }) => {
+      console.log(`Group history for ${payload.groupId}:`, payload.messages);
+      const mappedMessages = payload.messages.map(mapBackendMessageToFrontend);
+      setGroupMessages((prev) => ({
+        ...prev,
+        [payload.groupId]: mappedMessages,
+      }));
+      // Clear unread count when group history is fetched (i.e., chat is opened)
+      setUnreadCounts((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(payload.groupId, 0);
+        return newMap;
+      });
+    };
+
     const handleMessageUpdated = (updatedMessage: any) => {
       const mappedMessage = mapBackendMessageToFrontend(updatedMessage);
       if (mappedMessage.groupId) {
@@ -380,12 +358,10 @@ export function ChatPage() {
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
     socket.on("error", handleError);
-    socket.on("loginSuccess", handleLoginSuccess); // New: Login success handler
-    socket.on("loginFailure", handleLoginFailure); // New: Login failure handler
     socket.on("privateMessage", handlePrivateMessage);
     socket.on("privateMessageSent", handlePrivateMessageSent);
-    socket.on("globalMessage", handleNewGlobalMessage); // Changed: For new incoming global messages
-    socket.on("globalMessagesHistory", handleGlobalMessagesHistory); // New: For global messages history
+    // socket.on("globalMessage", handleGlobalMessage);
+    socket.on("getGlobalMessages", handleGlobalMessage);
     socket.on("groupMessage", handleGroupMessage);
     socket.on("userOnline", handleUserOnline);
     socket.on("userOffline", handleUserOffline);
@@ -396,7 +372,7 @@ export function ChatPage() {
     socket.on("availableGroups", handleAvailableGroups);
     socket.on("userGroups", handleUserGroups);
     socket.on("conversationHistory", handleConversationHistory);
-    // socket.on("groupHistory", handleGroupHistory); // New handler for group history
+    socket.on("groupHistory", handleGroupHistory); // New handler for group history
     socket.on("messageUpdated", handleMessageUpdated); // New handler for message updates
     socket.on("messageDeleted", handleMessageDeleted); // New handler for message deletions
     socket.on("groupChatHistoryCleared", handleGroupChatHistoryCleared); // New handler for group history cleared
@@ -406,12 +382,9 @@ export function ChatPage() {
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
       socket.off("error", handleError);
-      socket.off("loginSuccess", handleLoginSuccess); // Clean up
-      socket.off("loginFailure", handleLoginFailure); // Clean up
       socket.off("privateMessage", handlePrivateMessage);
       socket.off("privateMessageSent", handlePrivateMessageSent);
-      socket.off("globalMessage", handleNewGlobalMessage); // Clean up
-      socket.off("globalMessagesHistory", handleGlobalMessagesHistory); // Clean up
+      socket.off("globalMessage", handleGlobalMessage);
       socket.off("groupMessage", handleGroupMessage);
       socket.off("userOnline", handleUserOnline);
       socket.off("userOffline", handleUserOffline);
@@ -422,7 +395,7 @@ export function ChatPage() {
       socket.off("availableGroups", handleAvailableGroups);
       socket.off("userGroups", handleUserGroups);
       socket.off("conversationHistory", handleConversationHistory);
-      // socket.off("groupHistory", handleGroupHistory); // Clean up new handler
+      socket.off("groupHistory", handleGroupHistory); // Clean up new handler
       socket.off("messageUpdated", handleMessageUpdated); // Clean up new handler
       socket.off("messageDeleted", handleMessageDeleted); // Clean up new handler
       socket.off("groupChatHistoryCleared", handleGroupChatHistoryCleared); // Clean up new handler
@@ -444,13 +417,13 @@ export function ChatPage() {
       return;
     }
 
-    // Emit login event, but don't set isLoggedIn to true yet.
-    // Wait for 'loginSuccess' event from the server.
     socket.emit("userLogin", {
       userId: session.user.id,
       username: session.user.email,
     });
 
+    setIsLoggedIn(true);
+    setError(null);
     console.log(
       `Attempted login for User ID: ${session.user.id}, Username: ${session.user.email}`
     );
@@ -458,11 +431,18 @@ export function ChatPage() {
 
   // --- Automatic Socket Login Effect (triggers handleLogin) ---
   useEffect(() => {
-    // Only attempt login if socket is connected, session is authenticated, and not already logged in
     if (socket.connected && status === "authenticated" && !isLoggedIn) {
       handleLogin();
     }
   }, [socket.connected, status, isLoggedIn, handleLogin]);
+
+  // --- Fetch initial online users and groups after login ---
+  useEffect(() => {
+    if (isLoggedIn && socket.connected) {
+      socket.emit("getOnlineUsers");
+      socket.emit("getGroups");
+    }
+  }, [isLoggedIn, socket]);
 
   // --- UI Message Send Handler ---
   const handleSendMessage = useCallback(() => {
@@ -667,7 +647,6 @@ export function ChatPage() {
       } else if (conv.type === "global") {
         setSelectedChatType("global");
         setSelectedChatId("global-chat");
-        socket.emit("getGlobalMessages"); // Request global messages history
       }
     },
     [socket]
@@ -858,7 +837,7 @@ export function ChatPage() {
         {/* Chat Area - Right Panel */}
         {selectedChatId ? (
           <div
-            className={`flex-1 flex flex-col bg-white md:h-[100vh] h-[88vh] ${
+            className={`flex-1 flex flex-col bg-white ${
               !selectedChatId && "hidden"
             }`}
           >

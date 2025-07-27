@@ -26,3 +26,5 @@ export interface IDisplayConversation {
   timestamp?: string;
   unread?: number;
 }
+
+export type Group = any;

@@ -1,12 +1,8 @@
 "use client";
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
@@ -14,7 +10,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { X, Upload, ImageIcon, MapPin, Type } from "lucide-react";
 import Image from "next/image";
-import * as nsfwjs from 'nsfwjs';
+import * as nsfwjs from "nsfwjs";
+// import heic2any from 'heic2any'; // Removed direct import for dynamic loading
 
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -45,27 +42,33 @@ const loadNsfwModel = async () => {
   }
 };
 
-export function CreatePost({ children, profileId }: { children: React.ReactNode, profileId: string }) {
+export function CreatePost({
+  children,
+  profileId,
+}: {
+  children: React.ReactNode;
+  profileId: string;
+}) {
   const searchParams = useSearchParams();
-  const formParam = searchParams.get('form');
+  const formParam = searchParams.get("form");
 
-  const shouldAutoOpen = formParam === 'create';
+  const shouldAutoOpen = formParam === "create";
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const handleSubmit = async (data: PostCreateInput) => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       const response = await usePostApi.createPost(data);
       // console.log("Post created:", response)
       setIsOpen(false);
-      toast.success("Post created successfully!")
+      toast.success("Post created successfully!");
     } catch (error) {
-      console.error("Failed to create post:", error)
-      toast.error("Failed to create post. Please try again.")
+      console.error("Failed to create post:", error);
+      toast.error("Failed to create post. Please try again.");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -80,7 +83,7 @@ export function CreatePost({ children, profileId }: { children: React.ReactNode,
             onSubmit={handleSubmit}
             owner={profileId}
             isSubmitting={isSubmitting}
-            submitState={setIsSubmitting}
+            submitState={setIsOpen} // Pass setIsOpen directly here
           />
         </DialogContent>
       </form>
@@ -118,35 +121,88 @@ export function CreatePostForm({
       const filteredFiles: File[] = [];
       const imagePromises = acceptedFiles.map(async (file) => {
         // Only check images
-        if (!file.type.startsWith('image/')) {
+        if (!file.type.startsWith("image/")) {
           filteredFiles.push(file);
           return;
         }
 
-        const img = document.createElement('img');
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
+        let processedFile = file;
+        let fileSrc: string | undefined;
+
+        // Handle HEIC files: Convert to JPEG before further processing
+        if (file.type === "image/heic" || file.type === "image/heif") {
+          try {
+            // Dynamically import heic2any only when needed
+            const heic2anyModule = await import("heic2any");
+            const heic2any = heic2anyModule.default; // Access the default export
+
+            // heic2any returns a Promise that resolves with a Blob
+            const convertedBlob = await heic2any({
+              blob: file,
+              toType: "image/jpeg", // Convert to JPEG
+              quality: 0.8, // Adjust quality as needed
+            });
+            // Create a new File object from the converted Blob
+            processedFile = new File(
+              [convertedBlob as Blob],
+              file.name.replace(/\.heic$/i, ".jpeg"),
+              { type: "image/jpeg" }
+            );
+            fileSrc = URL.createObjectURL(processedFile);
+          } catch (error) {
+            console.error("Error converting HEIC file:", error);
+            toast.error(
+              `Failed to process HEIC image: ${file.name}. Please try a different format.`
+            );
+            return; // Skip this file if conversion fails
+          }
+        } else {
+          // For non-HEIC images, create an object URL directly
+          fileSrc = URL.createObjectURL(file);
+        }
+
+        if (!fileSrc) {
+          console.error("File source could not be created for", file.name);
+          return;
+        }
+
+        const img = document.createElement("img");
+        img.src = fileSrc;
 
         return new Promise<void>((resolve) => {
-          reader.onload = async (e) => {
-            img.src = e.target?.result as string;
-            img.onload = async () => {
-              if (nsfwModel) {
-                const predictions = await nsfwModel.classify(img);
-                // Check if any of 'Porn', 'Sexy', or 'Hentai' classes have a probability above 50%
-                const isExplicit = predictions.some(p =>
-                  (p.className === 'Porn' || p.className === 'Sexy' || p.className === 'Hentai') && p.probability > 0.5
-                );
+          img.onload = async () => {
+            if (nsfwModel) {
+              const predictions = await nsfwModel.classify(img);
+              // Check if any of 'Porn', 'Sexy', or 'Hentai' classes have a probability above 50%
+              const isExplicit = predictions.some(
+                (p) =>
+                  (p.className === "Porn" ||
+                    p.className === "Sexy" ||
+                    p.className === "Hentai") &&
+                  p.probability > 0.5
+              );
 
-                if (isExplicit) {
-                  toast.error("Explicit image detected, please keep the platform safe for everyone.");
-                  URL.revokeObjectURL(img.src); // Clean up the object URL
-                } else {
-                  filteredFiles.push(file);
-                }
+              if (isExplicit) {
+                toast.error(
+                  "Explicit image detected, please keep the platform safe for everyone."
+                );
+              } else {
+                filteredFiles.push(processedFile); // Push the processed file (original or converted)
               }
-              resolve();
-            };
+            } else {
+              // If NSFW model not loaded, still add the file
+              filteredFiles.push(processedFile);
+            }
+            URL.revokeObjectURL(fileSrc); // Clean up the object URL after use
+            resolve();
+          };
+          img.onerror = () => {
+            console.error("Error loading image for NSFW check:", file.name);
+            toast.error(
+              `Failed to load image for content check: ${file.name}.`
+            );
+            URL.revokeObjectURL(fileSrc); // Clean up the object URL
+            resolve(); // Resolve the promise to not block other files
           };
         });
       });
@@ -162,7 +218,7 @@ export function CreatePostForm({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      "image/*": [".jpeg", ".jpg", ".png", ".gif", ".webp"],
+      "image/*": [".jpeg", ".jpg", ".png", ".gif", ".webp", ".heic", ".heif"], // Added .heif for completeness
       "video/*": [".mp4", ".mov", ".avi", ".mkv"],
     },
     maxFiles: 10,
@@ -170,7 +226,7 @@ export function CreatePostForm({
   });
 
   const handleSubmit = async (data: PostCreateInput) => {
-    submitState(true);
+    submitState(true); // Assuming submitState is a setter for a boolean like setIsSubmitting
     if (files.length === 0 && !data.caption?.trim()) {
       toast.error("Please add a caption or at least one image");
       submitState(false);
@@ -269,7 +325,7 @@ export function CreatePostForm({
                           : "Drag & drop images here, or click to select"}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Supports: JPEG, PNG, GIF, WebP (Max 10 images)
+                        Supports: JPEG, PNG, GIF, WebP, Heic (Max 10 images)
                       </p>
                     </div>
                   )}
@@ -282,7 +338,7 @@ export function CreatePostForm({
                       <div key={index} className="relative group">
                         <div className="aspect-square rounded-lg overflow-hidden bg-muted">
                           <Image
-                            src={URL.createObjectURL(file)}
+                            src={URL.createObjectURL(file)} // This will now use the converted JPEG blob for HEIC files
                             alt={`Preview ${index + 1}`}
                             width={200}
                             height={200}

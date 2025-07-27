@@ -58,6 +58,7 @@
     "date-fns": "4.1.0",
     "dayjs": "^1.11.13",
     "embla-carousel-react": "latest",
+    "heic2any": "^0.0.4",
     "input-otp": "latest",
     "jsonwebtoken": "latest",
     "lucide-react": "^0.454.0",

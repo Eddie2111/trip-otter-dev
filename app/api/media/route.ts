@@ -104,6 +104,7 @@ export async function POST(request: Request) {
       "image/webp",
       "image/jpg",
       "image/gif",
+      "image/heic",
     ];
     const allowedMimeTypesForVideo = [
       "video/mp4",

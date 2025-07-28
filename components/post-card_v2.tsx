@@ -17,10 +17,11 @@ import {
   Send,
   Bookmark,
   MoreHorizontal,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { Loading } from "./ui/loading";
-import { useCommentApi, useLikeApi, useUserApi } from "@/lib/requests";
+import { useCommentApi, useFeedAPI, useLikeApi, useUserApi } from "@/lib/requests";
 import { useSession } from "next-auth/react";
 
 import dayjs from "dayjs";
@@ -34,15 +35,12 @@ import { ReportModal } from "./report-modal";
 import { User } from "./feed/postCardV2/user";
 import { useWebsocket } from "@/lib/useWebsocket";
 import { Socket } from "socket.io-client";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-const MAX_RETRIES = 5;
-const RETRY_DELAY_MS = 3000;
 
 export function PostContainer() {
-  const [posts, setPosts] = useState<IPostProps[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
+  const queryClient = useQueryClient();
 
   const [isConnected, setIsConnected] = useState(false);
   const socket = useWebsocket({
@@ -67,110 +65,45 @@ export function PostContainer() {
     }
   }, [socket]);
 
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [postsPerPage] = useState<number>(10);
-  const [hasMore, setHasMore] = useState<boolean>(true);
-  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    error,
+  } = useInfiniteQuery({
+    queryKey: ["homeFeed"],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await useFeedAPI.getFeed(pageParam as number, 10); // Fetch 10 posts per page
+      if (response.status !== 200) {
+        throw new Error(response.message || "Failed to fetch feed.");
+      }
+      return response.data;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      // Assuming lastPage is the array of items, and we need to check its length
+      if (lastPage.length < 10) { // If less than 10 items, it's the last page
+        return undefined;
+      }
+      return allPages.length + 1; // Next page is current number of pages + 1
+    },
+    initialPageParam: 1,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-  // Retry mechanism states
-  const [retryCount, setRetryCount] = useState<number>(0);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Ref for the element to observe for infinite scrolling
+  const posts = data?.pages.flat() || [];
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  const getFeed = useCallback(
-    async (page: number, limit: number, currentRetry: number = 0) => {
-      // Clear any existing retry timeout
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-        retryTimeoutRef.current = null;
-      }
-
-      if (page === 1 && currentRetry === 0) {
-        setLoading(true); // Show full loading spinner for the first page, initial attempt
-      } else if (page > 1) {
-        setLoadingMore(true); // Show loading indicator for subsequent pages
-      }
-
-      setError(null); // Clear previous errors before a new attempt
-
-      try {
-        const response = await fetch(`/api/feed?page=${page}&limit=${limit}`);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const result = await response.json();
-        if (result.status === 200 && result.data) {
-          setPosts((prevPosts) => {
-            // Filter out duplicates in case of quick scrolling/re-renders
-            const newPosts = result.data.filter(
-              (newPost: IPostProps) =>
-                !prevPosts.some((prevPost) => prevPost._id === newPost._id)
-            );
-            return [...prevPosts, ...newPosts];
-          });
-          setHasMore(result.pagination.hasMore);
-          setRetryCount(0); // Reset retry count on successful fetch
-        } else {
-          throw new Error(`API error: ${result.message || "Unknown error"}`);
-        }
-      } catch (err) {
-        const errorMessage = `Failed to load posts: ${
-          err instanceof Error ? err.message : "Unknown error"
-        }`;
-        setError(errorMessage);
-        console.error("Error fetching feed:", errorMessage);
-
-        // Implement retry logic only for initial load (page 1)
-        if (page === 1 && currentRetry < MAX_RETRIES) {
-          console.log(
-            `Retrying fetch in ${RETRY_DELAY_MS / 1000} seconds... (Attempt ${
-              currentRetry + 1
-            }/${MAX_RETRIES})`
-          );
-          setRetryCount(currentRetry + 1);
-          retryTimeoutRef.current = setTimeout(() => {
-            getFeed(page, limit, currentRetry + 1);
-          }, RETRY_DELAY_MS);
-        } else if (page === 1 && currentRetry >= MAX_RETRIES) {
-          console.log("Max retries reached. Stopping attempts.");
-          setLoading(false); // Stop loading after max retries
-        }
-      } finally {
-        if (page === 1 && currentRetry >= retryCount) {
-          // Only set loading to false if not retrying
-          setLoading(false);
-        }
-        setLoadingMore(false);
-      }
-    },
-    [retryCount] // Depend on retryCount to ensure useCallback updates
-  );
-
-  // Initial load
-  useEffect(() => {
-    getFeed(1, postsPerPage);
-    // Cleanup timeout on component unmount
-    return () => {
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-      }
-    };
-  }, [getFeed, postsPerPage]);
-
-  // Infinite scroll logic using Intersection Observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        // Only load more if the target is intersecting, there's more data, and not already loading
-        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
-          setCurrentPage((prevPage) => prevPage + 1);
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
         }
       },
-      { threshold: 0.5 } // Trigger when 50% of the target is visible
+      { threshold: 0.5 }
     );
 
     if (observerTarget.current) {
@@ -182,59 +115,45 @@ export function PostContainer() {
         observer.unobserve(observerTarget.current);
       }
     };
-  }, [hasMore, loadingMore, loading]); // Depend on hasMore, loadingMore, and loading to re-evaluate observer
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Fetch new posts when currentPage changes (triggered by observer)
-  useEffect(() => {
-    if (currentPage > 1) {
-      getFeed(currentPage, postsPerPage);
-    }
-  }, [currentPage, getFeed, postsPerPage]);
-
-  if (loading && posts.length === 0) {
-    // Show full loading spinner only if no posts are loaded yet and it's the initial fetch or retrying
+  if (isLoading && posts.length === 0) {
     return <Loading />;
   }
 
-  if (error && posts.length === 0 && retryCount >= MAX_RETRIES) {
-    // Show error message only if max retries reached and no posts were loaded
+  if (isError && posts.length === 0) {
     return (
-      <div className="flex justify-center items-center h-48 text-red-600">
-        Error: {error}
+      <div className="flex justify-center items-center h-48 text-red-600 dark:text-red-400">
+        Error: {error?.message || "Failed to load posts."}
         <p className="ml-2">Please try refreshing the page.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-0 md:space-y-6 pb-20 md:pb-0">
+    <div className="space-y-0 md:space-y-6 pb-20 md:pb-0 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {posts.length > 0
         ? posts.map((postItem) => (
           <PostCardV2 key={postItem._id} post={postItem} session={session} socket={socket} isSocketConnected={ isConnected } />
           ))
-        : // Only show "No posts available" if not loading and no error (or error but still trying)
-          !loading &&
-          !loadingMore &&
-          !error && (
-            <div className="flex justify-center items-center h-48 text-gray-600">
+        : !isLoading && (
+            <div className="flex justify-center items-center h-48 text-gray-600 dark:text-gray-400">
               No posts available.
             </div>
           )}
-      {hasMore && (
+      {hasNextPage && (
         <div ref={observerTarget} className="flex justify-center mt-6 p-4">
-          {loadingMore && <Loading />}{" "}
-          {/* Show loading spinner for loading more posts */}
+          {isFetchingNextPage && <Loading />}{" "}
         </div>
       )}
-      {!hasMore && posts.length > 0 && (
-        <div className="flex justify-center mt-6 text-gray-500">
+      {!hasNextPage && posts.length > 0 && (
+        <div className="flex justify-center mt-6 text-gray-500 dark:text-gray-400">
           You've reached the end of the feed. How about creating a post?
         </div>
       )}
-      {error &&
-        posts.length > 0 && ( // Show error if there's an error but some posts are already loaded
-          <div className="flex justify-center mt-6 text-red-600">
-            Error loading more posts: {error}
+      {isError && posts.length > 0 && (
+          <div className="flex justify-center mt-6 text-red-600 dark:text-red-400">
+            Error loading more posts: {error?.message || "Unknown error"}
           </div>
         )}
     </div>
@@ -256,11 +175,12 @@ export function PostCardV2({
       image?: string;
       username: string;
     };
-  };
+  } | null; // Session can be null if not logged in
   socket: Socket<any, any>;
   isSocketConnected: boolean;
 }) {
   const currentLoggedInUser = session?.user;
+  const queryClient = useQueryClient();
 
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>(
     {}
@@ -268,14 +188,13 @@ export function PostCardV2({
   const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>(
     {}
   );
-  // State to manage whether all comments are displayed or only a limited number
   const [showAllComments, setShowAllComments] = useState(false);
 
-  // Determine which comments to display based on showAllComments state
   const commentsToDisplay = showAllComments
     ? post.comments
-    : post.comments.slice(0, 4); // Show only first 4 comments by default
+    : post.comments.slice(0, 4);
 
+  // Use local state for liked status and count for immediate UI feedback
   const [isLiked, setIsLiked] = useState(
     currentLoggedInUser
       ? post.likes.some(
@@ -307,109 +226,186 @@ export function PostCardV2({
   };
 
   const createNotification = async (content: string, type:string, postUrl: string) => {
-    console.log("event emitted");
-    const getUser = await useUserApi.getUser(
-      session?.user?.id ?? ""
-    );
-    console.log(getUser, getUser?.data?.profile?._id);
-    if (socket) {
-      socket.emit("createNotification", {
-        createdBy: getUser?.data?.profile?._id,
-        receiver: post?.owner?._id,
-        content,
-        type,
-        postUrl,
-        isRead: false,
-      });
+    if (!isSocketConnected || !post?.owner?._id || !currentLoggedInUser?.id) return;
+
+    try {
+      const getUser = await useUserApi.getUser(currentLoggedInUser.id);
+      if (getUser?.data?.profile?._id) {
+        socket.emit("createNotification", {
+          createdBy: getUser.data.profile._id,
+          receiver: post.owner._id,
+          content,
+          type,
+          postUrl,
+          isRead: false,
+        });
+      }
+    } catch (error) {
+      console.error("Error creating notification:", error);
     }
   };
   
-  const [commenting, isCommenting] = useState<boolean>(false);
+  const addCommentMutation = useMutation({
+    mutationFn: async ({ postId, content }: { postId: string; content: string }) => {
+      const response = await useCommentApi.createComment(postId, content);
+      if (response.status !== 200) {
+        throw new Error(response.message || "Failed to add comment.");
+      }
+      return response.data;
+    },
+    onSuccess: (newCommentData, { postId }) => {
+      // Optimistically update the local post comments array
+      const newComment = {
+        _id: newCommentData._id,
+        content: newCommentData.content,
+        owner: newCommentData.owner || {
+          _id: currentLoggedInUser?.id,
+          username: currentLoggedInUser?.username,
+        },
+        createdAt: newCommentData.createdAt,
+      };
+      // Find the post in the cached data and update its comments
+      queryClient.setQueryData(["homeFeed"], (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: IPostProps[]) =>
+            page.map((p) =>
+              p._id === postId
+                ? { ...p, comments: [...p.comments, newComment] }
+                : p
+            )
+          ),
+        };
+      });
+
+      setCommentInputs((prev) => ({
+        ...prev,
+        [postId]: "",
+      }));
+      setShowAllComments(true);
+      toast.success("Comment added successfully!");
+      createNotification("commented on your post", "COMMENT", `/post/${postId}`);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to add comment.");
+    },
+  });
+
   const handleAddComment = async (postId: string) => {
-    isCommenting(true);
     const newCommentText = commentInputs[postId]?.trim();
     if (newCommentText && currentLoggedInUser) {
-      try {
-        const response = await useCommentApi.createComment(
-          postId,
-          newCommentText
-        );
-        // console.log("Comment API response:", response);
-
-        if (response.status === 200 && response.data) {
-          isCommenting(false);
-          const newComment = {
-            _id: response.data._id,
-            content: response.data.content,
-            owner: response.data.owner || {
-              _id: currentLoggedInUser.id,
-              username: currentLoggedInUser.username,
-            },
-            createdAt: response.data.createdAt,
-          };
-          post.comments.push(newComment);
-          setCommentInputs((prev) => ({
-            ...prev,
-            [postId]: "",
-          }));
-          setShowAllComments(true);
-          await createNotification("commented on your post", "COMMENT", `/post/${postId}`);
-        } else {
-          isCommenting(false);
-          console.error(
-            "API did not return a valid comment object or status was not 200:",
-            response
-          );
-        }
-      } catch (error) {
-        isCommenting(false);
-        console.error("Error adding comment:", error);
-      }
+      addCommentMutation.mutate({ postId, content: newCommentText });
     }
   };
 
+  const likeMutation = useMutation({
+    mutationFn: async (postId: string) => {
+      const response: any = await useLikeApi.likePost(postId);
+      if (response.status !== 200) {
+        throw new Error(response.message || "Failed to like/unlike post.");
+      }
+      return response.message; // Return message to distinguish like/unlike
+    },
+    onMutate: async (postId) => {
+      // Optimistic update
+      const previousPosts = queryClient.getQueryData(["homeFeed"]);
+      queryClient.setQueryData(["homeFeed"], (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: IPostProps[]) =>
+            page.map((p) => {
+              if (p._id === postId) {
+                const newLikes = isLiked
+                  ? p.likes.filter((like) => like.username !== currentLoggedInUser?.username)
+                  : [...p.likes, { _id: `temp-like-${Date.now()}`, username: currentLoggedInUser?.username || '', owner: currentLoggedInUser?.id || '' }];
+                return { ...p, likes: newLikes };
+              }
+              return p;
+            })
+          ),
+        };
+      });
+      setIsLiked((prev) => !prev);
+      setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
+      return { previousPosts };
+    },
+    onSuccess: (message, postId) => {
+      if (message === "Post liked successfully") {
+        toast.success("Post liked!");
+        createNotification("liked your post", "LIKE", `/post/${postId}`);
+      } else if (message === "Post unliked successfully") {
+        toast.info("Post unliked.");
+      }
+      // Invalidate to refetch and ensure consistency, but allow optimistic update to show first
+      queryClient.invalidateQueries({ queryKey: ["homeFeed"] });
+    },
+    onError: (error, postId, context) => {
+      toast.error(error.message || "Failed to update like status.");
+      // Revert optimistic update on error
+      queryClient.setQueryData(["homeFeed"], context?.previousPosts);
+      setIsLiked((prev) => !prev); // Revert local state
+      setLikesCount((prev) => (isLiked ? prev + 1 : prev - 1)); // Revert local count
+    },
+  });
+
   const handleLike = async () => {
-    setIsLiked(true);
     if (!currentLoggedInUser) {
-      // console.log("User not logged in. Cannot like.");
       toast.error("You must be logged in to like a post.");
       return;
     }
-
-    try {
-      const response: any = await useLikeApi.likePost(post._id);
-      // console.log("Like API response:", response);
-
-      if (response.status === 200) {
-        if (response.message === "Post liked successfully") {
-          setLikesCount((prev) => prev + 1);
-          await createNotification(
-            "liked your post",
-            "LIKE",
-            `/post/${post._id}`
-          );
-        } else if (response.message === "Post unliked successfully") {
-          setIsLiked(false);
-          setLikesCount((prev) => prev - 1);
-        }
-      } else {
-        console.error("API returned an error:", response.message);
-        setIsLiked(false);
-      }
-    } catch (error) {
-      setIsLiked(false);
-      console.error("Error liking post:", error);
-    }
+    likeMutation.mutate(post._id);
   };
 
-  const handleEditComment = (postId: string, index: number, text: string) => {
-    setEditingComment({ postId, commentIndex: index, originalText: text });
+  const updateCommentMutation = useMutation({
+    mutationFn: async ({ commentId, content }: { commentId: string; content: string }) => {
+      const response = await useCommentApi.updateComment(commentId, content);
+      if (response.status !== 200) {
+        throw new Error(response.message || "Failed to update comment.");
+      }
+      return response.data;
+    },
+    onSuccess: (updatedCommentData, { commentId }) => {
+      // Optimistically update the local post comments array
+      queryClient.setQueryData(["homeFeed"], (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: IPostProps[]) =>
+            page.map((p) =>
+              p._id === post._id
+                ? {
+                    ...p,
+                    comments: p.comments.map((comment) =>
+                      comment._id === commentId
+                        ? { ...comment, content: updatedCommentData.content, edited: true }
+                        : comment
+                    ),
+                  }
+                : p
+            )
+          ),
+        };
+      });
+      toast.success("Comment updated successfully!");
+      createNotification("updated comment on your post", "COMMENT", `/post/${post._id}`);
+      setEditingComment(null);
+      setEditCommentText("");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update comment.");
+    },
+  });
+
+  const handleEditComment = (commentId: string, index: number, text: string) => {
+    setEditingComment({ commentId, commentIndex: index, originalText: text });
     setEditCommentText(text);
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = () => {
     if (editingComment) {
-      const { commentId, commentIndex, originalText } = editingComment;
+      const { commentId, originalText } = editingComment;
       const newContent = editCommentText.trim();
 
       if (!newContent) {
@@ -423,46 +419,7 @@ export function PostCardV2({
         setEditCommentText("");
         return;
       }
-
-      try {
-        // Call the API to update the comment
-        const response = await useCommentApi.updateComment(
-          commentId,
-          newContent
-        );
-
-        if (response.status === 200 && response.data) {
-          // Update the local state with the new content and mark as edited
-          // This directly modifies the 'post' prop's comments array.
-          // In a real application, you might want to pass a callback to update the parent's state.
-          if (post.comments[commentIndex]) {
-            post.comments[commentIndex] = {
-              ...post.comments[commentIndex],
-              content: response.data.content,
-              edited: true,
-              createdAt: response.data.createdAt || dayjs().toISOString(),
-            };
-            // Force a re-render to reflect the change if not automatically happening
-            // by updating a dummy state or by using a key change.
-            // A better way would be to create a new array and set it.
-            // setDisplayedComments([...post.comments]); // If using local state for comments
-          }
-          toast.success("Comment updated successfully!");
-          await createNotification(
-            "updated comment on your post",
-            "COMMENT",
-            `/post/${post._id}`
-          );
-        } else {
-          toast.error(response.message || "Failed to update comment.");
-        }
-      } catch (error) {
-        console.error("Error updating comment:", error);
-        toast.error("An error occurred while updating the comment.");
-      } finally {
-        setEditingComment(null);
-        setEditCommentText("");
-      }
+      updateCommentMutation.mutate({ commentId, content: newContent });
     }
   };
 
@@ -471,61 +428,79 @@ export function PostCardV2({
     setEditCommentText("");
   };
 
-  const handleDeleteComment = async (commentId: string, index: number) => {
-    try {
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: string) => {
       const response = await useCommentApi.deleteComment(commentId);
-      if (response.status === 200) {
-        // Remove the comment from the local array
-        post.comments.splice(index, 1); // Directly modify the prop for simplicity
-        // setDisplayedComments([...post.comments]); // If using local state for comments
-        toast.success("Comment deleted successfully!");
-      } else {
-        toast.error(response.message || "Failed to delete comment.");
+      if (response.status !== 200) {
+        throw new Error(response.message || "Failed to delete comment.");
       }
-    } catch (error) {
-      console.error("Error deleting comment:", error);
-      toast.error("An error occurred while deleting the comment.");
-    }
+      return commentId;
+    },
+    onSuccess: (deletedCommentId) => {
+      // Optimistically remove the comment
+      queryClient.setQueryData(["homeFeed"], (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: IPostProps[]) =>
+            page.map((p) =>
+              p._id === post._id
+                ? {
+                    ...p,
+                    comments: p.comments.filter((comment) => comment._id !== deletedCommentId),
+                  }
+                : p
+            )
+          ),
+        };
+      });
+      toast.success("Comment deleted successfully!");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete comment.");
+    },
+  });
+
+  const handleDeleteComment = (commentId: string) => {
+    deleteCommentMutation.mutate(commentId);
   };
 
-  // Helper to check if a string is non-empty
   const isValidId = (id?: string) => id && id.length > 0;
 
   return (
     <Card
       key={post._id}
-      className="border-0 border-b md:border rounded-none md:rounded-lg shadow-none md:shadow-sm bg-white"
+      className="border-0 border-b md:border rounded-none md:rounded-lg shadow-none md:shadow-sm bg-white dark:bg-gray-800 dark:border-gray-700"
     >
       <div className="flex items-center justify-between p-3 md:p-4">
         <User post={post} />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="w-8 h-8">
+            <Button variant="ghost" size="icon" className="w-8 h-8 dark:text-gray-400 dark:hover:bg-gray-700">
               <MoreHorizontal className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>
+          <DropdownMenuContent align="end" className="dark:bg-gray-700 dark:border-gray-600">
+            <DropdownMenuItem className="dark:text-gray-100 dark:hover:bg-gray-600">
               <Link href={`/post/${post._id}/`} className="w-full">See post</Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>Save</DropdownMenuItem>
-            {/* Conditionally render ReportModal for post */}
+            <DropdownMenuItem className="dark:text-gray-100 dark:hover:bg-gray-600">Save</DropdownMenuItem>
             {isValidId(session?.user?.id) && isValidId(post.owner?._id) && (
               <ReportModal
-                reportedBy={session.user.id}
+                reportedBy={session?.user.id}
                 relatedPostId={post._id}
-                reportedUser={post.owner._id}
+                reportedUser={post?.owner._id}
               >
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="dark:text-gray-100 dark:hover:bg-gray-600">
                   Report
                 </DropdownMenuItem>
               </ReportModal>
             )}
-            <DropdownMenuItem>Unfollow</DropdownMenuItem>
+            <DropdownMenuItem className="dark:text-red-400 dark:hover:bg-gray-600">Unfollow</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="ml-6">{post.caption}</div>
+      <div className="ml-6 text-gray-800 dark:text-gray-200">{post.caption}</div>
 
       {post.image && post.image.length > 0 && (
         <CardContent className="p-0 relative">
@@ -538,33 +513,33 @@ export function PostCardV2({
             <Button
               variant="ghost"
               size="icon"
-              className="w-8 h-8 p-0"
+              className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700"
               onClick={handleLike}
             >
               <Heart
                 className={`w-6 h-6 ${
-                  isLiked ? "fill-red-500 text-red-500" : "text-gray-600"
+                  isLiked ? "fill-red-500 text-red-500" : "text-gray-600 dark:text-gray-400"
                 }`}
               />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="w-8 h-8 p-0"
+              className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700"
               onClick={() => toggleComments(post._id)}
             >
               <MessageCircle className="w-6 h-6" />
             </Button>
-            <Button variant="ghost" size="icon" className="w-8 h-8 p-0">
+            <Button variant="ghost" size="icon" className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700">
               <Send className="w-6 h-6" />
             </Button>
           </div>
-          <Button variant="ghost" size="icon" className="w-8 h-8 p-0">
+          <Button variant="ghost" size="icon" className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700">
             <Bookmark className="w-6 h-6" />
           </Button>
         </div>
 
-        <div className="font-semibold text-sm mb-2">
+        <div className="font-semibold text-sm mb-2 text-gray-900 dark:text-gray-100">
           {likesCount.toLocaleString()} likes
         </div>
 
@@ -572,7 +547,7 @@ export function PostCardV2({
           {commentsToDisplay.map((comment, index) => (
             <div
               key={comment._id || `initial-comment-${index}`}
-              className="text-sm group"
+              className="text-sm group text-gray-800 dark:text-gray-200"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -580,29 +555,27 @@ export function PostCardV2({
                     href={`person/${
                       comment?.owner?.username ? comment?.owner?._id : "/me"
                     }`}
-                    className="font-semibold mr-2"
+                    className="font-semibold mr-2 dark:text-gray-100"
                   >
                     {comment?.owner?.username || session?.user?.username}
                   </Link>
-                  {editingComment?.postId === post._id &&
-                  editingComment?.commentIndex === index ? (
+                  {editingComment?.commentId === comment._id ? ( // Use comment._id for editing check
                     <div className="mt-1">
                       <input
                         type="text"
                         value={editCommentText}
                         onChange={(e) => setEditCommentText(e.target.value)}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-blue-600"
                         onKeyPress={(e) => {
                           if (e.key === "Enter") handleSaveEdit();
                           if (e.key === "Escape") handleCancelEdit();
                         }}
-                        // Removed autoFocus as per user request to avoid focusing
                       />
                       <div className="flex gap-2 mt-1">
                         <Button
                           onClick={handleSaveEdit}
                           size="sm"
-                          className="h-6 px-2 text-xs"
+                          className="h-6 px-2 text-xs dark:bg-blue-700 dark:hover:bg-blue-800 dark:text-white"
                         >
                           Save
                         </Button>
@@ -610,7 +583,7 @@ export function PostCardV2({
                           onClick={handleCancelEdit}
                           variant="outline"
                           size="sm"
-                          className="h-6 px-2 text-xs bg-transparent"
+                          className="h-6 px-2 text-xs bg-transparent dark:bg-transparent dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
                         >
                           Cancel
                         </Button>
@@ -620,51 +593,48 @@ export function PostCardV2({
                     <>
                       {comment.content}
                       {(comment as any).edited && (
-                        <span className="text-xs text-gray-400 ml-1">
+                        <span className="text-xs text-gray-400 ml-1 dark:text-gray-500">
                           (edited)
                         </span>
                       )}
-                      <span className="text-xs text-gray-400 ml-2">
+                      <span className="text-xs text-gray-400 ml-2 dark:text-gray-500">
                         {dayjs(comment.createdAt).fromNow()}
                       </span>
                     </>
                   )}
                 </div>
-                {/* Check if the comment owner is the current logged-in user for edit/delete options */}
                 {currentLoggedInUser &&
                   comment.owner?.username === currentLoggedInUser.username &&
-                  !(
-                    editingComment?.postId === post._id &&
-                    editingComment?.commentIndex === index
-                  ) && (
+                  !(editingComment?.commentId === comment._id) && ( // Use comment._id for editing check
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="w-6 h-6"
+                            className="w-6 h-6 dark:text-gray-400 hover:dark:bg-gray-700"
                           >
                             <MoreHorizontal className="w-3 h-3" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="dark:bg-gray-700 dark:border-gray-600">
                           <DropdownMenuItem
                             onClick={() =>
                               handleEditComment(
-                                post._id,
+                                comment._id,
                                 index,
                                 comment.content
                               )
                             }
+                            className="dark:text-gray-100 dark:hover:bg-gray-600"
                           >
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() =>
-                              handleDeleteComment(comment._id, index)
-                            } // Pass comment._id
-                            className="text-red-600"
+                              handleDeleteComment(comment._id)
+                            }
+                            className="text-red-600 dark:text-red-400 dark:hover:bg-gray-600"
                           >
                             Delete
                           </DropdownMenuItem>
@@ -673,26 +643,22 @@ export function PostCardV2({
                     </div>
                   )}
 
-                {/* Conditionally render ReportModal for comment */}
-                {comment.owner?.username !== currentLoggedInUser.username &&
+                {comment.owner?.username !== currentLoggedInUser?.username &&
                   isValidId(session?.user?.id) &&
                   isValidId(comment.owner?._id) &&
-                  !(
-                    editingComment?.postId === post._id &&
-                    editingComment?.commentIndex === index
-                  ) && (
+                  !(editingComment?.commentId === comment._id) && ( // Use comment._id for editing check
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="w-6 h-6"
+                            className="w-6 h-6 dark:text-gray-400 hover:dark:bg-gray-700"
                           >
                             <MoreHorizontal className="w-3 h-3" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="dark:bg-gray-700 dark:border-gray-600">
                           <ReportModal
                             reportedBy={session.user.id}
                             reportedUser={comment.owner._id}
@@ -701,15 +667,16 @@ export function PostCardV2({
                           >
                             <DropdownMenuItem
                               onSelect={(e) => e.preventDefault()}
+                              className="dark:text-gray-100 dark:hover:bg-gray-600"
                             >
                               Report
                             </DropdownMenuItem>
                           </ReportModal>
                           <DropdownMenuItem
                             onClick={() =>
-                              handleDeleteComment(comment._id, index)
-                            } // Pass comment._id
-                            className="text-red-600"
+                              handleDeleteComment(comment._id)
+                            }
+                            className="text-red-600 dark:text-red-400 dark:hover:bg-gray-600"
                           >
                             Unfollow
                           </DropdownMenuItem>
@@ -721,21 +688,18 @@ export function PostCardV2({
             </div>
           ))}
 
-          {/* "View all comments" / "Hide comments" button */}
           {post.comments.length > 4 && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
                 setShowAllComments(!showAllComments);
-                // Also toggle the comment input field visibility when "View all comments" is clicked
-                // If showing all comments, also show the input field
                 setShowComments((prev) => ({
                   ...prev,
                   [post._id]: !showAllComments,
                 }));
               }}
-              className="text-xs text-gray-500 mt-1 h-auto p-0"
+              className="text-xs text-gray-500 mt-1 h-auto p-0 dark:text-gray-400 dark:hover:bg-gray-700"
             >
               {showAllComments
                 ? "Hide comments"
@@ -744,7 +708,7 @@ export function PostCardV2({
           )}
 
           {showComments[post._id] && (
-            <div className="mt-3 pt-3 border-t">
+            <div className="mt-3 pt-3 border-t dark:border-gray-700">
               <div className="flex items-center gap-2">
                 <Avatar className="w-6 h-6">
                   <AvatarImage
@@ -753,7 +717,7 @@ export function PostCardV2({
                       "/placeholder.svg?height=24&width=24"
                     }
                   />
-                  <AvatarFallback>
+                  <AvatarFallback className="dark:bg-gray-700 dark:text-gray-300">
                     {currentLoggedInUser?.name?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
@@ -768,25 +732,24 @@ export function PostCardV2({
                     onKeyPress={(e) =>
                       e.key === "Enter" && handleAddComment(post._id)
                     }
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    disabled={!currentLoggedInUser} // Disable if not logged in
-                    // Removed autoFocus as per user request to avoid focusing
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-600"
+                    disabled={!currentLoggedInUser || addCommentMutation.isPending}
                   />
                   {commentInputs[post._id]?.trim() &&
-                    currentLoggedInUser && ( // Only show post button if logged in
+                    currentLoggedInUser && (
                       <Button
                         onClick={() => handleAddComment(post._id)}
                         size="sm"
-                        disabled={commenting}
-                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50"
+                        disabled={addCommentMutation.isPending}
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 dark:bg-blue-700 dark:hover:bg-blue-800 dark:disabled:bg-blue-700/50"
                       >
-                        {commenting ? "posting..." : "post"}
+                        {addCommentMutation.isPending ? "posting..." : "post"}
                       </Button>
                     )}
                 </div>
               </div>
               {!currentLoggedInUser && (
-                <p className="text-xs text-red-500 mt-2">
+                <p className="text-xs text-red-500 mt-2 dark:text-red-400">
                   Please log in to add comments.
                 </p>
               )}

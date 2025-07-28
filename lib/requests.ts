@@ -398,6 +398,27 @@ class ReviewAPI extends BaseAPI {
   }
 }
 
+class FeedAPI extends BaseAPI {
+  public getFeed = async (page: number, limit: number): Promise<any> => {
+    try {
+      const response = await this.apiClient.get(`/api/feed?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    } 
+  }
+  public getFeedForProfile = async (page: number, limit: number, userId: string): Promise<any> => {
+    try {
+      const response = await this.apiClient.get(`/api/feed?page=${page}&limit=${limit}&id=${userId}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+}
+
 export const useAuthApi = new AuthAPI();
 export const usePostApi = new PostAPI();
 export const useMediaApi = new MediaAPI();
@@ -410,3 +431,4 @@ export const useFollowApi = new FollowAPI();
 export const useAnalyticsApi = new AnalyticsAPI();
 export const useResetPasswordAPI = new ResetPasswordAPI();
 export const useReviewAPI = new ReviewAPI();
+export const useFeedAPI = new FeedAPI();

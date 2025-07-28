@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ModeToggle } from "@/components/ui/theme-provider";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -17,6 +18,25 @@ export default function Settings() {
             </Button>
           </Link>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Preview Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="p-4 border rounded-lg">
+              <div className="flex flex-row items-center justify-between">
+                <div className="flex flex-col">
+                  <h3 className="font-semibold mb-2">Theme settings</h3>
+                  <p className="text-gray-600">
+                    Turn on dark mode or switch to light mode.
+                  </p>
+                </div>
+                <ModeToggle/>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -53,7 +73,6 @@ export default function Settings() {
             <CardTitle className="text-2xl">Others</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-
             <Link href="/settings/analytics">
               <div className="p-4 border rounded-lg">
                 <h3 className="font-semibold mb-2">Analytics</h3>
@@ -69,7 +88,6 @@ export default function Settings() {
                 </p>
               </div>
             </Link>
-
           </CardContent>
         </Card>
       </div>

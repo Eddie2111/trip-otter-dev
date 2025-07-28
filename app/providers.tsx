@@ -7,6 +7,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { FeedbackFormContainer } from "@/components/feedback-container";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 
 export default function Providers({
   children,
@@ -25,7 +26,14 @@ export default function Providers({
           showOnShallow={true}
           options={{ easing: "ease", speed: 500, showSpinner: true }}
         />
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
         {children}
+        </ThemeProvider>
         <FeedbackFormContainer />
       </QueryClientProvider>
     </SessionProvider>

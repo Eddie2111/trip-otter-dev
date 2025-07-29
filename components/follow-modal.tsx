@@ -36,24 +36,19 @@ export function FollowModal({ type, children, userId, currentLoggedInUserId }: F
 
   useEffect(() => {
     async function fetchData() {
-      console.log('Fetching data for userId:', userId, 'and type:', type); // Debugging log
       if (!userId) {
         setUsers([]);
-        console.log('userId is empty, setting users to empty array.'); // Debugging log
         return;
       }
       try {
         const response = await axios.get(`/api/followers?profileId=${userId}`);
-        console.log('API Response:', response.data); // Debugging log for raw API response
         const data = response.data.data;
 
         if (type === 'Following') {
           const mappedUsers = data.following.map((u: IResponseUser) => ({ ...u, isFollowing: true }));
           setUsers(mappedUsers);
-          console.log('Set users for Following:', mappedUsers); // Debugging log
         } else {
           setUsers(data.followers);
-          console.log('Set users for Followers:', data.followers); // Debugging log
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);

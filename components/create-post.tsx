@@ -11,7 +11,6 @@ import { useForm } from "react-hook-form";
 import { X, Upload, ImageIcon, MapPin, Type } from "lucide-react";
 import Image from "next/image";
 import * as nsfwjs from "nsfwjs";
-// import heic2any from 'heic2any'; // Removed direct import for dynamic loading
 
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -34,7 +33,9 @@ import { DialogTitle } from "@radix-ui/react-dialog";
 import { usePostApi } from "@/lib/requests";
 import { getSanityMedia } from "@/lib/getSanityImage";
 
-// Load the NSFWJS model once
+// Import useMutation from TanStack Query
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
 let nsfwModel: nsfwjs.NSFWJS | null = null;
 const loadNsfwModel = async () => {
   if (!nsfwModel) {
@@ -54,22 +55,26 @@ export function CreatePost({
 
   const shouldAutoOpen = formParam === "create";
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const handleSubmit = async (data: PostCreateInput) => {
-    setIsSubmitting(true);
-    try {
-      const response = await usePostApi.createPost(data);
-      // console.log("Post created:", response)
+  const [isOpen, setIsOpen] = useState(false);
+  const queryClient = useQueryClient();
+  
+  const createPostMutation = useMutation({
+    mutationFn: async (data: PostCreateInput) => {
+      return usePostApi.createPost(data);
+    },
+    onSuccess: () => {
       setIsOpen(false);
       toast.success("Post created successfully!");
-    } catch (error) {
+      queryClient.invalidateQueries({ queryKey: ["ProfileFeed"] });
+      queryClient.invalidateQueries({ queryKey: ["HomeFeed"] });
+    },
+    onError: (error) => {
       console.error("Failed to create post:", error);
-      toast.error("Failed to create post. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  const [isOpen, setIsOpen] = useState(false);
+      toast.error(
+        `Failed to create post: ${(error as any).message || "Unknown error"}`
+      );
+    },
+  });
 
   return (
     <Dialog defaultOpen={shouldAutoOpen} open={isOpen} onOpenChange={setIsOpen}>
@@ -80,10 +85,13 @@ export function CreatePost({
         <DialogContent className="sm:max-w-[625px]">
           <DialogTitle></DialogTitle>
           <CreatePostForm
-            onSubmit={handleSubmit}
+            // Pass the mutateAsync function from useMutation to the form
+            onSubmit={createPostMutation.mutateAsync}
             owner={profileId}
-            isSubmitting={isSubmitting}
-            submitState={setIsOpen} // Pass setIsOpen directly here
+            // Pass the isLoading state from useMutation to control form submission UI
+            isSubmitting={createPostMutation.isLoading}
+            // The submitState prop is no longer needed here as dialog closing
+            // and toast messages are handled by onSuccess/onError callbacks of useMutation
           />
         </DialogContent>
       </form>
@@ -92,11 +100,13 @@ export function CreatePost({
 }
 
 export function CreatePostForm({
-  onSubmit,
+  onSubmit, // This prop is now expected to be the mutateAsync function from useMutation
   owner,
-  isSubmitting,
-  submitState,
-}: CreatePostFormProps) {
+  isSubmitting, // This prop is now expected to be the isLoading boolean from useMutation
+}: Omit<CreatePostFormProps, "submitState"> & {
+  onSubmit: (data: PostCreateInput) => Promise<any>;
+  isSubmitting: boolean;
+}) {
   const [files, setFiles] = useState<File[]>([]);
   const { data: session } = useSession();
 
@@ -226,10 +236,9 @@ export function CreatePostForm({
   });
 
   const handleSubmit = async (data: PostCreateInput) => {
-    submitState(true); // Assuming submitState is a setter for a boolean like setIsSubmitting
+    // isSubmitting is now handled by useMutation's isLoading
     if (files.length === 0 && !data.caption?.trim()) {
       toast.error("Please add a caption or at least one image");
-      submitState(false);
       return;
     }
     try {
@@ -250,25 +259,25 @@ export function CreatePostForm({
         }
 
         const result = await res.json();
-        // console.log("file upload response", result);
         const mediaLink = await getSanityMedia(result.mediaId);
         uploadedImageIds.push(mediaLink.data.url);
       }
 
-      const owner = (session?.user?.id as string) ?? "";
+      const ownerId = (session?.user?.id as string) ?? "";
+      // Call the mutateAsync function passed from the parent component
       await onSubmit({
         ...data,
         image: uploadedImageIds,
-        owner,
+        owner: ownerId,
       });
 
       setFiles([]);
       form.reset();
     } catch (error) {
       console.error("Error submitting post:", error);
-      toast.error("Failed to create post. Please try again.");
+      // Error toast is now handled by the onError callback in the parent CreatePost component
     } finally {
-      submitState(false);
+      // No need to set submitting state here, useMutation handles it automatically
     }
   };
   const caption = form.watch("caption");

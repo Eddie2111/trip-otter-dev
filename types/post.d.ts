@@ -9,6 +9,7 @@ export interface Post {
   location: string;
   owner: UserDocument;
   comments: Comment[];
+  hashtags: string[];
 }
 
 export interface PostDocument extends Post, Document {

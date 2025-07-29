@@ -29,6 +29,10 @@ const postSchema = new Schema<PostDocument>(
       ref: 'User',
       required: true,
     },
+    hashtags: [{
+      type: String,
+      required: false,
+    }],
     comments: [
       {
         type: Schema.Types.ObjectId,

@@ -23,18 +23,8 @@ export function DesktopSidebar() {
     }
   };
 
-  if (
-    pathname === "/login" ||
-    pathname === "/signup" ||
-    pathname === "/forgot-password" ||
-    pathname.includes("verify") ||
-    pathname.includes("api")
-  ) {
-    return null;
-  }
-
   return (
-    <div className="hidden md:block fixed left-0 top-0 h-screen w-64 bg-white border-r pt-20 z-20 overflow-y-auto dark:bg-gray-900 dark:border-gray-700">
+    <div className="hidden md:block fixed left-0 top-0 h-screen max-w-64 min-w-24 bg-white border-r pt-20 z-20 overflow-y-auto dark:bg-gray-900 dark:border-gray-700">
       <div className="p-4">
         <nav className="space-y-2">
           <Link href="/" passHref>

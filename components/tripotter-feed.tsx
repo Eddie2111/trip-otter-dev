@@ -65,19 +65,19 @@ export function TripotterFeed() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Search Modal */}
-      <SearchModal
+      {/* <SearchModal
         isOpen={showSearchModal}
         onClose={() => setShowSearchModal(false)}
         onPersonSelect={() => {}}
         onShopSelect={() => {}}
-      />
+      /> */}
       {/* Desktop Header */}
-      <DesktopHeader
+      {/* <DesktopHeader
         setShowSearchModal={setShowSearchModal}
         session={session}
         handleLogout={handleLogout}
         userData={userData ?? session?.user}
-      />
+      /> */}
 
       {/* Mobile Header */}
       <div className="md:hidden sticky top-0 z-10 bg-white border-b px-4 py-3 dark:bg-gray-800 dark:border-gray-700">

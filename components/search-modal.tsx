@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,18 +23,71 @@ import {
   Star,
   Wand2,
   Loader2,
+  MapPin,
+  Hash,
 } from "lucide-react";
 import { ai } from "@/lib/gemini";
 import { Textarea } from "@/components/ui/textarea";
-import { mockSearchData, recentSearches, trendingSearches } from "@/data/mocks/search.mock";
+import {
+  mockSearchData,
+  recentSearches,
+  trendingSearches,
+} from "@/data/mocks/search.mock";
+import { useSearchAPI } from "@/lib/requests";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface SearchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPersonSelect: (personId: number) => void;
+  onPersonSelect: (personId: string) => void; // Changed to string for _id
   onGroupSelect?: (groupId: number) => void;
-  onShopSelect: (shopId: number) => void;
+  onShopSelect: (shopId: string) => void; // Changed to string for _id
 }
+
+interface FilteredResults {
+  people: Array<{
+    id: string;
+    username: string;
+    name: string;
+    avatar?: string;
+    verified?: boolean;
+    followers?: number;
+  }>;
+  hashtags: Array<{
+    id: string; // Can be post _id or a generated ID for the hashtag
+    tag: string;
+    count?: number;
+  }>;
+  // locations: Array<{
+  //   id: number; // Only from mock data
+  //   name: string;
+  //   count: number;
+  // }>;
+  // groups: Array<{
+  //   id: number; // Only from mock data
+  //   name: string;
+  //   avatar?: string;
+  //   members: number;
+  //   category: string;
+  // }>;
+  // shops: Array<{
+  //   id: string;
+  //   name: string;
+  //   avatar?: string;
+  //   rating?: number;
+  //   products?: number;
+  //   category?: string;
+  // }>;
+}
+
+const initialFilteredResults: FilteredResults = {
+  people: [],
+  hashtags: [],
+  // locations: [],
+  // groups: [],
+  // shops: [],
+};
 
 export function SearchModal({
   isOpen,
@@ -45,9 +98,13 @@ export function SearchModal({
 }: SearchModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  const [filteredResults, setFilteredResults] = useState(mockSearchData);
+  const [filteredResults, setFilteredResults] = useState<FilteredResults>(
+    initialFilteredResults
+  );
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // State for AI tab
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiResponse, setAiResponse] = useState<{
     suggestions: string[];
@@ -56,57 +113,141 @@ export function SearchModal({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchSearchResults = useCallback(async () => {
     if (!searchQuery.trim()) {
-      setFilteredResults(mockSearchData);
+      setFilteredResults({
+        // ...mockSearchData, // Removed to prevent issues with commented out types
+        people: [],
+        hashtags: [],
+        // shops: [],
+        // locations: [],
+        // groups: [],
+      });
+      setLoading(false);
+      setError(null);
       return;
     }
 
-    const query = searchQuery.toLowerCase();
-    const filtered = {
-      people: mockSearchData.people.filter(
-        (person) =>
-          person.username.toLowerCase().includes(query) ||
-          person.name.toLowerCase().includes(query)
-      ),
-      hashtags: mockSearchData.hashtags.filter((hashtag) =>
-        hashtag.tag.toLowerCase().includes(query)
-      ),
-      locations: mockSearchData.locations.filter((location) =>
-        location.name.toLowerCase().includes(query)
-      ),
-      groups: mockSearchData.groups.filter(
-        (group) =>
-          group.name.toLowerCase().includes(query) ||
-          group.category.toLowerCase().includes(query)
-      ),
-      shops: mockSearchData.shops.filter(
-        (shop) =>
-          shop.name.toLowerCase().includes(query) ||
-          shop.category.toLowerCase().includes(query)
-      ),
-    };
-    setFilteredResults(filtered);
-  }, [searchQuery]);
+    setLoading(true);
+    setError(null);
+    try {
+      let profileQuery = "";
+      let shopQuery = "";
+      let hashtagsQuery = "";
+      let groupQuery = "";
+
+      // Only pass the query to the selected tab's parameter
+      if (activeTab === "all") {
+        profileQuery = searchQuery;
+        shopQuery = searchQuery;
+        hashtagsQuery = searchQuery;
+        groupQuery = searchQuery;
+      } else if (activeTab === "people") {
+        profileQuery = searchQuery;
+      } else if (activeTab === "shops") {
+        shopQuery = searchQuery;
+      } else if (activeTab === "hashtags") {
+        hashtagsQuery = searchQuery;
+      }
+
+      const response = await useSearchAPI.search(
+        "1",
+        profileQuery,
+        groupQuery,
+        shopQuery,
+        hashtagsQuery
+      );
+
+      const apiData = response.data;
+
+      // Filter mock data for locations and groups based on search query
+      // const filteredLocations = mockSearchData.locations.filter((loc) =>
+      //   loc.name.toLowerCase().includes(searchQuery.toLowerCase())
+      // );
+      // const filteredGroups = mockSearchData.groups.filter(
+      //   (group) =>
+      //     group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      //     group.category.toLowerCase().includes(searchQuery.toLowerCase())
+      // );
+
+      const newFilteredResults: FilteredResults = {
+        people: (apiData.users || []).map((user: any) => ({
+          id: user._id,
+          username: user.username,
+          name: user.fullName,
+          avatar: user.profileImage || "/placeholder.svg",
+          verified: false,
+          followers: 0,
+        })),
+        // shops: (apiData.shops || []).map((shop: any) => ({
+        //   id: shop._id,
+        //   name: shop.name,
+        //   avatar: shop.avatar || "/placeholder.svg",
+        //   rating: shop.rating || 0,
+        //   products: shop.products || 0,
+        //   category: shop.category || "General",
+        // })),
+        hashtags: (apiData.hashtags || []).flatMap((post: any) =>
+          post.hashtags.map((tag: string) => ({
+            id: post._id + tag,
+            tag: tag,
+            count: 0,
+          }))
+        ),
+        // locations: filteredLocations,
+        // groups: filteredGroups,
+      };
+
+      setFilteredResults(newFilteredResults);
+    } catch (err) {
+      console.error("Error fetching search results:", err);
+      setError("Failed to fetch search results. Please try again.");
+      setFilteredResults(initialFilteredResults);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery, activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "ai") {
+      const handler = setTimeout(() => {
+        fetchSearchResults();
+      }, 300);
+
+      return () => {
+        clearTimeout(handler);
+      };
+    } else {
+      setFilteredResults(initialFilteredResults);
+    }
+  }, [searchQuery, activeTab, fetchSearchResults]);
 
   const clearSearch = () => {
     setSearchQuery("");
+    setFilteredResults({
+      // ...mockSearchData, // Removed to prevent issues with commented out types
+      people: [],
+      hashtags: [],
+      // shops: [],
+      // locations: [],
+      // groups: [],
+    });
   };
 
-  const handlePersonClick = (personId: number) => {
+  const handlePersonClick = (personId: string) => {
     onPersonSelect(personId);
+    router.push(`/person/${personId}`);
     onClose();
   };
 
   const handleGroupClick = (groupId: number) => {
-    // Ensure onGroupSelect is defined before calling
     if (onGroupSelect) {
       onGroupSelect(groupId);
     }
     onClose();
   };
 
-  const handleShopClick = (shopId: number) => {
+  const handleShopClick = (shopId: string) => {
     onShopSelect(shopId);
     onClose();
   };
@@ -118,13 +259,12 @@ export function SearchModal({
     }
     setAiLoading(true);
     setAiError(null);
-    setAiResponse(null); // Clear previous response
+    setAiResponse(null);
 
     try {
       const response = await ai(aiPrompt);
       if (response) {
         setAiResponse(response);
-        console.log(response);
       } else {
         setAiError("Failed to get AI suggestions. Please try again.");
       }
@@ -136,26 +276,294 @@ export function SearchModal({
     }
   };
 
+  const renderResults = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-full py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600">Loading results...</span>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="text-red-500 text-center py-8">
+          <p>{error}</p>
+          <p>Please try again later.</p>
+        </div>
+      );
+    }
+
+    const hasResults =
+      filteredResults.people.length > 0 || filteredResults.hashtags.length > 0;
+    // || filteredResults.locations.length > 0
+    // || filteredResults.groups.length > 0
+    // || filteredResults.shops.length > 0;
+
+    if (!searchQuery && activeTab !== "ai") {
+      return (
+        <div className="space-y-6 py-4">
+          {/* Recent Searches */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="w-4 h-4 text-gray-500" />
+              <h3 className="font-semibold text-sm">Recent</h3>
+            </div>
+            <div className="space-y-2">
+              {recentSearches.map((search, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                  onClick={() => setSearchQuery(search.query)}
+                >
+                  <div className="flex items-center gap-3">
+                    <search.icon className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm">{search.query}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-6 h-6 rounded-full"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Trending */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp className="w-4 h-4 text-gray-500" />
+              <h3 className="font-semibold text-sm">Trending</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {trendingSearches.map((trend, index) => (
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-gray-200 rounded-md"
+                  onClick={() => setSearchQuery(trend)}
+                >
+                  {trend}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (!hasResults && searchQuery && !loading) {
+      return (
+        <div className="text-center text-gray-500 py-8">
+          No results found for "{searchQuery}" in this category.
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6 py-4">
+        {/* People Results */}
+        {(activeTab === "all" || activeTab === "people") &&
+          filteredResults.people.length > 0 && (
+            <div>
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                People
+              </h3>
+              <div className="space-y-2">
+                {filteredResults.people.map((person) => (
+                  <Link
+                    key={person.id}
+                    className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                    href={`/person/${person.id}`}
+                  >
+                    <Avatar className="w-10 h-10 rounded-full">
+                      <AvatarImage
+                        src={person.avatar || "/placeholder.svg"}
+                        alt={person.name}
+                      />
+                      <AvatarFallback>
+                        {person.name ? person.name[0] : "N/A"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1">
+                        <span className="font-semibold text-sm">
+                          {person.username}
+                        </span>
+                        {person.verified && (
+                          <Star className="w-3 h-3 text-blue-500 fill-current" />
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {person.name}{" "}
+                        {person.followers
+                          ? `• ${person.followers} followers`
+                          : ""}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+        {/* Groups Results (from mock data) */}
+        {/* {(activeTab === "all" || activeTab === "groups") &&
+          filteredResults.groups.length > 0 && (
+            <div>
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Groups
+              </h3>
+              <div className="space-y-2">
+                {filteredResults.groups.map((group) => (
+                  <div
+                    key={group.id}
+                    className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                    onClick={() => handleGroupClick(group.id)}
+                  >
+                    <Avatar className="w-10 h-10 rounded-full">
+                      <AvatarImage
+                        src={group.avatar || "/placeholder.svg"}
+                        alt={group.name}
+                      />
+                      <AvatarFallback>{group.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="font-semibold text-sm">{group.name}</div>
+                      <div className="text-xs text-gray-500">
+                        {group.members} members • {group.category}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )} */}
+
+        {/* Shops Results */}
+        {/* {(activeTab === "all" || activeTab === "shops") &&
+          filteredResults.shops.length > 0 && (
+            <div>
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <Store className="w-4 h-4" />
+                Shops
+              </h3>
+              <div className="space-y-2">
+                {filteredResults.shops.map((shop) => (
+                  <div
+                    key={shop.id}
+                    className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                    onClick={() => handleShopClick(shop.id)}
+                  >
+                    <Avatar className="w-10 h-10 rounded-full">
+                      <AvatarImage
+                        src={shop.avatar || "/placeholder.svg"}
+                        alt={shop.name}
+                      />
+                      <AvatarFallback>{shop.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="font-semibold text-sm">{shop.name}</div>
+                      <div className="text-xs text-gray-500 flex items-center gap-2">
+                        {shop.rating ? <span>⭐ {shop.rating}</span> : null}
+                        {shop.rating && shop.products ? <span>•</span> : null}
+                        {shop.products ? (
+                          <span>{shop.products} products</span>
+                        ) : null}
+                        {(shop.rating || shop.products) && shop.category ? (
+                          <span>•</span>
+                        ) : null}
+                        {shop.category ? <span>{shop.category}</span> : null}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )} */}
+
+        {/* Hashtags Results */}
+        {(activeTab === "all" || activeTab === "hashtags") &&
+          filteredResults.hashtags.length > 0 && (
+            <div>
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <Hash className="w-4 h-4" />
+                Hashtags
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {filteredResults.hashtags.map((hashtag, index) => (
+                  <Badge
+                    key={hashtag.id || index}
+                    variant="secondary"
+                    className="cursor-pointer hover:bg-gray-200 rounded-md"
+                    onClick={() => setSearchQuery(hashtag.tag)}
+                  >
+                    {hashtag.tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+        {/* Locations Results (from mock data) */}
+        {/* {(activeTab === "all" || activeTab === "locations") &&
+          filteredResults.locations.length > 0 && (
+            <div>
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                Locations
+              </h3>
+              <div className="space-y-2">
+                {filteredResults.locations.map((location) => (
+                  <div
+                    key={location.id}
+                    className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                    onClick={() => setSearchQuery(location.name)}
+                  >
+                    <MapPin className="w-5 h-5 text-gray-400" />
+                    <div className="flex-1">
+                      <div className="font-semibold text-sm">
+                        {location.name}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {location.count} posts
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )} */}
+      </div>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] p-0">
+      <DialogContent className="max-w-2xl max-h-[80vh] p-0 flex flex-col">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="sr-only">Search</DialogTitle>
-          {activeTab !== "ai" && ( // Only show search input if not on AI tab
+          {activeTab !== "ai" && (
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="Search people, hashtags, locations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10 h-12 text-base"
+                className="pl-10 pr-10 h-12 text-base rounded-md"
                 autoFocus
               />
               {searchQuery && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 w-8 h-8"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 w-8 h-8 rounded-full"
                   onClick={clearSearch}
                 >
                   <X className="w-4 h-4" />
@@ -165,202 +573,63 @@ export function SearchModal({
           )}
         </DialogHeader>
 
-        <div className="px-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-6">
+        <div className="px-6 flex-grow flex flex-col">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="flex-grow flex flex-col"
+          >
+            <TabsList className="grid w-full grid-cols-4 mt-4">
+              {" "}
+              {/* Changed to grid-cols-3 */}
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="people">People</TabsTrigger>
-              <TabsTrigger value="locations">Places</TabsTrigger>
+              {/* <TabsTrigger value="locations">Places</TabsTrigger>
               <TabsTrigger value="groups">Groups</TabsTrigger>
-              <TabsTrigger value="shops">Shops</TabsTrigger>
-              <TabsTrigger value="ai" className="bg-blue-500 hover:bg-blue-500/50 transition ease-in-out duration-300 text-white font-bold"> <Wand2 className="mr-2 h-4 w-4" /> AI</TabsTrigger> {/* New AI Tab */}
+              <TabsTrigger value="shops">Shops</TabsTrigger> */}
+              <TabsTrigger value="hashtags">Hashtags</TabsTrigger>
+              <TabsTrigger
+                value="ai"
+                className="bg-blue-500 hover:bg-blue-500/50 transition ease-in-out duration-300 text-white font-bold"
+              >
+                {" "}
+                <Wand2 className="mr-2 h-4 w-4" /> AI
+              </TabsTrigger>
             </TabsList>
 
-            <ScrollArea className="h-96 mt-4">
-              {activeTab !== "ai" &&
-                !searchQuery && ( // Show recent/trending only for non-AI tabs when no search query
-                  <div className="space-y-6">
-                    {/* Recent Searches */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <Clock className="w-4 h-4 text-gray-500" />
-                        <h3 className="font-semibold text-sm">Recent</h3>
-                      </div>
-                      <div className="space-y-2">
-                        {recentSearches.map((search, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
-                          >
-                            <div className="flex items-center gap-3">
-                              <search.icon className="w-4 h-4 text-gray-400" />
-                              <span className="text-sm">{search.query}</span>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="w-6 h-6"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Trending */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <TrendingUp className="w-4 h-4 text-gray-500" />
-                        <h3 className="font-semibold text-sm">Trending</h3>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {trendingSearches.map((trend, index) => (
-                          <Badge
-                            key={index}
-                            variant="secondary"
-                            className="cursor-pointer hover:bg-gray-200"
-                          >
-                            {trend}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
+            <ScrollArea className="flex-grow mt-4 pb-4 px-1">
               <TabsContent value="all" className="mt-0">
-                {searchQuery && (
-                  <div className="space-y-6">
-                    {/* People Results */}
-                    {filteredResults.people.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                          <Users className="w-4 h-4" />
-                          People
-                        </h3>
-                        <div className="space-y-2">
-                          {filteredResults.people.slice(0, 3).map((person) => (
-                            <div
-                              key={person.id}
-                              className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
-                              onClick={() => handlePersonClick(person.id)}
-                            >
-                              <Avatar className="w-10 h-10">
-                                <AvatarImage
-                                  src={person.avatar || "/placeholder.svg"}
-                                />
-                                <AvatarFallback>
-                                  {person.name[0]}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-1">
-                                  <span className="font-semibold text-sm">
-                                    {person.username}
-                                  </span>
-                                  {person.verified && (
-                                    <Star className="w-3 h-3 text-blue-500 fill-current" />
-                                  )}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {person.name} • {person.followers} followers
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Groups Results */}
-                    {filteredResults.groups.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                          <Users className="w-4 h-4" />
-                          Groups
-                        </h3>
-                        <div className="space-y-2">
-                          {filteredResults.groups.slice(0, 2).map((group) => (
-                            <div
-                              key={group.id}
-                              className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
-                              onClick={() => handleGroupClick(group.id)}
-                            >
-                              <Avatar className="w-10 h-10">
-                                <AvatarImage
-                                  src={group.avatar || "/placeholder.svg"}
-                                />
-                                <AvatarFallback>{group.name[0]}</AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <div className="font-semibold text-sm">
-                                  {group.name}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {group.members} members • {group.category}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Shops Results */}
-                    {filteredResults.shops.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                          <Store className="w-4 h-4" />
-                          Shops
-                        </h3>
-                        <div className="space-y-2">
-                          {filteredResults.shops.slice(0, 2).map((shop) => (
-                            <div
-                              key={shop.id}
-                              className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
-                              onClick={() => handleShopClick(shop.id)}
-                            >
-                              <Avatar className="w-10 h-10">
-                                <AvatarImage
-                                  src={shop.avatar || "/placeholder.svg"}
-                                />
-                                <AvatarFallback>{shop.name[0]}</AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <div className="font-semibold text-sm">
-                                  {shop.name}
-                                </div>
-                                <div className="text-xs text-gray-500 flex items-center gap-2">
-                                  <span>⭐ {shop.rating}</span>
-                                  <span>•</span>
-                                  <span>{shop.products} products</span>
-                                  <span>•</span>
-                                  <span>{shop.category}</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                {renderResults()}
+              </TabsContent>
+              <TabsContent value="people" className="mt-0">
+                {renderResults()}
+              </TabsContent>
+              {/* <TabsContent value="locations" className="mt-0">
+                {renderResults()}
+              </TabsContent>
+              <TabsContent value="groups" className="mt-0">
+                {renderResults()}
+              </TabsContent>
+              <TabsContent value="shops" className="mt-0">
+                {renderResults()}
+              </TabsContent> */}
+              <TabsContent value="hashtags" className="mt-0">
+                {renderResults()}
               </TabsContent>
 
               {/* AI Tab Content */}
-              <TabsContent value="ai" className="mt-0 p-4">
+              <TabsContent value="ai" className="mt-0">
                 <div className="space-y-4">
                   <Textarea
                     placeholder="Tell me about your travel preferences, e.g., 'I want a relaxing beach vacation in Europe with good seafood and historical sites.'"
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
-                    className="min-h-[100px]"
+                    className="min-h-[100px] rounded-md"
                   />
                   <Button
                     onClick={handleGenerateAIResponse}
                     disabled={aiLoading}
-                    className="w-full"
+                    className="w-full rounded-md"
                   >
                     {aiLoading ? (
                       <>

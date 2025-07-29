@@ -8,6 +8,15 @@ import "@/utils/schema/comments-schema";
 import "@/utils/schema/like-schema";
 import "@/utils/schema/user-schema";
 
+interface IPostBody {
+  owner: string;
+  image?: string[] | undefined;
+  likes?: string[] | undefined;
+  caption?: string | undefined;
+  location?: string | undefined;
+  comments?: string[] | undefined;
+}
+
 export async function GET(request: NextRequest): Promise<Response> {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -36,7 +45,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     }
 
     const post = await runDBOperation(async () => {
-      return await postsSchema
+      return (await postsSchema
         .findById(postId)
         .populate({
           path: "owner",
@@ -63,7 +72,7 @@ export async function GET(request: NextRequest): Promise<Response> {
           },
         })
         .lean()
-        .exec() as any;
+        .exec()) as any;
     });
 
     if (!post) {
@@ -109,35 +118,39 @@ export async function GET(request: NextRequest): Promise<Response> {
     );
   }
 }
-  
+
 export async function POST(request: Request) {
-    const postBody = await request.json()
-    try {
-        const createPost = await runDBOperationWithTransaction(async () => {
-            const newPost = new postsSchema(postBody);
-            await newPost.save();
-      
-            const updateResult = await profileSchema.findOneAndUpdate(
-              { user: postBody.owner },
-              { $push: { posts: newPost._id } },
-              { new: true, upsert: true,}
-            );
-      
-            return {newPost, updateResult};
-          });
-        return Response.json({
-            message: "Post uploaded!",
-            status: 200,
-            data: createPost,
-        })
-    } catch (error: unknown) {
-        const errResponse = error as {message: string; code: number};
-        return Response.json({
-            message: "Error uploading post",
-            status: 500,
-            error: errResponse.message,
-        })
-    }
+  const postBody = (await request.json()) as IPostBody;
+  try {
+    const createPost = await runDBOperationWithTransaction(async () => {
+      const hashtags = postBody.caption?.match(/#[a-zA-Z0-9]+/g) || [];
+      const newPost = new postsSchema({
+        ...postBody,
+        hashtags,
+      });
+      await newPost.save();
+
+      const updateResult = await profileSchema.findOneAndUpdate(
+        { user: postBody.owner },
+        { $push: { posts: newPost._id } },
+        { new: true, upsert: true }
+      );
+
+      return { newPost, updateResult };
+    });
+    return Response.json({
+      message: "Post uploaded!",
+      status: 200,
+      data: createPost,
+    });
+  } catch (error: unknown) {
+    const errResponse = error as { message: string; code: number };
+    return Response.json({
+      message: "Error uploading post",
+      status: 500,
+      error: errResponse.message,
+    });
+  }
 }
 
 export async function PATCH(request: NextRequest) {
@@ -242,7 +255,7 @@ export async function DELETE(request: NextRequest) {
     const deletePost = await runDBOperation(async () => {
       const deletedPost = await postsSchema.findByIdAndDelete(postId);
       return deletedPost;
-    })
+    });
     if (!deletePost) {
       return Response.json({
         message: "Post not found.",
@@ -253,25 +266,25 @@ export async function DELETE(request: NextRequest) {
       message: "Post deleted successfully!",
       status: 200,
       data: deletePost,
-    })
+    });
   } catch (err) {
-    console.log(err)
+    console.log(err);
     return Response.json({
       message: "Error deleting post",
       status: 500,
       error: err,
-    })
+    });
   }
 }
 
 export async function OPTIONS(request: Request) {
-    return new Response(null, {
-      status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Max-Age": "86400",
-      },
-    });
+  return new Response(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
 }

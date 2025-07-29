@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -280,8 +280,8 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   // Display error state for the main profile
   if (isProfileError) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-red-500">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <p className="text-red-500 dark:text-red-400">
           Error loading profile: {profileError?.message}
         </p>
       </div>
@@ -291,8 +291,8 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   // If data is still null after loading and no error, it means user not found.
   if (!personProfile) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">User not found.</p>
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <p className="text-gray-500 dark:text-gray-400">User not found.</p>
       </div>
     );
   }
@@ -302,19 +302,27 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   return (
     <div className="flex min-h-screen">
       <DesktopSidebar />
-      <main className="md:ml-64 flex-1 bg-gray-50 overflow-auto">
+      <main className="md:ml-64 flex-1 bg-gray-50 dark:bg-gray-950 overflow-auto">
         {/* Header */}
-        <div className="bg-white border-b sticky top-0 z-10">
+        <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-800 sticky top-0 z-10">
           <div className="max-w-4xl mx-auto px-4 py-3">
             <div className="flex items-center gap-4">
               <Link href="/" shallow={true}>
-                <Button variant="ghost" size="icon">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="dark:text-gray-400 dark:hover:bg-gray-800"
+                >
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
               </Link>
               <div>
-                <h1 className="font-semibold">{displayPersonData?.fullName}</h1>
-                <p className="text-sm text-gray-500">{posts?.length} posts</p>
+                <h1 className="font-semibold text-gray-900 dark:text-gray-100">
+                  {displayPersonData?.fullName}
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {posts?.length} posts
+                </p>
               </div>
             </div>
           </div>
@@ -334,7 +342,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                 <ProfileEditImages type="COVER">
                   <Button
                     variant="secondary"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
                   >
                     <Camera className="w-4 h-4" />
                     Edit Cover Photo
@@ -345,17 +353,17 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
           </div>
 
           {/* Profile Info */}
-          <div className="bg-white px-4 pb-6 mt-0 md:mt-24">
+          <div className="bg-white dark:bg-gray-900 px-4 pb-6 mt-0 md:mt-24">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 md:-mt-20">
               <div className="flex flex-col md:flex-row md:items-end gap-4">
                 <div className="relative group">
-                  <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
+                  <Avatar className="w-32 h-32 border-4 border-white dark:border-gray-900 shadow-lg">
                     <AvatarImage
                       src={
                         displayPersonData?.profileImage || "/placeholder.svg"
                       }
                     />
-                    <AvatarFallback className="text-2xl">
+                    <AvatarFallback className="text-2xl dark:bg-gray-700 dark:text-gray-300">
                       {displayPersonData?.fullName
                         ? displayPersonData?.fullName
                             .split(" ")
@@ -370,7 +378,11 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                   {selfProfile && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <ProfileEditImages type="PROFILE">
-                        <Button variant="secondary" size="icon">
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+                        >
                           <Camera className="w-5 h-5" />
                         </Button>
                       </ProfileEditImages>
@@ -380,17 +392,17 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
 
                 <div className="md:mb-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <h1 className="text-2xl font-bold">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                       {displayPersonData?.fullName}
                     </h1>
                     {displayPersonData.verified && (
                       <Star className="w-5 h-5 text-blue-500 fill-current" />
                     )}
                   </div>
-                  <p className="text-gray-600 mb-1">
+                  <p className="text-gray-600 dark:text-gray-300 mb-1">
                     @{displayPersonData?.username}
                   </p>
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300 mb-3">
                     <FollowModal
                       type="Followers"
                       userId={displayPersonData._id ?? ""}
@@ -420,12 +432,18 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                     type="FULLFORM"
                     defaultData={displayPersonData}
                   >
-                    <Button variant="default" className="w-full md:w-auto">
+                    <Button
+                      variant="default"
+                      className="w-full md:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white"
+                    >
                       Edit profile
                     </Button>
                   </ProfileEditModal>
                   <CreatePost profileId={personId}>
-                    <Button variant="default" className="w-full md:w-auto">
+                    <Button
+                      variant="default"
+                      className="w-full md:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white"
+                    >
                       Create post
                     </Button>
                   </CreatePost>
@@ -435,7 +453,9 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                   <Button
                     variant={isFollowing ? "outline" : "default"}
                     onClick={handleFollow}
-                    className="flex-1 md:flex-none"
+                    className="flex-1 md:flex-none
+                    dark:border-blue-500 dark:text-blue-500 dark:hover:bg-blue-900
+                    dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white"
                     disabled={followMutation.isPending}
                   >
                     {followMutation.isPending ? (
@@ -447,11 +467,18 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                       </>
                     )}
                   </Button>
-                  <Button variant="outline">
+                  <Button
+                    variant="outline"
+                    className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                  >
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Message
                   </Button>
-                  <Button variant="outline" size="icon">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                  >
                     <MoreHorizontal className="w-4 h-4" />
                   </Button>
                 </div>
@@ -460,16 +487,21 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
 
             {/* Bio and Info */}
             <div className="mt-4 space-y-3">
-              <div className="whitespace-pre-line text-gray-800">
+              <div className="whitespace-pre-line text-gray-800 dark:text-gray-200">
                 {displayPersonData?.bio ? (
                   displayPersonData?.bio
                 ) : (
                   <ProfileEditModal type="BIO" defaultData={displayPersonData}>
-                    <Badge variant="secondary">+ Add bio</Badge>
+                    <Badge
+                      variant="secondary"
+                      className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+                    >
+                      + Add bio
+                    </Badge>
                   </ProfileEditModal>
                 )}
               </div>
-              <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+              <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-300">
                 <div className="flex items-center gap-1">
                   <MapPin className="w-4 h-4" />
                   {displayPersonData.location ? (
@@ -479,7 +511,9 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                       type="LOCATION"
                       defaultData={displayPersonData}
                     >
-                      <Badge>+ Add Location</Badge>
+                      <Badge className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+                        + Add Location
+                      </Badge>
                     </ProfileEditModal>
                   )}
                 </div>
@@ -495,7 +529,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                             rel="noreferrer"
                             className="text-blue-500 transition ease-in-out duration-300 hover:underline"
                           >
-                            <span className="text-gray-600">
+                            <span className="text-gray-600 dark:text-gray-300">
                               {social.platform}
                             </span>
                           </a>
@@ -507,18 +541,28 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                       type="SOCIALS"
                       defaultData={displayPersonData}
                     >
-                      <Badge variant="secondary">+ Add socials</Badge>
+                      <Badge
+                        variant="secondary"
+                        className="dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+                      >
+                        + Add socials
+                      </Badge>
                     </ProfileEditModal>
                   )}
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
                   Joined{" "}
-                  {displayPersonData?.createdAt?.toString().split("T")[0]}
+                  {dayjs(displayPersonData?.createdAt).format("MMM YYYY")}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="secondary">{displayPersonData?.role}</Badge>
+                <Badge
+                  variant="secondary"
+                  className="dark:bg-gray-700 dark:text-gray-100"
+                >
+                  {displayPersonData?.role}
+                </Badge>
                 {/* {mutualFollowers.length > 0 && (
                   <div className="flex items-center gap-1 text-sm text-gray-600">
                     <span>Followed by</span>
@@ -544,25 +588,31 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
             </div>
 
             {/* Stats */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <div className="font-semibold text-lg">
+                  <div className="font-semibold text-lg text-gray-900 dark:text-gray-100">
                     {displayPersonData.stats?.totalLikes || 0}
                   </div>
-                  <div className="text-sm text-gray-600">Total Likes</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    Total Likes
+                  </div>
                 </div>
                 <div>
-                  <div className="font-semibold text-lg">
+                  <div className="font-semibold text-lg text-gray-900 dark:text-gray-100">
                     {displayPersonData.stats?.avgLikes || 0}
                   </div>
-                  <div className="text-sm text-gray-600">Avg. Likes</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    Avg. Likes
+                  </div>
                 </div>
                 <div>
-                  <div className="font-semibold text-lg">
+                  <div className="font-semibold text-lg text-gray-900 dark:text-gray-100">
                     {displayPersonData.stats?.engagement || 0}
                   </div>
-                  <div className="text-sm text-gray-600">Engagement</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    Engagement
+                  </div>
                 </div>
               </div>
             </div>
@@ -574,10 +624,25 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="posts">Posts</TabsTrigger>
-              <TabsTrigger value="followers">Followers</TabsTrigger>
-              <TabsTrigger value="following">Following</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 dark:bg-gray-800 dark:text-gray-300">
+              <TabsTrigger
+                value="posts"
+                className="dark:data-[state=active]:bg-blue-600 dark:data-[state=active]:text-white"
+              >
+                Posts
+              </TabsTrigger>
+              <TabsTrigger
+                value="followers"
+                className="dark:data-[state=active]:bg-blue-600 dark:data-[state=active]:text-white"
+              >
+                Followers
+              </TabsTrigger>
+              <TabsTrigger
+                value="following"
+                className="dark:data-[state=active]:bg-blue-600 dark:data-[state=active]:text-white"
+              >
+                Following
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="posts" className="mt-6">
@@ -585,9 +650,9 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
             </TabsContent>
 
             <TabsContent value="followers" className="mt-6">
-              <Card>
+              <Card className="dark:bg-gray-800 dark:border-gray-700">
                 <CardHeader>
-                  <CardTitle>
+                  <CardTitle className="text-gray-900 dark:text-gray-100">
                     Followers ({followersCount.toLocaleString()})
                   </CardTitle>
                 </CardHeader>
@@ -603,13 +668,13 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                         >
                           <div className="flex items-center gap-3">
                             <Link href={`/person/${follower._id}`}>
-                              <Avatar className="w-10 h-10">
+                              <Avatar className="w-10 h-10 dark:bg-gray-700 dark:text-gray-300">
                                 <AvatarImage
                                   src={
                                     follower.profileImage || "/placeholder.svg"
                                   }
                                 />
-                                <AvatarFallback>
+                                <AvatarFallback className="dark:bg-gray-700 dark:text-gray-300">
                                   {follower.fullName
                                     ? follower.fullName[0]
                                     : follower.username[0]}
@@ -619,13 +684,13 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                             <div>
                               <div className="flex items-center gap-2">
                                 <Link href={`/person/${follower._id}`}>
-                                  <span className="font-semibold">
+                                  <span className="font-semibold text-gray-900 dark:text-gray-100">
                                     {follower.fullName}
                                   </span>
                                 </Link>
                               </div>
                               <Link href={`/person/${follower._id}`}>
-                                <span className="text-sm text-gray-600">
+                                <span className="text-sm text-gray-600 dark:text-gray-300">
                                   @{follower.username}
                                 </span>
                               </Link>
@@ -634,7 +699,9 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                         </div>
                       ))
                     ) : (
-                      <p className="text-gray-500">No followers yet.</p>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        No followers yet.
+                      </p>
                     )}
                   </div>
                 </CardContent>
@@ -642,9 +709,9 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
             </TabsContent>
 
             <TabsContent value="following" className="mt-6">
-              <Card>
+              <Card className="dark:bg-gray-800 dark:border-gray-700">
                 <CardHeader>
-                  <CardTitle>
+                  <CardTitle className="text-gray-900 dark:text-gray-100">
                     Following ({followingCount.toLocaleString()})
                   </CardTitle>
                 </CardHeader>
@@ -660,13 +727,13 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                         >
                           <div className="flex items-center gap-3">
                             <Link href={`/person/${following._id}`}>
-                              <Avatar className="w-10 h-10">
+                              <Avatar className="w-10 h-10 dark:bg-gray-700 dark:text-gray-300">
                                 <AvatarImage
                                   src={
                                     following.profileImage || "/placeholder.svg"
                                   }
                                 />
-                                <AvatarFallback>
+                                <AvatarFallback className="dark:bg-gray-700 dark:text-gray-300">
                                   {following.fullName
                                     ? following.fullName[0]
                                     : following.username[0]}
@@ -676,13 +743,13 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                             <div>
                               <div className="flex items-center gap-2">
                                 <Link href={`/person/${following._id}`}>
-                                  <span className="font-semibold">
+                                  <span className="font-semibold text-gray-900 dark:text-gray-100">
                                     {following.fullName}
                                   </span>
                                 </Link>
                               </div>
                               <Link href={`/person/${following._id}`}>
-                                <span className="text-sm text-gray-600">
+                                <span className="text-sm text-gray-600 dark:text-gray-300">
                                   @{following.username}
                                 </span>
                               </Link>
@@ -691,7 +758,9 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                         </div>
                       ))
                     ) : (
-                      <p className="text-gray-500">Not following anyone yet.</p>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        Not following anyone yet.
+                      </p>
                     )}
                   </div>
                 </CardContent>

@@ -74,14 +74,14 @@ export default function Settings() {
             <CardTitle className="text-2xl dark:text-gray-100">Others</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <Link href="/settings/analytics">
+            <Link href="/misc/analytics">
               <div className="p-4 border rounded-lg dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <h3 className="font-semibold mb-2 dark:text-gray-100">Analytics</h3>
                 <p className="text-gray-600 dark:text-gray-400">Check the platforms analytics</p>
               </div>
             </Link>
 
-            <Link href="/settings/reviews">
+            <Link href="/misc/reviews">
               <div className="p-4 border rounded-lg dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <h3 className="font-semibold mb-2 dark:text-gray-100">Reviews and Issues</h3>
                 <p className="text-gray-600 dark:text-gray-400">

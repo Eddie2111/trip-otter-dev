@@ -1,6 +1,14 @@
-"use client";
-import { useEffect, useState } from "react";
-import type React from "react";
+import { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: {
+      template: "Privacy Policy",
+      default: "Privacy Policy",
+    },
+    description: "Tripotter privacy policies",
+  };
+}
 
 export default function PrivacyPolicy() {
   return (

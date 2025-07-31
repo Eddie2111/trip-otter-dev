@@ -26,12 +26,7 @@ import { useRouter } from "next/navigation";
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-interface LoginPageProps {
-  onLogin: () => void;
-  onSwitchToSignup: () => void;
-}
-
-export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
+export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();

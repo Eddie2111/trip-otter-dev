@@ -3,6 +3,18 @@ import ReviewContainer from "./_component";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: {
+      template: "Reviews",
+      default: "Reviews",
+    },
+    description: "Tripotter reviews",
+  };
+}
+
 export default function Reviews() {
   return (
     <div className="ml-[300px]">

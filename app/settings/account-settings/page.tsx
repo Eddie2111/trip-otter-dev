@@ -1,7 +1,17 @@
 import { ProfileEditFormNoModal } from "@/components/profile-page/profile-edit-modal";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { Metadata } from "next";
 import Link from "next/link";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: {
+      template: "Account Settings",
+      default: "Account Settings",
+    },
+  };
+}
 
 export default function AccountSettings() {
   return (

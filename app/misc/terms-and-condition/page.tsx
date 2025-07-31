@@ -1,5 +1,14 @@
-"use client";
-import { useEffect, useState } from "react";
+import { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: {
+      template: "Terms and Conditions",
+      default: "Terms and Conditions",
+    },
+    description: "Tripotter terms and conditions",
+  };
+}
 import type React from "react";
 
 const Section = ({

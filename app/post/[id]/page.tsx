@@ -3,6 +3,29 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import dynamic from "next/dynamic";
 import { Loading } from "@/components/ui/loading";
+import { Metadata } from "next";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
+  const { id } = params;
+  let title = "Photo";
+
+  try {
+    const postData = await GetPost(id);
+    if (postData && postData.caption) {
+      const words = postData.caption.split(/\s+/).filter(Boolean);
+      title = words.slice(0, 5).join(" ");
+    }
+  } catch (error) {
+    console.error("Failed to fetch post data for metadata:", error);
+  }
+  return {
+    title: title,
+  };
+}
 
 const PostCard = dynamic(
   () => import("@/components/post-card").then((mod) => mod.PostCard),
@@ -14,9 +37,9 @@ const PostCard = dynamic(
 export default async function Page({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = await params;
+  const { id } = params;
   try {
     const postData = await GetPost(id);
     const { data: session } = await getServerSession(authOptions);
@@ -34,6 +57,11 @@ export default async function Page({
       );
     }
   } catch (error) {
-    // console.log(error);
+    console.error("Error fetching post data in Page component:", error);
+    return (
+      <div>
+        <h1>Error loading post</h1>
+      </div>
+    );
   }
 }

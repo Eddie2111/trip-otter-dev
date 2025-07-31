@@ -1,5 +1,16 @@
 import { GroupsPage } from "@/components/groups-page";
 import { ShopsPage } from "@/components/shops-page";
+import { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: {
+      template: "Groups",
+      default: "Groups",
+    },
+    description: "Groups of TripOtter",
+  };
+}
 
 export default function Shop() {
   return (

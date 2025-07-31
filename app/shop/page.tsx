@@ -1,4 +1,14 @@
 import { ShopsPage } from "@/components/shops-page";
+import { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: {
+      template: "Shops",
+      default: "Shops",
+    },
+  };
+}
 
 export default function Shop() {
   return (

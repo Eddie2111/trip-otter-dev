@@ -227,11 +227,20 @@ export function PostCardV2({
 
   const createNotification = async (content: string, type:string, postUrl: string) => {
     if (!isSocketConnected || !post?.owner?._id || !currentLoggedInUser?.id) return;
-
+    console.log("trigger create notification");
     try {
       const getUser = await useUserApi.getUser(currentLoggedInUser.id);
+      console.log(getUser, getUser?.data);
       if (getUser?.data?.profile?._id) {
         socket.emit("createNotification", {
+          createdBy: getUser.data.profile._id,
+          receiver: post.owner._id,
+          content,
+          type,
+          postUrl,
+          isRead: false,
+        });
+        console.log({
           createdBy: getUser.data.profile._id,
           receiver: post.owner._id,
           content,
@@ -284,7 +293,6 @@ export function PostCardV2({
         [postId]: "",
       }));
       setShowAllComments(true);
-      toast.success("Comment added successfully!");
       createNotification("commented on your post", "COMMENT", `/post/${postId}`);
     },
     onError: (error) => {
@@ -333,20 +341,15 @@ export function PostCardV2({
     },
     onSuccess: (message, postId) => {
       if (message === "Post liked successfully") {
-        toast.success("Post liked!");
         createNotification("liked your post", "LIKE", `/post/${postId}`);
-      } else if (message === "Post unliked successfully") {
-        toast.info("Post unliked.");
       }
-      // Invalidate to refetch and ensure consistency, but allow optimistic update to show first
       queryClient.invalidateQueries({ queryKey: ["homeFeed"] });
     },
     onError: (error, postId, context) => {
       toast.error(error.message || "Failed to update like status.");
-      // Revert optimistic update on error
       queryClient.setQueryData(["homeFeed"], context?.previousPosts);
-      setIsLiked((prev) => !prev); // Revert local state
-      setLikesCount((prev) => (isLiked ? prev + 1 : prev - 1)); // Revert local count
+      setIsLiked((prev) => !prev);
+      setLikesCount((prev) => (isLiked ? prev + 1 : prev - 1));
     },
   });
 

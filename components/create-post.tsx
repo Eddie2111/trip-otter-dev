@@ -33,7 +33,6 @@ import { DialogTitle } from "@radix-ui/react-dialog";
 import { usePostApi } from "@/lib/requests";
 import { getSanityMedia } from "@/lib/getSanityImage";
 
-// Import useMutation from TanStack Query
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 let nsfwModel: nsfwjs.NSFWJS | null = null;
@@ -85,13 +84,9 @@ export function CreatePost({
         <DialogContent className="sm:max-w-[625px]">
           <DialogTitle></DialogTitle>
           <CreatePostForm
-            // Pass the mutateAsync function from useMutation to the form
             onSubmit={createPostMutation.mutateAsync}
             owner={profileId}
-            // Pass the isLoading state from useMutation to control form submission UI
             isSubmitting={createPostMutation.isLoading}
-            // The submitState prop is no longer needed here as dialog closing
-            // and toast messages are handled by onSuccess/onError callbacks of useMutation
           />
         </DialogContent>
       </form>
@@ -100,9 +95,9 @@ export function CreatePost({
 }
 
 export function CreatePostForm({
-  onSubmit, // This prop is now expected to be the mutateAsync function from useMutation
+  onSubmit,
   owner,
-  isSubmitting, // This prop is now expected to be the isLoading boolean from useMutation
+  isSubmitting,
 }: Omit<CreatePostFormProps, "submitState"> & {
   onSubmit: (data: PostCreateInput) => Promise<any>;
   isSubmitting: boolean;
@@ -130,7 +125,6 @@ export function CreatePostForm({
     async (acceptedFiles: File[]) => {
       const filteredFiles: File[] = [];
       const imagePromises = acceptedFiles.map(async (file) => {
-        // Only check images
         if (!file.type.startsWith("image/")) {
           filteredFiles.push(file);
           return;
@@ -139,20 +133,16 @@ export function CreatePostForm({
         let processedFile = file;
         let fileSrc: string | undefined;
 
-        // Handle HEIC files: Convert to JPEG before further processing
         if (file.type === "image/heic" || file.type === "image/heif") {
           try {
-            // Dynamically import heic2any only when needed
             const heic2anyModule = await import("heic2any");
-            const heic2any = heic2anyModule.default; // Access the default export
+            const heic2any = heic2anyModule.default;
 
-            // heic2any returns a Promise that resolves with a Blob
             const convertedBlob = await heic2any({
               blob: file,
-              toType: "image/jpeg", // Convert to JPEG
-              quality: 0.8, // Adjust quality as needed
+              toType: "image/jpeg",
+              quality: 0.8,
             });
-            // Create a new File object from the converted Blob
             processedFile = new File(
               [convertedBlob as Blob],
               file.name.replace(/\.heic$/i, ".jpeg"),
@@ -164,10 +154,9 @@ export function CreatePostForm({
             toast.error(
               `Failed to process HEIC image: ${file.name}. Please try a different format.`
             );
-            return; // Skip this file if conversion fails
+            return;
           }
         } else {
-          // For non-HEIC images, create an object URL directly
           fileSrc = URL.createObjectURL(file);
         }
 

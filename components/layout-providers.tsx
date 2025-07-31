@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useUserApi } from "@/lib/requests";
 import { SearchModal } from "./search-modal";
 import { useQuery } from "@tanstack/react-query";
+import { MobileHeader }from "./mobile-header";
 
 export default function LayoutProviders({
   children,
@@ -72,6 +73,7 @@ export default function LayoutProviders({
           handleLogout={handleLogout}
           userData={userData}
         />
+        <MobileHeader />
         <DesktopSidebar />
         {children}
         <MobileNavigation />

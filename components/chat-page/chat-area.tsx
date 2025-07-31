@@ -45,15 +45,9 @@ export function ChatArea({
 }: ChatAreaProps) {
   // Helper to get a user's username by ID
   const getUsernameById = (userId: string): string => {
-    // First, try to find in online users
     const user = onlineUsers.find((u) => u.id === userId);
     if (user) return user.username;
-
-    // If not found in online users, you might need a more comprehensive list
-    // of all known users (e.g., from private conversations or group members).
-    // For now, we'll just return the first few characters of the ID if not found.
-    // In a real app, you'd likely fetch user profiles as needed or maintain a global user map.
-    return userId.substring(0, 8); // Fallback to truncated ID
+    return userId.substring(0, 8);
   };
 
   const getChatHeaderName = () => {

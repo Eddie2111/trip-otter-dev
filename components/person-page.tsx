@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState } from "react";
 import type React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -44,7 +44,8 @@ const CreatePost = Dynamic(
   () => import("./create-post").then((mod) => mod.CreatePost),
   {
     ssr: true,
-    loading: () => <LoadingSmall />,
+    loading: () =>
+      <Button> <LoadingSmall /> </Button>,
   }
 );
 

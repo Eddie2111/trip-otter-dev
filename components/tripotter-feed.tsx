@@ -19,6 +19,7 @@ import { DesktopHeader } from "./desktop-header";
 import { PostContainer } from "./post-card_v2";
 import { Sidebar } from "./mobile-sidebar";
 import { LoadingScreen } from "./ui/loading-splash";
+import MobileHeader from "./mobile-header";
 
 export function TripotterFeed() {
   const router = useRouter();
@@ -64,38 +65,6 @@ export function TripotterFeed() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Search Modal */}
-      {/* <SearchModal
-        isOpen={showSearchModal}
-        onClose={() => setShowSearchModal(false)}
-        onPersonSelect={() => {}}
-        onShopSelect={() => {}}
-      /> */}
-      {/* Desktop Header */}
-      {/* <DesktopHeader
-        setShowSearchModal={setShowSearchModal}
-        session={session}
-        handleLogout={handleLogout}
-        userData={userData ?? session?.user}
-      /> */}
-
-      {/* Mobile Header */}
-      <div className="md:hidden sticky top-0 z-10 bg-white border-b px-4 py-3 dark:bg-gray-800 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Sidebar />
-            <Camera className="w-6 h-6 text-gray-800 dark:text-gray-200" />
-            <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">Tripotter</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <Heart className="w-6 h-6 text-gray-800 dark:text-gray-200" />
-            {/* Changed onClick to Link for chat navigation */}
-            <Link href="/chat" className="flex items-center">
-              <MessageCircle className="w-6 h-6 cursor-pointer text-gray-800 dark:text-gray-200" />
-            </Link>
-          </div>
-        </div>
-      </div>
 
       <div className="flex">
         {/* Main Content - Now only renders the feed content directly */}

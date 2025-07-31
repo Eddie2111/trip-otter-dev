@@ -9,8 +9,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  MessageCircle,
-  Camera,
   Search,
   User,
   Settings,
@@ -18,6 +16,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { NotificationContainer } from "./notification-container";
+import { MessageContainer } from "./message-container";
+import Image from "next/image";
 
 interface IDesktopHeader {
   setShowSearchModal: (showSearchModal: boolean) => void;
@@ -33,14 +33,19 @@ export function DesktopHeader({
   userData,
 }: IDesktopHeader) {
   return (
-    <div className="hidden md:block sticky top-0 z-10 bg-white border-b dark:bg-gray-900 dark:border-gray-800">
+    <div
+      className="hidden md:block sticky top-0 z-10 border-b dark:border-gray-800
+                 bg-gradient-to-br from-[#0099DB] to-[#00F0E4]"
+    >
       <div className="max-w-full mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 ml-64">
-            <Camera className="w-8 h-8 text-gray-900 dark:text-gray-100" />
+            {/* Changed text color to white for better contrast with the gradient */}
+            <Image src="/logo.webp" height={40} width={40} alt="logo" />
             {/* Link for the home/dashboard page */}
             <Link href="/" passHref>
-              <h1 className="text-2xl font-bold cursor-pointer text-gray-900 dark:text-gray-100">
+              {/* Changed text color to white for better contrast with the gradient */}
+              <h1 className="text-2xl font-bold cursor-pointer text-white">
                 Tripotter
               </h1>
             </Link>
@@ -48,7 +53,9 @@ export function DesktopHeader({
           <div className="flex-1 max-w-xs mx-8">
             <Button
               variant="outline"
-              className="w-full justify-start text-gray-500 bg-transparent dark:text-gray-400 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700"
+              // Adjusted button styles for better visibility on gradient background
+              className="w-full justify-start text-white bg-white/20 border-white/30
+                         hover:bg-white/30 dark:text-white dark:bg-white/10 dark:border-white/20 dark:hover:bg-white/20"
               onClick={() => setShowSearchModal(true)}
             >
               <Search className="w-4 h-4 mr-2" />
@@ -56,12 +63,7 @@ export function DesktopHeader({
             </Button>
           </div>
           <div className="flex items-center gap-6 mr-8">
-            {/* Link for the chat page */}
-            <Link href="/chat" passHref>
-              <MessageCircle className="w-6 h-6 cursor-pointer text-gray-900 dark:text-gray-100" />
-            </Link>
-            {/* Assuming Heart icon might also lead to a page, e.g., /likes or /notifications */}
-            {/* If it's just an icon without navigation, it can remain as is or be wrapped in a Link if needed */}
+            <MessageContainer />
             <NotificationContainer />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -79,7 +81,6 @@ export function DesktopHeader({
                 className="w-48 dark:bg-gray-800 dark:border-gray-700"
               >
                 <DropdownMenuItem className="cursor-pointer dark:text-gray-100 dark:hover:bg-gray-700">
-                  {/* Existing Link for Profile */}
                   <Link
                     href="/person/me"
                     shallow

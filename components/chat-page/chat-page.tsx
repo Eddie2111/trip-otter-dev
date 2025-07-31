@@ -14,15 +14,13 @@ import type { IDisplayConversation, IMessage, IUser } from "@/types/chat.d";
 export function ChatPage() {
   const { data: session, status } = useSession();
 
-  // State for UI selection
   const [selectedChatType, setSelectedChatType] = useState<
-    "private" | "group" | "global" | "user" | null // Added "user" to possible types
+    "private" | "group" | "global" | "user" | null 
   >(null);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isCreateGroupDialogOpen, setIsCreateGroupDialogOpen] = useState(false);
 
-  // Use the custom chat logic hook
   const {
     socket,
     isLoggedIn,
@@ -35,9 +33,8 @@ export function ChatPage() {
     groupMessages,
     unreadCounts,
     messagesEndRef,
-    // handleLogin, // This is now managed by the hook's internal useEffect
     handleSendMessage,
-    handleSelectChat: handleSelectChatFromHook, // Rename to avoid conflict
+    handleSelectChat: handleSelectChatFromHook,
     emitCreateGroup,
   } = useChatLogic({
     selectedChatType,
@@ -46,66 +43,38 @@ export function ChatPage() {
     newMessage,
   });
 
-  // Override handleSelectChat to also update local UI states
   const handleSelectChat = useCallback(
     (conv: IDisplayConversation) => {
-      console.log("Selected chat (conv object):", conv); // Log the full conversation object
-      // Cast conv.type to the correct union type
+      console.log("Selected chat (conv object):", conv);
       setSelectedChatType(conv.type as "private" | "group" | "global" | "user");
       setSelectedChatId(conv.id);
-      handleSelectChatFromHook(conv); // Call the hook's logic
+      handleSelectChatFromHook(conv);
     },
     [handleSelectChatFromHook]
   );
 
-  // Filter messages based on selected chat
   const currentChatMessages = useMemo(() => {
-    // Ensure currentUserId is always a string for comparison
     const currentUserId = session?.user?.id
       ? String(session.user.id)
       : undefined;
-
-    console.log("--- Filtering messages START ---");
-    console.log("  selectedChatType:", selectedChatType);
-    console.log("  selectedChatId:", selectedChatId);
-    console.log("  currentUserId (from session):", currentUserId);
-    console.log("  Total privateMessages available:", privateMessages.length);
 
     if (selectedChatType === "global") {
       console.log("  Returning global messages.");
       console.log("--- Filtering messages END ---");
       return globalMessages;
     } else if (
-      selectedChatType === "user" && // Changed from "private" to "user"
+      selectedChatType === "user" &&
       selectedChatId &&
       currentUserId
     ) {
       const filtered = privateMessages.filter((msg) => {
-        const msgSender = String(msg.sender); // Ensure message sender is string
-        const msgReceiver = msg.receiver ? String(msg.receiver) : undefined; // Ensure message receiver is string
+        const msgSender = String(msg.sender);
+        const msgReceiver = msg.receiver ? String(msg.receiver) : undefined;
 
         const condition1 =
           msgSender === currentUserId && msgReceiver === selectedChatId;
         const condition2 =
           msgSender === selectedChatId && msgReceiver === currentUserId;
-
-        console.log(`    Message ID: ${msg.id}`);
-        console.log(
-          `      Msg Sender: ${msgSender}, Msg Receiver: ${msgReceiver}`
-        );
-        console.log(
-          `      Comparing (Current User <-> Selected Chat): ${currentUserId} <-> ${selectedChatId}`
-        );
-        console.log(
-          `      Condition1 (sender=${currentUserId}, receiver=${selectedChatId}): ${condition1}`
-        );
-        console.log(
-          `      Condition2 (sender=${selectedChatId}, receiver=${currentUserId}): ${condition2}`
-        );
-        console.log(
-          `      Result for this message: ${condition1 || condition2}`
-        );
-
         return condition1 || condition2;
       });
       console.log("  Filtered private messages count:", filtered.length);

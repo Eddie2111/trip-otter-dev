@@ -1,8 +1,20 @@
+import { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: {
+      template: "Privacy Policy",
+      default: "Privacy Policy",
+    },
+    description: "Tripotter privacy policies",
+  };
+}
+
 export default function PrivacyPolicy() {
   return (
-    <main className="max-w-3xl mx-auto px-4 py-12 text-gray-800">
-      <h1 className="text-4xl font-bold mb-2">Tripotter Privacy Policy</h1>
-      <p className="text-sm text-gray-500 mb-8">
+    <main className="max-w-3xl mx-auto px-4 py-12 text-gray-800 dark:bg-gray-950 dark:text-gray-200">
+      <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">Tripotter Privacy Policy</h1>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
         Effective Date: July 20, 2025 • Last Updated: July 20, 2025
       </p>
 
@@ -57,8 +69,8 @@ export default function PrivacyPolicy() {
       />
 
       <Section title="3. Payments and Financial Data">
-        <h4 className="font-semibold mt-4 mb-2">3.1 Supported Methods</h4>
-        <ul className="list-disc list-inside space-y-1">
+        <h4 className="font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">3.1 Supported Methods</h4>
+        <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
           <li>Google Pay</li>
           <li>Pathao Pay</li>
           <li>Visa, Mastercard, Debit Cards</li>
@@ -102,13 +114,13 @@ export default function PrivacyPolicy() {
 
       <Section title="7. AI & Moderation">
         <p>We use AI for:</p>
-        <ul className="list-disc list-inside space-y-1">
+        <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
           <li>Travel plan generation and content suggestions</li>
           <li>Real-time content moderation and flagging</li>
           <li>Editing photos, posts, or user input</li>
         </ul>
-        <h4 className="font-semibold mt-4 mb-2">7.1 AI Data Practices</h4>
-        <ul className="list-disc list-inside space-y-1">
+        <h4 className="font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">7.1 AI Data Practices</h4>
+        <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
           <li>AI-generated content is not guaranteed to be 100% accurate</li>
           <li>
             You may not use platform content for external AI training without
@@ -166,7 +178,7 @@ export default function PrivacyPolicy() {
           change services, or comply with updated laws. Major updates will be
           announced via:
         </p>
-        <ul className="list-disc list-inside space-y-1">
+        <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
           <li>In-app notifications</li>
           <li>Email alerts</li>
           <li>Banner messages on the website</li>
@@ -182,7 +194,7 @@ export default function PrivacyPolicy() {
           Email:{" "}
           <a
             href="mailto:shadmanislam27@gmail.com"
-            className="text-blue-600 underline"
+            className="text-blue-600 underline dark:text-blue-400"
           >
             shadmanislam27@gmail.com
           </a>
@@ -190,7 +202,7 @@ export default function PrivacyPolicy() {
         <p>Phone: +8801627439774</p>
       </Section>
 
-      <p className="text-sm mt-10 text-gray-500">
+      <p className="text-sm mt-10 text-gray-500 dark:text-gray-400">
         Legal Note: This Privacy Policy complies with GDPR (EU), CCPA
         (California), PDPA (Bangladesh), global privacy frameworks, and industry
         standards used by major social and travel platforms.
@@ -210,9 +222,9 @@ function Section({
 }) {
   return (
     <section className="mb-8">
-      <h2 className="text-2xl font-semibold mb-3">{title}</h2>
+      <h2 className="text-2xl font-semibold mb-3 text-gray-900 dark:text-gray-100">{title}</h2>
       {items && (
-        <ul className="list-disc list-inside space-y-1 text-gray-700">
+        <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
           {items.map((item, idx) => (
             <li key={idx}>{item}</li>
           ))}
@@ -226,8 +238,8 @@ function Section({
 function Subsection({ title, items }: { title: string; items: string[] }) {
   return (
     <div className="mb-4">
-      <h4 className="font-medium">{title}</h4>
-      <ul className="list-disc list-inside pl-4 space-y-1 text-gray-700">
+      <h4 className="font-medium text-gray-900 dark:text-gray-100">{title}</h4>
+      <ul className="list-disc list-inside pl-4 space-y-1 text-gray-700 dark:text-gray-300">
         {items.map((item, idx) => (
           <li key={idx}>{item}</li>
         ))}

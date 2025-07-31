@@ -13,8 +13,10 @@ import {
   Title,
 } from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// Register all necessary Chart.js components
 ChartJS.register(
   ArcElement,
   Tooltip,
@@ -25,32 +27,10 @@ ChartJS.register(
   Title
 );
 
-// Define interfaces for data structure
-interface YearlyData {
-  postsThisYear: number;
-  commentsThisYear: number;
-  likesThisYear: number;
-  usersJoinedThisYear: number;
-}
-
-interface MonthlyData {
-  month: string;
-  posts: number;
-  comments: number;
-  likes: number;
-  usersJoined: number;
-}
-
-interface AnalyticsData {
-  yearly: YearlyData;
-  monthly: MonthlyData[];
-}
-
-interface AnalyticsResponse {
-  message: string;
-  status: number;
-  data: AnalyticsData;
-}
+import type {
+  MonthlyData,
+  AnalyticsData,
+} from "./types";
 
 export default function Analytics() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
@@ -78,10 +58,9 @@ export default function Analytics() {
     }
 
     if (!analyticsData && loading) {
-      // Only fetch if data is not present and still loading
       fetchData();
     }
-  }, [analyticsData, loading]); // Depend on analyticsData and loading state
+  }, [analyticsData, loading]);
 
   if (loading) {
     return <LoadingScreen />;
@@ -89,7 +68,7 @@ export default function Analytics() {
 
   if (error) {
     return (
-      <div className="md:ml-[300px] mx-auto p-6 text-center text-red-500">
+      <div className="md:ml-[300px] mx-auto p-6 text-center text-red-500 dark:bg-gray-900 dark:text-red-400 min-h-screen">
         <h2 className="text-2xl font-bold mb-4">Error</h2>
         <p>{error}</p>
       </div>
@@ -98,17 +77,15 @@ export default function Analytics() {
 
   if (!analyticsData) {
     return (
-      <div className="md:ml-[300px] mx-auto p-6 text-center text-gray-500">
+      <div className="md:ml-[300px] mx-auto p-6 text-center text-gray-500 dark:bg-gray-900 dark:text-gray-400 min-h-screen">
         <h2 className="text-2xl font-bold mb-4">No Analytics Data Available</h2>
         <p>Please try again later.</p>
       </div>
     );
   }
 
-  // Destructure yearly and monthly data for easier access
   const { yearly, monthly } = analyticsData;
 
-  // --- Data for Yearly Distribution Doughnut Chart ---
   const yearlyDistributionData = {
     labels: ["Posts", "Comments", "Likes", "Users Joined"],
     datasets: [
@@ -121,10 +98,10 @@ export default function Analytics() {
           yearly.usersJoinedThisYear,
         ],
         backgroundColor: [
-          "rgba(255, 99, 132, 0.6)", // Red for Posts
-          "rgba(54, 162, 235, 0.6)", // Blue for Comments
-          "rgba(255, 206, 86, 0.6)", // Yellow for Likes
-          "rgba(75, 192, 192, 0.6)", // Green for Users Joined
+          "rgba(255, 99, 132, 0.6)",
+          "rgba(54, 162, 235, 0.6)",
+          "rgba(255, 206, 86, 0.6)",
+          "rgba(75, 192, 192, 0.6)",
         ],
         borderColor: [
           "rgba(255, 99, 132, 1)",
@@ -142,6 +119,9 @@ export default function Analytics() {
     plugins: {
       legend: {
         position: "top" as const,
+        labels: {
+          color: "rgb(156, 163, 175)", // Tailwind gray-400 for dark mode
+        },
       },
       title: {
         display: true,
@@ -149,6 +129,7 @@ export default function Analytics() {
         font: {
           size: 18,
         },
+        color: "rgb(229, 231, 235)", // Tailwind gray-200 for dark mode
       },
       tooltip: {
         callbacks: {
@@ -168,7 +149,6 @@ export default function Analytics() {
     },
   };
 
-  // --- Data for Monthly Bar Charts ---
   const monthLabels = monthly.map((data) => data.month);
 
   const createMonthlyChartData = (
@@ -193,6 +173,9 @@ export default function Analytics() {
     plugins: {
       legend: {
         position: "top" as const,
+        labels: {
+          color: "rgb(156, 163, 175)", // Tailwind gray-400 for dark mode
+        },
       },
       title: {
         display: true,
@@ -200,6 +183,7 @@ export default function Analytics() {
         font: {
           size: 18,
         },
+        color: "rgb(229, 231, 235)", // Tailwind gray-200 for dark mode
       },
     },
     scales: {
@@ -208,12 +192,26 @@ export default function Analytics() {
         title: {
           display: true,
           text: "Count",
+          color: "rgb(156, 163, 175)", // Tailwind gray-400
+        },
+        ticks: {
+          color: "rgb(156, 163, 175)", // Tailwind gray-400
+        },
+        grid: {
+          color: "rgba(100, 100, 100, 0.2)", // Lighter grid lines for dark mode
         },
       },
       x: {
         title: {
           display: true,
           text: "Month",
+          color: "rgb(156, 163, 175)", // Tailwind gray-400
+        },
+        ticks: {
+          color: "rgb(156, 163, 175)", // Tailwind gray-400
+        },
+        grid: {
+          color: "rgba(100, 100, 100, 0.2)", // Lighter grid lines for dark mode
         },
       },
     },
@@ -241,14 +239,19 @@ export default function Analytics() {
   );
 
   return (
-    <div className="md:ml-[300px] mx-auto p-4 sm:p-6 lg:p-8 font-inter">
-      <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-800 mb-8 text-center">
+    <div className="md:ml-[300px] mx-auto p-4 sm:p-6 lg:p-8 font-inter bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <Link href="/settings">
+        <Button variant="ghost" className="mb-4">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Settings
+        </Button>
+      </Link>
+      <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-800 mb-8 text-center dark:text-gray-100">
         TripOtter Analytics
       </h1>
 
-      {/* Yearly Summary Cards */}
       <section className="mb-12">
-        <h2 className="text-2xl font-bold text-gray-700 mb-6 text-center">
+        <h2 className="text-2xl font-bold text-gray-700 mb-6 text-center dark:text-gray-200">
           Yearly Overview ({new Date().getFullYear()})
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -275,11 +278,8 @@ export default function Analytics() {
         </div>
       </section>
 
-      {/* Yearly Distribution Chart */}
-      <section className="mb-12 bg-white p-6 rounded-xl shadow-lg">
+      <section className="mb-12 bg-white p-6 rounded-xl shadow-lg dark:bg-gray-800 dark:border-gray-700">
         <div className="max-w-md mx-auto">
-          {" "}
-          {/* Constrain width for Doughnut */}
           <Doughnut
             data={yearlyDistributionData}
             options={yearlyDistributionOptions}
@@ -287,38 +287,33 @@ export default function Analytics() {
         </div>
       </section>
 
-      {/* Monthly Trends Section */}
       <section>
-        <h2 className="text-2xl font-bold text-gray-700 mb-6 text-center">
+        <h2 className="text-2xl font-bold text-gray-700 mb-6 text-center dark:text-gray-200">
           Monthly Trends ({new Date().getFullYear()})
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Posts Monthly Chart */}
-          <div className="bg-white p-6 rounded-xl shadow-lg h-[400px]">
+          <div className="bg-white p-6 rounded-xl shadow-lg h-[400px] dark:bg-gray-800 dark:border-gray-700">
             <Bar
               data={postsMonthlyData}
               options={monthlyChartOptions("Monthly Posts")}
             />
           </div>
 
-          {/* Comments Monthly Chart */}
-          <div className="bg-white p-6 rounded-xl shadow-lg h-[400px]">
+          <div className="bg-white p-6 rounded-xl shadow-lg h-[400px] dark:bg-gray-800 dark:border-gray-700">
             <Bar
               data={commentsMonthlyData}
               options={monthlyChartOptions("Monthly Comments")}
             />
           </div>
 
-          {/* Likes Monthly Chart */}
-          <div className="bg-white p-6 rounded-xl shadow-lg h-[400px]">
+          <div className="bg-white p-6 rounded-xl shadow-lg h-[400px] dark:bg-gray-800 dark:border-gray-700">
             <Bar
               data={likesMonthlyData}
               options={monthlyChartOptions("Monthly Likes")}
             />
           </div>
 
-          {/* Users Joined Monthly Chart */}
-          <div className="bg-white p-6 rounded-xl shadow-lg h-[400px]">
+          <div className="bg-white p-6 rounded-xl shadow-lg h-[400px] dark:bg-gray-800 dark:border-gray-700">
             <Bar
               data={usersJoinedMonthlyData}
               options={monthlyChartOptions("Monthly Users Joined")}

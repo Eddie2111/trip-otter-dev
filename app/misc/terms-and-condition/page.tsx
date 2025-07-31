@@ -1,3 +1,16 @@
+import { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: {
+      template: "Terms and Conditions",
+      default: "Terms and Conditions",
+    },
+    description: "Tripotter terms and conditions",
+  };
+}
+import type React from "react";
+
 const Section = ({
   title,
   children,
@@ -6,15 +19,19 @@ const Section = ({
   children: React.ReactNode;
 }) => (
   <section className="mb-8">
-    <h2 className="text-xl font-semibold mb-2">{title}</h2>
-    <div className="text-gray-700 space-y-2">{children}</div>
+    <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+      {title}
+    </h2>
+    <div className="text-gray-700 dark:text-gray-300 space-y-2">{children}</div>
   </section>
 );
 
 export default function TermsPage() {
   return (
-    <main className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Terms and Conditions</h1>
+    <main className="max-w-4xl mx-auto p-6 bg-white dark:bg-gray-950 text-gray-800 dark:text-gray-200">
+      <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-gray-100">
+        Terms and Conditions
+      </h1>
 
       <Section title="1. Introduction">
         <p>
@@ -201,7 +218,7 @@ export default function TermsPage() {
           <br />
           <a
             href="mailto:shadmanislam27@gmail.com"
-            className="text-blue-600 underline"
+            className="text-blue-600 underline dark:text-blue-400"
           >
             shadmanislam27@gmail.com
           </a>
@@ -233,7 +250,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <footer className="text-xs text-gray-500 mt-8">
+      <footer className="text-xs text-gray-500 dark:text-gray-400 mt-8">
         Legal Note: This Privacy Policy complies with GDPR (EU), CCPA
         (California), PDPA (Bangladesh), global privacy frameworks, and industry
         standards used by major social and travel platforms.

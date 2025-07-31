@@ -42,7 +42,7 @@ interface ResetPasswordPageProps {
   id: string; // The ID from the URL params
 }
 
-export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
+export function ResetPasswordPage({ id }: ResetPasswordPagePageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const router = useRouter();
@@ -53,7 +53,9 @@ export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
       setUserData(response.data.data);
       if (response.data.status === 400) {
         router.push("/login");
-        toast.error("Please try again with a new valid token to reset password");
+        toast.error(
+          "Please try again with a new valid token to reset password"
+        );
       }
     }
     fetchData(id);
@@ -71,7 +73,10 @@ export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
     setIsLoading(true);
 
     try {
-      const response = await useResetPasswordAPI.changePassword(userData?.email, data.newPassword);
+      const response = await useResetPasswordAPI.changePassword(
+        userData?.email,
+        data.newPassword
+      );
       console.log(response);
 
       toast.success("Password has been reset successfully!");
@@ -87,14 +92,14 @@ export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 p-4">
-      <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 p-4">
+      <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl dark:bg-gray-800/95 dark:border-gray-700">
         <CardHeader className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
             <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full">
               <Camera className="w-8 h-8 text-white" />
             </div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-purple-400 dark:to-pink-400">
               Tripotter
             </CardTitle>
           </div>
@@ -102,7 +107,7 @@ export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
 
         <CardContent className="space-y-6">
           {userData ? (
-            <Card>
+            <Card className="dark:bg-gray-700 dark:border-gray-600">
               <CardContent>
                 <div className="flex flex-row mt-5 p-auto justify-center items-center">
                   <img
@@ -112,16 +117,19 @@ export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
                     className="rounded-full"
                   />
                   <div className="flex flex-col justify-center ml-4">
-                    <h1 className="text-md font-bold">{ userData?.fullName ?? "" }</h1>
-                    <p className="text-gray-500 text-sm">{ userData?.location ?? "" }</p>
+                    <h1 className="text-md font-bold text-gray-900 dark:text-gray-100">
+                      {userData?.fullName ?? ""}
+                    </h1>
+                    <p className="text-gray-500 text-sm dark:text-gray-400">
+                      {userData?.location ?? ""}
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           ) : (
-              <Loading />
-          )
-        }
+            <Loading />
+          )}
           <Form {...resetPasswordForm}>
             <form
               onSubmit={resetPasswordForm.handleSubmit(
@@ -134,7 +142,7 @@ export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">
+                    <FormLabel className="text-gray-700 font-medium dark:text-gray-200">
                       New Password
                     </FormLabel>
                     <FormControl>
@@ -144,7 +152,7 @@ export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
                           {...field}
                           type="password"
                           placeholder="Enter your new password"
-                          className="pl-10 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                          className="pl-10 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:border-purple-400 dark:focus:ring-purple-400"
                         />
                       </div>
                     </FormControl>
@@ -157,7 +165,7 @@ export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">
+                    <FormLabel className="text-gray-700 font-medium dark:text-gray-200">
                       Confirm New Password
                     </FormLabel>
                     <FormControl>
@@ -167,7 +175,7 @@ export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
                           {...field}
                           type="password"
                           placeholder="Confirm your new password"
-                          className="pl-10 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                          className="pl-10 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:border-purple-400 dark:focus:ring-purple-400"
                         />
                       </div>
                     </FormControl>
@@ -177,7 +185,8 @@ export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
               />
               <Button
                 type="submit"
-                className="w-full h-12 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                className="w-full h-12 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200
+                dark:from-purple-600 dark:to-pink-600 dark:hover:from-purple-700 dark:hover:to-pink-700"
                 disabled={isLoading}
               >
                 {isLoading ? "Setting New Password..." : "Set New Password"}
@@ -188,7 +197,7 @@ export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
           <div className="text-center">
             <Link
               href="/login"
-              className="text-purple-600 hover:text-purple-700 font-semibold"
+              className="text-purple-600 hover:text-purple-700 font-semibold dark:text-purple-400 dark:hover:text-purple-300"
             >
               Back to Login
             </Link>

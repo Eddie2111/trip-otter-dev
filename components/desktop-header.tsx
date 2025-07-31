@@ -9,21 +9,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Heart,
-  MessageCircle,
-  Camera,
   Search,
   User,
   Settings,
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
-import type { Dispatch, SetStateAction } from "react";
 import { NotificationContainer } from "./notification-container";
+import { MessageContainer } from "./message-container";
+import Image from "next/image";
 
 interface IDesktopHeader {
   setShowSearchModal: (showSearchModal: boolean) => void;
-  // setCurrentPage is removed as routing will now be handled by next/link
   session: any;
   handleLogout: () => void;
   userData: any;
@@ -33,23 +30,32 @@ export function DesktopHeader({
   setShowSearchModal,
   session,
   handleLogout,
-  userData
+  userData,
 }: IDesktopHeader) {
   return (
-    <div className="hidden md:block sticky top-0 z-10 bg-white border-b">
+    <div
+      className="hidden md:block sticky top-0 z-10 border-b dark:border-gray-800
+                 bg-gradient-to-br from-[#0099DB] to-[#00F0E4]"
+    >
       <div className="max-w-full mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 ml-64">
-            <Camera className="w-8 h-8" />
+            {/* Changed text color to white for better contrast with the gradient */}
+            <Image src="/logo.webp" height={40} width={40} alt="logo" />
             {/* Link for the home/dashboard page */}
             <Link href="/" passHref>
-              <h1 className="text-2xl font-bold cursor-pointer">Tripotter</h1>
+              {/* Changed text color to white for better contrast with the gradient */}
+              <h1 className="text-2xl font-bold cursor-pointer text-white">
+                Tripotter
+              </h1>
             </Link>
           </div>
           <div className="flex-1 max-w-xs mx-8">
             <Button
               variant="outline"
-              className="w-full justify-start text-gray-500 bg-transparent"
+              // Adjusted button styles for better visibility on gradient background
+              className="w-full justify-start text-white bg-white/20 border-white/30
+                         hover:bg-white/30 dark:text-white dark:bg-white/10 dark:border-white/20 dark:hover:bg-white/20"
               onClick={() => setShowSearchModal(true)}
             >
               <Search className="w-4 h-4 mr-2" />
@@ -57,48 +63,46 @@ export function DesktopHeader({
             </Button>
           </div>
           <div className="flex items-center gap-6 mr-8">
-            {/* Link for the chat page */}
-            <Link href="/chat" passHref>
-              <MessageCircle className="w-6 h-6 cursor-pointer" />
-            </Link>
-            {/* Assuming Heart icon might also lead to a page, e.g., /likes or /notifications */}
-            {/* If it's just an icon without navigation, it can remain as is or be wrapped in a Link if needed */}
-            <NotificationContainer/>
+            <MessageContainer />
+            <NotificationContainer />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Avatar className="w-8 h-8 cursor-pointer">
+                <Avatar className="w-8 h-8 cursor-pointer dark:bg-gray-700 dark:text-gray-300">
                   <AvatarImage
-                    src={
-                      userData?.profileImage ?? userData?.image
-                    }
+                    src={userData?.profileImage ?? userData?.image}
                   />
                   <AvatarFallback>
                     {session?.user?.name?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem className="cursor-pointer">
-                  {/* Existing Link for Profile */}
+              <DropdownMenuContent
+                align="end"
+                className="w-48 dark:bg-gray-800 dark:border-gray-700"
+              >
+                <DropdownMenuItem className="cursor-pointer dark:text-gray-100 dark:hover:bg-gray-700">
                   <Link
                     href="/person/me"
                     shallow
-                    className="cursor-pointer flex"
+                    className="cursor-pointer flex w-full"
                   >
                     <User className="w-4 h-4 mr-4" />
                     Profile
                   </Link>
                 </DropdownMenuItem>
                 {/* Link for the Settings page */}
-                <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/settings" passHref className="flex">
+                <DropdownMenuItem
+                  asChild
+                  className="cursor-pointer dark:text-gray-100 dark:hover:bg-gray-700"
+                >
+                  <Link href="/settings" passHref className="flex w-full">
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="cursor-pointer text-red-600"
+                  className="cursor-pointer text-red-600 dark:text-red-400 dark:hover:bg-gray-700"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout

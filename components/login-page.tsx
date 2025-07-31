@@ -1,39 +1,41 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import type { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Mail, Lock, Camera } from "lucide-react"
-import { toast } from "sonner"
-import { loginSchema } from "@/utils/models/signin.model"
-import type { IErrorProps } from "@/types/error"
-import { signIn, useSession } from "next-auth/react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import type { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Eye, EyeOff, Mail, Lock, Camera } from "lucide-react";
+import { toast } from "sonner";
+import { loginSchema } from "@/utils/models/signin.model";
+import type { IErrorProps } from "@/types/error";
+import { signIn, useSession } from "next-auth/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-type LoginFormValues = z.infer<typeof loginSchema>
+type LoginFormValues = z.infer<typeof loginSchema>;
 
-interface LoginPageProps {
-  onLogin: () => void
-  onSwitchToSignup: () => void
-}
-
-export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+export function LoginPage() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
   const { data: session } = useSession();
-  useEffect(() => { 
+  useEffect(() => {
     if (session) {
       router.push("/");
     }
-  })
+  });
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -41,54 +43,56 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
       password: "",
       rememberMe: false,
     },
-  })
+  });
 
   const onSubmit = async (data: LoginFormValues) => {
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       const response = await signIn("credentials", {
         redirect: false,
         email: data.email,
         password: data.password,
-      })
+      });
       if (response?.ok) {
-        toast.success("Welcome!")
-        router.push("/")
+        toast.success("Welcome!");
+        router.push("/");
       } else {
-        toast.info("Unable to sign in, try again?")
+        toast.info("Unable to sign in, try again?");
       }
     } catch (error) {
-      const err = error as unknown as IErrorProps
-      toast.error(err.message || "Unknown error")
-      console.error("Sign-in error:", error)
+      const err = error as unknown as IErrorProps;
+      toast.error(err.message || "Unknown error");
+      console.error("Sign-in error:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleDemoLogin = () => {
-    form.setValue("email", "test@user.com")
-    form.setValue("password", "Abcd1234..")
-  }
+    form.setValue("email", "test@user.com");
+    form.setValue("password", "Abcd1234..");
+  };
 
   const handleGoogleLogin = () => {
-    signIn("google", { callbackUrl: "/" })
-  }
+    signIn("google", { callbackUrl: "/" });
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 p-4">
-      <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 p-4">
+      <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl dark:bg-gray-800/95 dark:border-gray-700">
         <CardHeader className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
             <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full">
               <Camera className="w-8 h-8 text-white" />
             </div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-purple-400 dark:to-pink-400">
               Tripotter
             </CardTitle>
           </div>
-          <p className="text-gray-600">Welcome back! Sign in to your account</p>
+          <p className="text-gray-600 dark:text-gray-300">
+            Welcome back! Sign in to your account
+          </p>
         </CardHeader>
 
         <CardContent className="space-y-6">
@@ -99,7 +103,9 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">Email</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium dark:text-gray-200">
+                      Email
+                    </FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -107,7 +113,7 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
                           {...field}
                           type="email"
                           placeholder="Enter your email"
-                          className="pl-10 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                          className="pl-10 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:border-purple-400 dark:focus:ring-purple-400"
                         />
                       </div>
                     </FormControl>
@@ -121,7 +127,9 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">Password</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium dark:text-gray-200">
+                      Password
+                    </FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -129,13 +137,13 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
                           {...field}
                           type={showPassword ? "text" : "password"}
                           placeholder="Enter your password"
-                          className="pl-10 pr-10 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                          className="pl-10 pr-10 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:border-purple-400 dark:focus:ring-purple-400"
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 dark:hover:bg-gray-600"
                           onClick={() => setShowPassword(!showPassword)}
                         >
                           {showPassword ? (
@@ -158,23 +166,33 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                       <FormControl>
-                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="dark:border-gray-500 dark:data-[state=checked]:bg-purple-500 dark:data-[state=checked]:text-white"
+                        />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel className="text-sm font-normal text-gray-600">Remember me</FormLabel>
+                        <FormLabel className="text-sm font-normal text-gray-600 dark:text-gray-300">
+                          Remember me
+                        </FormLabel>
                       </div>
                     </FormItem>
                   )}
                 />
 
-                <Link href="/forgot-password" className="px-0 text-purple-600 hover:text-purple-700 text-sm hover:underline">
+                <Link
+                  href="/forgot-password"
+                  className="px-0 text-purple-600 hover:text-purple-700 text-sm hover:underline dark:text-purple-400 dark:hover:text-purple-300"
+                >
                   Forgot password?
                 </Link>
               </div>
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                className="w-full h-12 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200
+                dark:from-purple-600 dark:to-pink-600 dark:hover:from-purple-700 dark:hover:to-pink-700"
                 disabled={isLoading}
               >
                 {isLoading ? "Signing in..." : "Sign In"}
@@ -184,17 +202,19 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
+              <div className="w-full border-t border-gray-200 dark:border-gray-700" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              <span className="px-2 bg-white text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                Or continue with
+              </span>
             </div>
           </div>
 
           <Button
             onClick={handleGoogleLogin}
             variant="outline"
-            className="w-full h-12 border-gray-200 hover:bg-gray-50 bg-transparent"
+            className="w-full h-12 border-gray-200 hover:bg-gray-50 bg-transparent dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path
@@ -218,19 +238,28 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
           </Button>
 
           <div className="text-center space-y-2">
-            <Button onClick={handleDemoLogin} variant="ghost" className="text-sm text-gray-600 hover:text-gray-800">
+            <Button
+              onClick={handleDemoLogin}
+              variant="ghost"
+              className="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+            >
               Try Demo Account / I'm Feeling Lucky
             </Button>
           </div>
 
           <div className="text-center">
-            <span className="text-gray-600">Don't have an account? </span>
-            <Link href="/signup" className="text-purple-600 hover:text-purple-700 font-semibold">
+            <span className="text-gray-600 dark:text-gray-300">
+              Don't have an account?{" "}
+            </span>
+            <Link
+              href="/signup"
+              className="text-purple-600 hover:text-purple-700 font-semibold dark:text-purple-400 dark:hover:text-purple-300"
+            >
               Sign up
             </Link>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

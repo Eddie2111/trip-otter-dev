@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Loading } from "./ui/loading";
-import { useCommentApi, useLikeApi } from "@/lib/requests";
+import { useCommentApi, useFeedAPI, useLikeApi } from "@/lib/requests";
 import { useSession } from "next-auth/react";
 
 import dayjs from "dayjs";
@@ -32,120 +32,65 @@ import { toast } from "sonner";
 import { PostDialog } from "./post-dialog";
 import { ReportModal } from "./report-modal";
 
-const MAX_RETRIES = 5;
-const RETRY_DELAY_MS = 5000;
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+
 const POSTS_PER_PAGE = 6;
 
 export function PostContainer({ profileId }: { profileId: string }) {
-  const [posts, setPosts] = useState<IPostProps[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
-
-  const [page, setPage] = useState<number>(1);
-  const [hasMore, setHasMore] = useState<boolean>(true);
-
-  const [retryCount, setRetryCount] = useState<number>(0);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const queryClient = useQueryClient();
   const observerRef = useRef<HTMLDivElement | null>(null);
 
-  const getFeed = useCallback(
-    async (currentPage: number, currentRetry: number = 0) => {
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-        retryTimeoutRef.current = null;
+  // Fetches posts with infinite scrolling using useInfiniteQuery
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    error,
+  } = useInfiniteQuery({
+    queryKey: ["ProfileFeed", profileId],
+    queryFn: async ({ pageParam = 1 }) => {
+      const result = await useFeedAPI.getFeedForProfile(
+        pageParam,
+        POSTS_PER_PAGE,
+        profileId
+      );
+      if (result.status === 500) {
+        throw new Error(`HTTP error! status: ${result.status}`);
       }
-
-      // Only show full loading spinner for initial load or if there are no posts yet
-      if (currentPage === 1 && posts.length === 0) {
-        setLoading(true);
-      } else if (hasMore) {
-        // For subsequent pages, show a smaller loading indicator (managed by IntersectionObserver)
-        setLoading(true);
-      }
-
-      setError(null);
-
-      try {
-        const response = await fetch(
-          `/api/feed?id=${profileId}&page=${currentPage}&limit=${POSTS_PER_PAGE}`
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        if (result.status === 200 && result.data) {
-          setPosts((prevPosts) => {
-            // Filter out duplicates to avoid issues if the same post is returned
-            const newPosts = result.data.filter(
-              (newItem: IPostProps) =>
-                !prevPosts.some((prevItem) => prevItem._id === newItem._id)
-            );
-            return [...prevPosts, ...newPosts];
-          });
-          setHasMore(result.pagination.hasMore);
-          setRetryCount(0); // Reset retry count on successful fetch
-        } else {
-          throw new Error(`API error: ${result.message || "Unknown error"}`);
-        }
-      } catch (err) {
-        const errorMessage = `Failed to load posts: ${
-          err instanceof Error ? err.message : "Unknown error"
-        }`;
-        setError(errorMessage);
-        console.error("Error fetching feed:", errorMessage);
-
-        if (currentRetry < MAX_RETRIES) {
-          console.log(
-            `Retrying fetch in ${RETRY_DELAY_MS / 1000} seconds... (Attempt ${
-              currentRetry + 1
-            }/${MAX_RETRIES})`
-          );
-          setRetryCount(currentRetry + 1);
-          retryTimeoutRef.current = setTimeout(() => {
-            getFeed(currentPage, currentRetry + 1);
-          }, RETRY_DELAY_MS);
-        } else {
-          console.log("Max retries reached. Stopping attempts.");
-          setLoading(false); // Stop loading if max retries reached
-        }
-      } finally {
-        // Ensure loading is set to false once the fetch attempt (including retries) is complete
-        if (currentRetry >= MAX_RETRIES || !retryTimeoutRef.current) {
-          setLoading(false);
-        }
+      if (result.status === 200 && result.data) {
+        return result.data;
+      } else {
+        throw new Error(`API error: ${result.message || "Unknown error"}`);
       }
     },
-    // IMPORTANT FIX: Removed `posts.length` and `hasMore` from dependencies.
-    // `getFeed` only needs to be re-created if `profileId` changes.
-    // `setPosts` uses a functional update to get the latest `prevPosts`.
-    // `hasMore` is read as a state variable inside the IntersectionObserver.
-    [profileId]
-  );
+    getNextPageParam: (lastPage, allPages) => {
+      // Determines the next page number for infinite scrolling
+      const hasMoreData = lastPage.length === POSTS_PER_PAGE;
+      return hasMoreData ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
+  });
 
-  // Initial fetch for the first page
-  useEffect(() => {
-    getFeed(1);
-    return () => {
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-      }
-    };
-  }, [getFeed]); // Depend on getFeed to re-run if profileId changes
+  // Flattens the paginated data into a single array of posts
+  const posts = data?.pages?.flatMap((page) => page) || [];
 
-  // Effect for infinite scrolling using IntersectionObserver
+  // Sets up Intersection Observer for loading more posts when the observerRef element is in view
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        // If the observer target is intersecting, there's more data,
-        // and not currently loading or in an error state, increment page.
-        if (entries[0].isIntersecting && hasMore && !loading && !error) {
-          setPage((prevPage) => prevPage + 1);
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
         }
       },
-      { threshold: 0.5 } // Trigger when 50% of the target is visible
+      { threshold: 0.5 }
     );
 
     if (observerRef.current) {
@@ -157,61 +102,54 @@ export function PostContainer({ profileId }: { profileId: string }) {
         observer.unobserve(observerRef.current);
       }
     };
-  }, [loading, hasMore, error]); // Dependencies ensure observer reacts to these states
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Effect to fetch new data when page number changes
-  useEffect(() => {
-    if (page > 1) {
-      // Only fetch if page is greater than 1 (initial fetch is handled by the first useEffect)
-      getFeed(page);
-    }
-  }, [page, getFeed]); // Depend on page and a stable getFeed
-
-  // Show full-page loading spinner only if no posts have been loaded yet
-  if (loading && posts.length === 0) {
+  // Displays a loading spinner if no posts have been loaded yet
+  if (isLoading && posts.length === 0) {
     return <Loading />;
   }
 
-  // Show error message if initial load failed after max retries
-  if (error && posts.length === 0 && retryCount >= MAX_RETRIES) {
+  // Displays an error message if fetching posts failed and no posts are displayed
+  if (isError && posts.length === 0) {
     return (
-      <div className="flex justify-center items-center h-48 text-red-600">
-        Error: {error}
+      <div className="flex justify-center items-center h-48 text-red-600 dark:text-red-400">
+        Error: {error?.message || "Failed to load posts."}
         <p className="ml-2">Please try refreshing the page.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-0 md:space-y-6 pb-20 md:pb-0">
+    <div className="space-y-0 md:space-y-6 pb-20 md:pb-0 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {posts.length > 0
         ? posts.map((postItem) => (
             <PostCard key={postItem._id} post={postItem} session={session} />
           ))
-        : // Show "No posts available" only if not loading and no error, and no posts exist
-          !loading &&
-          !error && (
-            <div className="flex justify-center items-center h-48 text-gray-600">
+        : !isLoading &&
+          !isError && (
+            <div className="flex justify-center items-center h-48 text-gray-600 dark:text-gray-400">
               No posts available.
             </div>
           )}
 
-      {hasMore && (
+      {/* Renders a loading spinner at the bottom if more pages are available or being fetched */}
+      {(hasNextPage || isFetchingNextPage) && (
         <div ref={observerRef} className="flex justify-center py-4">
-          {/* Show loading spinner at the bottom when fetching more posts */}
-          {loading && <Loading />}
+          {isFetchingNextPage && <Loading />}
         </div>
       )}
 
-      {!hasMore && posts.length > 0 && !loading && (
-        <div className="flex justify-center py-4 text-gray-500">
+      {/* Message displayed when all posts have been loaded */}
+      {!hasNextPage && posts.length > 0 && !isFetchingNextPage && (
+        <div className="flex justify-center py-4 text-gray-500 dark:text-gray-400">
           You've reached the end of the posts.
         </div>
       )}
 
-      {error && posts.length > 0 && (
-        <div className="flex justify-center mt-6 text-red-600">
-          Error loading more posts: {error}
+      {/* Displays an error if fetching more posts failed after initial load */}
+      {isError && posts.length > 0 && (
+        <div className="flex justify-center mt-6 text-red-600 dark:text-red-400">
+          Error loading more posts: {error?.message || "Unknown error"}
         </div>
       )}
     </div>
@@ -226,6 +164,8 @@ export function PostCard({
   session: any;
 }) {
   const currentLoggedInUser = session?.user;
+  const queryClient = useQueryClient();
+
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>(
     {}
   );
@@ -233,7 +173,6 @@ export function PostCard({
     {}
   );
   const [displayedComments, setDisplayedComments] = useState(post.comments);
-
   const [isLiked, setIsLiked] = useState(
     currentLoggedInUser
       ? post.likes.some(
@@ -242,13 +181,143 @@ export function PostCard({
       : false
   );
   const [likesCount, setLikesCount] = useState(post.likes.length);
-
   const [editingComment, setEditingComment] = useState<{
     commentId: string;
     commentIndex: number;
     originalText: string;
   } | null>(null);
   const [editCommentText, setEditCommentText] = useState("");
+
+  // Handles liking/unliking a post with optimistic updates
+  const likeMutation = useMutation({
+    mutationFn: async () => useLikeApi.likePost(post._id),
+    onMutate: async () => {
+      const previousIsLiked = isLiked;
+      const previousLikesCount = likesCount;
+      setIsLiked((prev) => !prev);
+      setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
+      return { previousIsLiked, previousLikesCount }; // Context for onError
+    },
+    onError: (err, variables, context) => {
+      setIsLiked(context?.previousIsLiked || false);
+      setLikesCount(context?.previousLikesCount || 0);
+      toast.error(
+        `Failed to update like status: ${
+          (err as any).message || "Unknown error"
+        }`
+      );
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(["ProfileFeed", post.owner?._id]);
+    },
+  });
+
+  // Handles adding a comment with optimistic updates
+  const addCommentMutation = useMutation({
+    mutationFn: async (newCommentText: string) =>
+      useCommentApi.createComment(post._id, newCommentText),
+    onMutate: async (newCommentText) => {
+      const newTempComment = {
+        _id: `temp-${Date.now()}`,
+        content: newCommentText,
+        owner: {
+          _id: currentLoggedInUser?.id || "",
+          username: currentLoggedInUser?.username || "",
+          profileImage: currentLoggedInUser?.image || "",
+        },
+        createdAt: dayjs().toISOString(),
+      };
+      setDisplayedComments((prev) => [...prev, newTempComment]);
+      setCommentInputs((prev) => ({ ...prev, [post._id]: "" }));
+      return newTempComment;
+    },
+    onSuccess: (response, variables, context) => {
+      if (response.status === 200 && response.data) {
+        setDisplayedComments((prev) =>
+          prev.map((comment) =>
+            comment._id === context?._id
+              ? {
+                  ...response.data,
+                  owner: response.data.owner || context?.owner,
+                }
+              : comment
+          )
+        );
+        toast.success("Comment added successfully!");
+      } else {
+        setDisplayedComments((prev) =>
+          prev.filter((comment) => comment._id !== context?._id)
+        );
+        toast.error(response.message || "Failed to add comment.");
+      }
+    },
+    onError: (err, variables, context) => {
+      setDisplayedComments((prev) =>
+        prev.filter((comment) => comment._id !== context?._id)
+      );
+      toast.error(
+        `Failed to add comment: ${(err as any).message || "Unknown error"}`
+      );
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(["ProfileFeed", post.owner?._id]);
+    },
+  });
+
+  // Handles updating a comment with optimistic updates
+  const updateCommentMutation = useMutation({
+    mutationFn: async ({
+      commentId,
+      newContent,
+    }: {
+      commentId: string;
+      newContent: string;
+    }) => useCommentApi.updateComment(commentId, newContent),
+    onMutate: async ({ commentId, newContent }) => {
+      const previousComments = displayedComments;
+      setDisplayedComments((prev) =>
+        prev.map((comment) =>
+          comment._id === commentId
+            ? { ...comment, content: newContent, edited: true }
+            : comment
+        )
+      );
+      setEditingComment(null);
+      setEditCommentText("");
+      return { previousComments };
+    },
+    onError: (err, variables, context) => {
+      setDisplayedComments(context?.previousComments || []);
+      toast.error(
+        `Failed to update comment: ${(err as any).message || "Unknown error"}`
+      );
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(["ProfileFeed", post.owner?._id]);
+    },
+  });
+
+  // Handles deleting a comment with optimistic updates
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: string) =>
+      useCommentApi.deleteComment(commentId),
+    onMutate: async (commentId) => {
+      const previousComments = displayedComments;
+      setDisplayedComments((prev) =>
+        prev.filter((comment) => comment._id !== commentId)
+      );
+      return { previousComments };
+    },
+    onError: (err, variables, context) => {
+      setDisplayedComments(context?.previousComments || []);
+      toast.error(
+        `Failed to delete comment: ${(err as any).message || "Unknown error"}`
+      );
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(["ProfileFeed", post.owner?._id]);
+    },
+  });
 
   const toggleComments = (postId: string) => {
     setShowComments((prev) => ({
@@ -263,82 +332,24 @@ export function PostCard({
       [postId]: value,
     }));
   };
-  const [commenting, isCommenting] = useState<boolean>(false);
+
   const handleAddComment = async (postId: string) => {
-    isCommenting(true);
     const newCommentText = commentInputs[postId]?.trim();
     if (newCommentText && currentLoggedInUser) {
-      try {
-        const response = await useCommentApi.createComment(
-          postId,
-          newCommentText
-        );
-
-        if (response.status === 200 && response.data) {
-          const newComment = {
-            _id: response.data._id,
-            content: response.data.content,
-            owner: response.data.owner || {
-              _id: currentLoggedInUser.id,
-              username: currentLoggedInUser.username,
-            },
-            createdAt: response.data.createdAt,
-          };
-          setDisplayedComments((prevComments) => [...prevComments, newComment]);
-          setCommentInputs((prev) => ({
-            ...prev,
-            [postId]: "",
-          }));
-          toast.success("Comment added successfully!");
-          isCommenting(false);
-        } else {
-          isCommenting(false);
-          console.error(
-            "API did not return a valid comment object or status was not 200:",
-            response
-          );
-          toast.error(response.message || "Failed to add comment.");
-        }
-      } catch (error) {
-        isCommenting(false);
-        console.error("Error adding comment:", error);
-        toast.error("An error occurred while adding the comment.");
-      }
+      addCommentMutation.mutate(newCommentText);
     } else if (!newCommentText) {
-      isCommenting(false);
       toast.error("Comment cannot be empty.");
     } else if (!currentLoggedInUser) {
-      isCommenting(false);
       toast.error("You must be logged in to add a comment.");
     }
   };
 
-  const handleLike = async () => {
+  const handleLike = () => {
     if (!currentLoggedInUser) {
       toast.error("You must be logged in to like a post.");
       return;
     }
-
-    const previousIsLiked = isLiked;
-    const previousLikesCount = likesCount;
-    setIsLiked(!isLiked);
-    setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
-
-    try {
-      const response: any = await useLikeApi.likePost(post._id);
-
-      if (response.status === 200) {
-      } else {
-        setIsLiked(previousIsLiked);
-        setLikesCount(previousLikesCount);
-        toast.error(response.message || "Failed to update like status.");
-      }
-    } catch (error) {
-      setIsLiked(previousIsLiked);
-      setLikesCount(previousLikesCount);
-      console.error("Error liking post:", error);
-      toast.error("An error occurred while liking the post.");
-    }
+    likeMutation.mutate();
   };
 
   const handleEditComment = (
@@ -350,9 +361,9 @@ export function PostCard({
     setEditCommentText(text);
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = () => {
     if (editingComment) {
-      const { commentId, commentIndex, originalText } = editingComment;
+      const { commentId, originalText } = editingComment;
       const newContent = editCommentText.trim();
 
       if (!newContent) {
@@ -367,36 +378,7 @@ export function PostCard({
         return;
       }
 
-      try {
-        const response = await useCommentApi.updateComment(
-          commentId,
-          newContent
-        );
-
-        if (response.status === 200 && response.data) {
-          setDisplayedComments((prev) => {
-            const updatedComments = [...(prev || [])];
-            if (updatedComments[commentIndex]) {
-              updatedComments[commentIndex] = {
-                ...updatedComments[commentIndex],
-                content: response.data.content,
-                edited: true,
-                createdAt: response.data.createdAt || dayjs().toISOString(),
-              };
-            }
-            return updatedComments;
-          });
-          toast.success("Comment updated successfully!");
-        } else {
-          toast.error(response.message || "Failed to update comment.");
-        }
-      } catch (error) {
-        console.error("Error updating comment:", error);
-        toast.error("An error occurred while updating the comment.");
-      } finally {
-        setEditingComment(null);
-        setEditCommentText("");
-      }
+      updateCommentMutation.mutate({ commentId, newContent });
     }
   };
 
@@ -405,29 +387,14 @@ export function PostCard({
     setEditCommentText("");
   };
 
-  const handleDeleteComment = async (commentId: string, index: number) => {
-    try {
-      const response = await useCommentApi.deleteComment(commentId);
-      if (response.status === 200) {
-        setDisplayedComments((prev) => {
-          const updatedComments = [...(prev || [])];
-          updatedComments.splice(index, 1);
-          return updatedComments;
-        });
-        toast.success("Comment deleted successfully!");
-      } else {
-        toast.error(response.message || "Failed to delete comment.");
-      }
-    } catch (error) {
-      console.error("Error deleting comment:", error);
-      toast.error("An error occurred while deleting the comment.");
-    }
+  const handleDeleteComment = (commentId: string, index: number) => {
+    deleteCommentMutation.mutate(commentId);
   };
 
   return (
     <Card
       key={post._id}
-      className="border-0 border-b md:border rounded-none md:rounded-lg shadow-none md:shadow-sm bg-white"
+      className="border-0 border-b md:border rounded-none md:rounded-lg shadow-none md:shadow-sm bg-white dark:bg-gray-800 dark:border-gray-700"
     >
       <div className="flex items-center justify-between p-3 md:p-4">
         <div className="flex items-center gap-3">
@@ -437,18 +404,18 @@ export function PostCard({
                 src={post?.owner?.profileImage || "/placeholder.svg"}
                 alt={post?.owner?.username}
               />
-              <AvatarFallback>
+              <AvatarFallback className="dark:bg-gray-700 dark:text-gray-300">
                 {post?.owner?.username?.[0]?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
           </Link>
           <div>
             <Link href={`/profile/${post?.owner?._id}`}>
-              <span className="font-semibold text-sm md:text-base">
+              <span className="font-semibold text-sm md:text-base text-gray-900 dark:text-gray-100">
                 @{post?.owner?.username}
               </span>
             </Link>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
               {dayjs(post.createdAt).fromNow()}
               {post?.location && ` • ${post?.location}`}
             </div>
@@ -456,50 +423,74 @@ export function PostCard({
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="w-8 h-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-8 h-8 dark:text-gray-400 dark:hover:bg-gray-700"
+            >
               <MoreHorizontal className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+          <DropdownMenuContent
+            align="end"
+            className="dark:bg-gray-700 dark:border-gray-600"
+          >
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              className="dark:text-gray-100 dark:hover:bg-gray-600"
+            >
               <PostDialog
                 post={{ _caption: post.caption, _location: post.location }}
                 id={post._id}
                 type={"EDIT"}
               >
-                <Button variant="ghost">Edit Post</Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start dark:text-gray-100 dark:hover:bg-gray-600"
+                >
+                  Edit Post
+                </Button>
               </PostDialog>
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              className="dark:text-gray-100 dark:hover:bg-gray-600"
+            >
               <PostDialog id={post._id} type={"DELETE"}>
-                <Button variant="ghost" className=" text-red-600">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-red-600 dark:text-red-400 dark:hover:bg-gray-600"
+                >
                   Delete Post
                 </Button>
               </PostDialog>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem className="dark:text-gray-100 dark:hover:bg-gray-600">
               <Link
                 href={`/post/${post._id}?caption=${post.caption
                   .split(/ /g)
                   .slice(0, 8)
                   .join("-")}`}
+                className="w-full"
               >
                 Show post
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem className="dark:text-gray-100 dark:hover:bg-gray-600">
               <ReportModal
                 reportedBy={session?.user?.id ?? ""}
                 reportedUser={post?.owner?._id ?? ""}
                 relatedPostId={post?._id ?? ""}
               >
-                <div className="border-0">Report </div>
+                <div className="border-0 w-full text-left">Report </div>
               </ReportModal>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="ml-6">{post.caption}</div>
+      <div className="ml-6 text-gray-800 dark:text-gray-200">
+        {post.caption}
+      </div>
       {post.image && post.image.length > 0 && (
         <CardContent className="p-0 relative">
           <GridMedia media={post.image} />
@@ -511,33 +502,44 @@ export function PostCard({
             <Button
               variant="ghost"
               size="icon"
-              className="w-8 h-8 p-0"
+              className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700"
               onClick={handleLike}
+              disabled={likeMutation.isPending}
             >
               <Heart
                 className={`w-6 h-6 ${
-                  isLiked ? "fill-red-500 text-red-500" : "text-gray-600"
+                  isLiked
+                    ? "fill-red-500 text-red-500"
+                    : "text-gray-600 dark:text-gray-400"
                 }`}
               />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="w-8 h-8 p-0"
+              className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700"
               onClick={() => toggleComments(post._id)}
             >
               <MessageCircle className="w-6 h-6" />
             </Button>
-            <Button variant="ghost" size="icon" className="w-8 h-8 p-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700"
+            >
               <Send className="w-6 h-6" />
             </Button>
           </div>
-          <Button variant="ghost" size="icon" className="w-8 h-8 p-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700"
+          >
             <Bookmark className="w-6 h-6" />
           </Button>
         </div>
 
-        <div className="font-semibold text-sm mb-2">
+        <div className="font-semibold text-sm mb-2 text-gray-900 dark:text-gray-100">
           {likesCount.toLocaleString()} likes
         </div>
 
@@ -545,11 +547,11 @@ export function PostCard({
           {displayedComments.map((comment, index) => (
             <div
               key={comment._id || `initial-comment-${index}`}
-              className="text-sm group"
+              className="text-sm group text-gray-800 dark:text-gray-200"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <span className="font-semibold mr-2">
+                  <span className="font-semibold mr-2 dark:text-gray-100">
                     {comment.owner?.username || session?.user?.username}
                   </span>
                   {editingComment?.commentId === comment._id &&
@@ -559,7 +561,7 @@ export function PostCard({
                         type="text"
                         value={editCommentText}
                         onChange={(e) => setEditCommentText(e.target.value)}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-blue-600"
                         onKeyPress={(e) => {
                           if (e.key === "Enter") handleSaveEdit();
                           if (e.key === "Escape") handleCancelEdit();
@@ -570,15 +572,19 @@ export function PostCard({
                         <Button
                           onClick={handleSaveEdit}
                           size="sm"
-                          className="h-6 px-2 text-xs"
+                          className="h-6 px-2 text-xs dark:bg-blue-700 dark:hover:bg-blue-800 dark:text-white"
+                          disabled={updateCommentMutation.isPending}
                         >
-                          Save
+                          {updateCommentMutation.isPending
+                            ? "Saving..."
+                            : "Save"}
                         </Button>
                         <Button
                           onClick={handleCancelEdit}
                           variant="outline"
                           size="sm"
-                          className="h-6 px-2 text-xs bg-transparent"
+                          className="h-6 px-2 text-xs bg-transparent dark:bg-transparent dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+                          disabled={updateCommentMutation.isPending}
                         >
                           Cancel
                         </Button>
@@ -588,11 +594,11 @@ export function PostCard({
                     <>
                       {comment.content}
                       {(comment as any).edited && (
-                        <span className="text-xs text-gray-400 ml-1">
+                        <span className="text-xs text-gray-400 ml-1 dark:text-gray-500">
                           (edited)
                         </span>
                       )}
-                      <span className="text-xs text-gray-400 ml-2">
+                      <span className="text-xs text-gray-400 ml-2 dark:text-gray-500">
                         {dayjs(comment.createdAt).fromNow()}
                       </span>
                     </>
@@ -610,12 +616,15 @@ export function PostCard({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="w-6 h-6"
+                            className="w-6 h-6 dark:text-gray-400 hover:dark:bg-gray-700"
                           >
                             <MoreHorizontal className="w-3 h-3" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent
+                          align="end"
+                          className="dark:bg-gray-700 dark:border-gray-600"
+                        >
                           <DropdownMenuItem
                             onClick={() =>
                               handleEditComment(
@@ -624,6 +633,7 @@ export function PostCard({
                                 comment.content
                               )
                             }
+                            className="dark:text-gray-100 dark:hover:bg-gray-600"
                           >
                             Edit
                           </DropdownMenuItem>
@@ -631,7 +641,7 @@ export function PostCard({
                             onClick={() =>
                               handleDeleteComment(comment._id, index)
                             }
-                            className="text-red-600"
+                            className="text-red-600 dark:text-red-400 dark:hover:bg-gray-600"
                           >
                             Delete
                           </DropdownMenuItem>
@@ -644,7 +654,7 @@ export function PostCard({
           ))}
 
           {showComments[post._id] && (
-            <div className="mt-3 pt-3 border-t">
+            <div className="mt-3 pt-3 border-t dark:border-gray-700">
               <div className="flex items-center gap-2">
                 <Avatar className="w-6 h-6">
                   <AvatarImage
@@ -653,7 +663,7 @@ export function PostCard({
                       "/placeholder.svg?height=24&width=24"
                     }
                   />
-                  <AvatarFallback>
+                  <AvatarFallback className="dark:bg-gray-700 dark:text-gray-300">
                     {currentLoggedInUser?.name?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
@@ -668,23 +678,25 @@ export function PostCard({
                     onKeyPress={(e) =>
                       e.key === "Enter" && handleAddComment(post._id)
                     }
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    disabled={!currentLoggedInUser}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-600"
+                    disabled={
+                      !currentLoggedInUser || addCommentMutation.isPending
+                    }
                   />
                   {commentInputs[post._id]?.trim() && currentLoggedInUser && (
                     <Button
                       onClick={() => handleAddComment(post._id)}
                       size="sm"
-                      disabled={commenting}
-                      className="absolute right-0 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600 rounded-full p-5 transition duration-300 ease-in-out disabled:bg-blue-500/50"
+                      disabled={addCommentMutation.isPending}
+                      className="absolute right-0 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600 rounded-full p-5 transition duration-300 ease-in-out disabled:bg-blue-500/50 dark:bg-blue-700 dark:hover:bg-blue-800 dark:disabled:bg-blue-700/50"
                     >
-                      {commenting ? "Posting..." : "Post"}
+                      {addCommentMutation.isPending ? "Posting..." : "Post"}
                     </Button>
                   )}
                 </div>
               </div>
               {!currentLoggedInUser && (
-                <p className="text-xs text-red-500 mt-2">
+                <p className="text-xs text-red-500 mt-2 dark:text-red-400">
                   Please log in to add comments.
                 </p>
               )}
@@ -696,7 +708,7 @@ export function PostCard({
               variant="ghost"
               size="sm"
               onClick={() => toggleComments(post._id)}
-              className="text-xs text-gray-500 mt-1 h-auto p-0"
+              className="text-xs text-gray-500 mt-1 h-auto p-0 dark:text-gray-400 dark:hover:bg-gray-700"
             >
               View all {displayedComments.length} comments
             </Button>

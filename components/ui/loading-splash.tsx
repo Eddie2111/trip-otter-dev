@@ -21,7 +21,7 @@ export function LoadingScreen() {
   const quote = getRandomQuote();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center dark:bg-gray-900">
       <div className="text-center">
         <img
           src="/splash.jpg"
@@ -30,8 +30,8 @@ export function LoadingScreen() {
           width="400"
           className="w-64 h-32 mx-auto mb-4"
         />
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-        <p className="text-gray-600">{quote}</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4 dark:border-blue-400"></div>
+        <p className="text-gray-600 dark:text-gray-300">{quote}</p>
       </div>
     </div>
   );

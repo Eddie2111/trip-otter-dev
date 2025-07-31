@@ -22,6 +22,9 @@ interface UserDataOptimized {
     commentsCount: number;
     followersCount: number;
     followingCount: number;
+    createdAt: Date;
+    updatedAt: Date;
+    _id: number;
   };
   [key: string]: any;
 }
@@ -61,7 +64,7 @@ export async function GET(request: NextRequest): Promise<Response> {
             { $match: { user: new mongoose.Types.ObjectId(userId) } },
             {
               $project: {
-                _id: 0,
+                _id: 1,
                 postsCount: { $size: "$posts" },
                 commentsCount: { $size: "$comments" },
                 followersCount: { $size: "$followers" },
@@ -83,6 +86,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       const userData: UserDataOptimized = {
         ...user,
         profile: {
+          _id: profileCounts._id,
           postsCount: profileCounts.postsCount || 0,
           commentsCount: profileCounts.commentsCount || 0,
           followersCount: profileCounts.followersCount || 0,

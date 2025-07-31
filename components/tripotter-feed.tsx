@@ -19,28 +19,34 @@ import { DesktopHeader } from "./desktop-header";
 import { PostContainer } from "./post-card_v2";
 import { Sidebar } from "./mobile-sidebar";
 import { LoadingScreen } from "./ui/loading-splash";
+import MobileHeader from "./mobile-header";
 
 export function TripotterFeed() {
-  const router = useRouter(); 
+  const router = useRouter();
 
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const { data: session, status } = useSession();
+
   useEffect(() => {
     async function fetchData() {
       if (status === 'authenticated') {
-        const _userData = await fetch(`api/users?id${session?.user?.id}`);
-        setUserData(_userData);
+        const _userData = await fetch(`api/users?id=${session?.user?.id}`);
+        const data = await _userData.json();
+        setUserData(data);
       }
     }
-  },[status])
+    fetchData();
+  }, [status, session?.user?.id]);
 
   const isAuthenticated = status === "authenticated";
 
   const handleLogout = async () => {
     try {
-      await signOut();
-      router.push("/login");
+      await signOut({
+        redirect: true,
+        callbackUrl: "/login",
+      });
       toast.success("Come back soon!");
     } catch (error) {
       console.error("Logout error:", error);
@@ -58,39 +64,7 @@ export function TripotterFeed() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Search Modal */}
-      <SearchModal
-        isOpen={showSearchModal}
-        onClose={() => setShowSearchModal(false)}
-        onPersonSelect={() => {}}
-        onShopSelect={() => {}}
-      />
-      {/* Desktop Header */}
-      <DesktopHeader
-        setShowSearchModal={setShowSearchModal}
-        session={session}
-        handleLogout={handleLogout}
-        userData={userData ?? session?.user}
-      />
-
-      {/* Mobile Header */}
-      <div className="md:hidden sticky top-0 z-10 bg-white border-b px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Sidebar />
-            <Camera className="w-6 h-6" />
-            <h1 className="text-xl font-bold">Tripotter</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <Heart className="w-6 h-6" />
-            {/* Changed onClick to Link for chat navigation */}
-            <Link href="/chat" className="flex items-center">
-              <MessageCircle className="w-6 h-6 cursor-pointer" />
-            </Link>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
 
       <div className="flex">
         {/* Main Content - Now only renders the feed content directly */}
@@ -100,7 +74,7 @@ export function TripotterFeed() {
 
             <div className="flex-1 max-w-none md:max-w-lg">
               {/* Stories */}
-              {/* <Card className="mb-6 bg-white">
+              {/* <Card className="mb-6 bg-white dark:bg-gray-800 dark:border-gray-700">
                 <CardContent className="p-4">
                   <ScrollArea className="w-full">
                     <div className="flex gap-4 pb-2">
@@ -119,7 +93,7 @@ export function TripotterFeed() {
                             <Avatar
                               className={`w-14 h-14 ${
                                 story.hasStory && !story.isOwn
-                                  ? "border-2 border-white"
+                                  ? "border-2 border-white dark:border-gray-800"
                                   : ""
                               }`}
                             >
@@ -127,17 +101,17 @@ export function TripotterFeed() {
                                 src={story.avatar || "/placeholder.svg"}
                                 alt={story.username}
                               />
-                              <AvatarFallback>
+                              <AvatarFallback className="dark:bg-gray-700 dark:text-gray-300">
                                 {story.username[0].toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             {story.isOwn && (
-                              <div className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-1">
+                              <div className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-1 dark:bg-blue-700">
                                 <PlusSquare className="w-3 h-3 text-white" />
                               </div>
                             )}
                           </div>
-                          <span className="text-xs text-center truncate w-16">
+                          <span className="text-xs text-center truncate w-16 text-gray-700 dark:text-gray-300">
                             {story.username}
                           </span>
                         </div>
@@ -148,20 +122,20 @@ export function TripotterFeed() {
               </Card> */}
 
               {/* Posts */}
-              <PostContainer />
+              <PostContainer/> {/* Pass profileId */}
             </div>
 
             {/* Right Sidebar - Suggested Users */}
             <div className="hidden lg:block w-80 space-y-6">
-              <Card className="p-4">
+              <Card className="p-4 bg-white dark:bg-gray-800 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-500">
+                  <h3 className="font-semibold text-gray-500 dark:text-gray-300">
                     Suggested for you
                   </h3>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-xs font-semibold"
+                    className="text-xs font-semibold text-gray-700 dark:text-gray-200 dark:hover:bg-gray-700"
                   >
                     See All
                   </Button>
@@ -177,18 +151,18 @@ export function TripotterFeed() {
                           <AvatarImage
                             src={user.avatar || "/placeholder.svg"}
                           />
-                          <AvatarFallback>
+                          <AvatarFallback className="dark:bg-gray-700 dark:text-gray-300">
                             {user.username[0].toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-semibold text-sm">
+                          <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">
                             {user.username}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
                             {user.name}
                           </div>
-                          <div className="text-xs text-gray-400">
+                          <div className="text-xs text-gray-400 dark:text-gray-500">
                             Followed by {user.mutualFollowers} others
                           </div>
                         </div>
@@ -196,7 +170,7 @@ export function TripotterFeed() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-blue-500 text-xs font-semibold"
+                        className="text-blue-500 text-xs font-semibold dark:text-blue-400 dark:hover:bg-gray-700"
                       >
                         Follow
                       </Button>
@@ -205,7 +179,7 @@ export function TripotterFeed() {
                 </div>
               </Card>
 
-              <div className="text-xs text-gray-400 space-y-1">
+              <div className="text-xs text-gray-400 space-y-1 dark:text-gray-500">
                 <div>About • Help • Press • API • Jobs • Privacy • Terms</div>
                 <div>Locations • Language </div>
                 <div className="mt-4">© 2025 Tripotter</div>

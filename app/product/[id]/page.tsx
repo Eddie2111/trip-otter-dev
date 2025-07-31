@@ -1,4 +1,5 @@
 import { ProductPage } from "@/components/product-page"
+import { Metadata } from "next"
 
 interface ProductPageProps {
   params: {
@@ -7,6 +8,15 @@ interface ProductPageProps {
   searchParams: {
     shopId?: string
   }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: {
+      template: "Product",
+      default: "Product",
+    },
+  };
 }
 
 export default function Product({ params, searchParams }: ProductPageProps) {

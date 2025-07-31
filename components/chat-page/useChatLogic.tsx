@@ -7,9 +7,9 @@ import type {
   IMessage,
   IUser,
   IDisplayConversation,
-  Group, // Ensure this type matches what backend emits for groups
+  Group,
 } from "@/types/chat.d";
-import { Socket } from "socket.io-client"; // Import Socket type
+import { Socket } from "socket.io-client";
 
 interface UseChatLogicProps {
   selectedChatType: "private" | "group" | "global" | "user" | null;
@@ -71,7 +71,6 @@ export function useChatLogic({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [
@@ -82,18 +81,16 @@ export function useChatLogic({
     selectedChatType,
   ]);
 
-  // Helper to map backend MessageDocument to frontend IMessage
   const mapBackendMessageToFrontend = useCallback(
     (backendMessage: any): IMessage => {
       return {
-        id: backendMessage.serial, // Map backend 'serial' to frontend 'id'
+        id: backendMessage.serial,
         content: backendMessage.content,
-        // Ensure sender and receiver are always strings for consistent comparison
         sender: backendMessage.sender ? String(backendMessage.sender) : "",
         receiver: backendMessage.receiver
           ? String(backendMessage.receiver)
           : undefined,
-        groupId: backendMessage.groupId, // This should be the group's serial
+        groupId: backendMessage.groupId,
         createdAt: backendMessage.createdAt,
         updatedAt: backendMessage.updatedAt,
       };
@@ -466,8 +463,7 @@ export function useChatLogic({
     socket.on("groupCreated", handleGroupCreated);
     socket.on("userJoinedGroup", handleUserJoinedGroup);
     socket.on("userLeftGroup", handleUserLeftGroup);
-    // socket.on("availableGroups", handleAvailableGroups); // Removed listener
-    socket.on("userGroups", handleUserGroups); // Primary listener for user's groups
+    socket.on("userGroups", handleUserGroups);
     socket.on("conversationHistory", handleConversationHistory);
     socket.on("groupHistory", handleGroupHistory);
     socket.on("messageUpdated", handleMessageUpdated);

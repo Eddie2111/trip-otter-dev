@@ -103,13 +103,11 @@ export function useChatLogic({
     if (!socket) return;
 
     const handleConnect = () => {
-      console.log("Socket connected:", socket.id);
       setSocketStatus(`Connected (ID: ${socket.id})`);
       setError(null);
     };
 
     const handleDisconnect = () => {
-      console.log("Socket disconnected");
       setSocketStatus("Disconnected");
       setIsLoggedIn(false);
       setOnlineUsers([]);
@@ -135,8 +133,6 @@ export function useChatLogic({
       setIsLoggedIn(true);
       setError(null);
       socket.emit("getOnlineUsers");
-      // The backend now emits 'userGroups' directly after login, no need to emit 'getGroups' here
-      // socket.emit("getGroups"); // Removed this line
       if (selectedChatType === "global") {
         socket.emit("getGlobalMessages");
       }
@@ -154,10 +150,6 @@ export function useChatLogic({
           ...prevMessages,
           mapBackendMessageToFrontend(message),
         ];
-        console.log(
-          "Private message received. New privateMessages state:",
-          newMessages
-        );
         return newMessages;
       });
       if (selectedChatType !== "user" || selectedChatId !== message.sender) {
@@ -175,10 +167,6 @@ export function useChatLogic({
           ...prevMessages,
           mapBackendMessageToFrontend(message),
         ];
-        console.log(
-          "Private message sent. New privateMessages state:",
-          newMessages
-        );
         return newMessages;
       });
       if (selectedChatType === "user" && selectedChatId === message.receiver) {
@@ -196,13 +184,8 @@ export function useChatLogic({
           ...prevMessages,
           mapBackendMessageToFrontend(message),
         ];
-        console.log(
-          "New global message received. New globalMessages state:",
-          newMessages
-        );
         return newMessages;
       });
-      console.log("New global message received:", message);
       if (selectedChatType !== "global") {
         setUnreadCounts((prev) => {
           const newMap = new Map(prev);
@@ -213,7 +196,6 @@ export function useChatLogic({
     };
 
     const handleGlobalMessagesHistory = (messages: any[]) => {
-      console.log("Global messages history received:", messages);
       const mappedMessages = messages.map(mapBackendMessageToFrontend);
       setGlobalMessages(mappedMessages);
       setUnreadCounts((prev) => {
@@ -224,7 +206,6 @@ export function useChatLogic({
     };
 
     const handleGroupMessage = (message: any) => {
-      console.log("Received groupMessage event:", message);
       if (message.groupId) {
         setGroupMessages((prev) => {
           const groupId = message.groupId;
@@ -237,10 +218,6 @@ export function useChatLogic({
             ...prev,
             [groupId]: newGroupMessages,
           };
-          console.log(
-            `Updating groupMessages for group ${groupId}. New state:`,
-            updatedState
-          );
           return updatedState;
         });
         if (
@@ -257,7 +234,6 @@ export function useChatLogic({
     };
 
     const handleUserOnline = (user: IUser) => {
-      console.log(`User online: ${user.username} (${user.id})`);
       setOnlineUsers((prev) => {
         if (!prev.some((u) => u.id === user.id)) {
           return [...prev, { ...user, isOnline: true, socketId: "" }];
@@ -269,20 +245,16 @@ export function useChatLogic({
     };
 
     const handleUserOffline = (user: { userId: string; username: string }) => {
-      console.log(`User offline: ${user.username} (${user.userId})`);
       setOnlineUsers((prev) =>
         prev.map((u) => (u.id === user.userId ? { ...u, isOnline: false } : u))
       );
     };
 
     const handleOnlineUsers = (users: IUser[]) => {
-      console.log("Updated online users list:", users);
       setOnlineUsers(users);
     };
 
     const handleGroupCreated = (group: Group) => {
-      // Type 'Group' from chat.types.d
-      console.log("Group created (from backend):", group);
       setUserGroups((prev) => {
         // Ensure we don't add duplicates if 'userGroups' also emits this
         if (!prev.some((g) => g.id === group.id)) {
@@ -299,7 +271,6 @@ export function useChatLogic({
       userId: string;
       username: string;
     }) => {
-      console.log(`User ${payload.username} joined group ${payload.groupId}`);
       setUserGroups((prev) =>
         prev.map((group) =>
           group.id === payload.groupId &&
@@ -315,7 +286,6 @@ export function useChatLogic({
       userId: string;
       username: string;
     }) => {
-      console.log(`User ${payload.username} left group ${payload.groupId}`);
       setUserGroups((prev) =>
         prev.map((group) =>
           group.id === payload.groupId
@@ -330,16 +300,7 @@ export function useChatLogic({
       );
     };
 
-    // The backend no longer emits 'availableGroups' generally.
-    // Frontend should rely on 'userGroups' after login.
-    // const handleAvailableGroups = (groups: Group[]) => {
-    //   console.log("Available groups:", groups);
-    //   setUserGroups(groups);
-    // };
-
     const handleUserGroups = (groups: Group[]) => {
-      // This is the primary event for initial groups
-      console.log("User's groups received from backend:", groups);
       setUserGroups(groups);
     };
 
@@ -347,10 +308,6 @@ export function useChatLogic({
       recipientId: string;
       messages: any[];
     }) => {
-      console.log(
-        `Conversation history for ${payload.recipientId}:`,
-        payload.messages
-      );
       const mappedMessages = payload.messages.map(mapBackendMessageToFrontend);
       setPrivateMessages(mappedMessages);
       setUnreadCounts((prev) => {
@@ -364,17 +321,12 @@ export function useChatLogic({
       groupId: string;
       messages: any[];
     }) => {
-      console.log(`Group history for ${payload.groupId}:`, payload.messages);
       const mappedMessages = payload.messages.map(mapBackendMessageToFrontend);
       setGroupMessages((prev) => {
         const updatedState = {
           ...prev,
           [payload.groupId]: mappedMessages,
         };
-        console.log(
-          `Setting group history for group ${payload.groupId}. New state:`,
-          updatedState
-        );
         return updatedState;
       });
       setUnreadCounts((prev) => {
@@ -402,7 +354,6 @@ export function useChatLogic({
           prev.map((msg) => (msg.id === mappedMessage.id ? mappedMessage : msg))
         );
       }
-      console.log("Message updated:", updatedMessage);
     };
 
     const handleMessageDeleted = (payload: {
@@ -424,7 +375,6 @@ export function useChatLogic({
           prev.filter((msg) => msg.id !== payload.messageSerial)
         );
       }
-      console.log("Message deleted:", payload.messageSerial);
     };
 
     const handleGroupChatHistoryCleared = (payload: {
@@ -436,9 +386,6 @@ export function useChatLogic({
         delete newGroupMessages[payload.groupId];
         return newGroupMessages;
       });
-      console.log(
-        `Group chat history cleared for group ${payload.groupId} by ${payload.clearedBy}`
-      );
     };
 
     const handleForceDisconnect = (reason: string) => {
@@ -518,9 +465,6 @@ export function useChatLogic({
       username: session.user.email,
     });
 
-    console.log(
-      `Attempted login for User ID: ${session.user.id}, Username: ${session.user.email}`
-    );
   }, [socket, session, status]);
 
   // --- Automatic Socket Login Effect (triggers handleLogin) ---

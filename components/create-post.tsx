@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { X, Upload, ImageIcon, MapPin, Type } from "lucide-react";
 import Image from "next/image";
 import * as nsfwjs from "nsfwjs";
@@ -42,6 +42,28 @@ const loadNsfwModel = async () => {
   }
 };
 
+// New component to handle the submit button's disabled state
+// It uses useWatch to only re-render when the caption value changes.
+function SubmitButton({ form, files, isSubmitting }) {
+  // useWatch subscribes to specific field changes without re-rendering the entire parent component.
+  const caption = useWatch({
+    control: form.control,
+    name: "caption",
+  });
+
+  const isFormInvalid = !caption?.trim() && files.length === 0;
+
+  return (
+    <Button
+      type="submit"
+      disabled={isSubmitting || isFormInvalid}
+      className="min-w-[120px]"
+    >
+      {isSubmitting ? "Creating..." : "Create Post"}
+    </Button>
+  );
+}
+
 export function CreatePost({
   children,
   profileId,
@@ -56,7 +78,7 @@ export function CreatePost({
 
   const [isOpen, setIsOpen] = useState(false);
   const queryClient = useQueryClient();
-  
+
   const createPostMutation = useMutation({
     mutationFn: async (data: PostCreateInput) => {
       return usePostApi.createPost(data);
@@ -269,10 +291,6 @@ export function CreatePostForm({
       // No need to set submitting state here, useMutation handles it automatically
     }
   };
-  const caption = form.watch("caption");
-  const image = form.watch("image");
-
-  const isFormInvalid = !caption?.trim() && (!image || files.length === 0);
 
   return (
     <div className="overflow-y-auto max-h-[80vh]">
@@ -418,13 +436,12 @@ export function CreatePostForm({
                 >
                   Clear
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || isFormInvalid}
-                  className="min-w-[120px]"
-                >
-                  {isSubmitting ? "Creating..." : "Create Post"}
-                </Button>
+                {/* Use the new SubmitButton component to encapsulate the re-render logic */}
+                <SubmitButton
+                  form={form}
+                  files={files}
+                  isSubmitting={isSubmitting}
+                />
               </div>
             </form>
           </Form>

@@ -91,7 +91,6 @@ export const NotificationContainer = () => {
             ...prevNotifications,
           ]);
         }
-        console.log(newNotification);
       });
 
       socket.on(
@@ -150,16 +149,13 @@ export const NotificationContainer = () => {
     }
   };
 
-  // OPTION 1: Debounced batch approach (recommended)
   const markAllAsReadDebounced = () => {
-    if (isMarkingAllAsRead) return; // Prevent multiple simultaneous calls
+    if (isMarkingAllAsRead) return;
 
-    // Clear any existing timeout
     if (markAllTimeoutRef.current) {
       clearTimeout(markAllTimeoutRef.current);
     }
 
-    // Debounce the operation by 300ms
     markAllTimeoutRef.current = setTimeout(() => {
       if (socket && !isMarkingAllAsRead) {
         setIsMarkingAllAsRead(true);

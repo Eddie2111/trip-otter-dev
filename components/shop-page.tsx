@@ -1,240 +1,76 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Star, MapPin, Heart, Share2, Filter, ArrowLeft } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
-import { shops } from "./shops-page"
-
-// Sample products for each shop
-const shopProducts = {
-  1: [
-    // Adventure Gear Co.
-    {
-      id: 101,
-      name: "Professional Hiking Backpack",
-      price: 129.99,
-      originalPrice: 159.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.8,
-      reviews: 89,
-      inStock: true,
-      description: "Durable 40L hiking backpack with multiple compartments and weather-resistant material",
-      features: ["40L capacity", "Weather-resistant", "Multiple compartments", "Ergonomic design"],
-      shopId: 1,
-    },
-    {
-      id: 102,
-      name: "Waterproof Camping Tent",
-      price: 199.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.9,
-      reviews: 156,
-      inStock: true,
-      description: "4-person waterproof tent perfect for camping adventures",
-      features: ["4-person capacity", "Waterproof", "Easy setup", "Lightweight"],
-      shopId: 1,
-    },
-    {
-      id: 103,
-      name: "Portable Camping Stove",
-      price: 45.99,
-      originalPrice: 59.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.7,
-      reviews: 234,
-      inStock: false,
-      description: "Compact and lightweight camping stove for outdoor cooking",
-      features: ["Compact design", "Lightweight", "Fuel efficient", "Wind resistant"],
-      shopId: 1,
-    },
-    {
-      id: 104,
-      name: "Multi-tool Survival Kit",
-      price: 34.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.6,
-      reviews: 178,
-      inStock: true,
-      description: "Essential survival tools in one compact package",
-      features: ["15 tools in 1", "Stainless steel", "Compact", "Durable"],
-      shopId: 1,
-    },
-    {
-      id: 105,
-      name: "Solar Power Bank",
-      price: 79.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.5,
-      reviews: 92,
-      inStock: true,
-      description: "20000mAh solar power bank for extended outdoor trips",
-      features: ["20000mAh capacity", "Solar charging", "Waterproof", "LED flashlight"],
-      shopId: 1,
-    },
-    {
-      id: 106,
-      name: "Insulated Water Bottle",
-      price: 24.99,
-      originalPrice: 34.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.8,
-      reviews: 312,
-      inStock: true,
-      description: "32oz stainless steel insulated water bottle",
-      features: ["32oz capacity", "24h cold retention", "12h hot retention", "BPA-free"],
-      shopId: 1,
-    },
-  ],
-  2: [
-    // Local Artisan Crafts
-    {
-      id: 201,
-      name: "Handwoven Dream Catcher",
-      price: 39.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.9,
-      reviews: 67,
-      inStock: true,
-      description: "Authentic handwoven dream catcher made by local artisans",
-      features: ["Handmade", "Natural materials", "Traditional design", "Unique piece"],
-      shopId: 2,
-    },
-    {
-      id: 202,
-      name: "Ceramic Coffee Mug Set",
-      price: 29.99,
-      originalPrice: 39.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.7,
-      reviews: 123,
-      inStock: true,
-      description: "Set of 2 handcrafted ceramic coffee mugs with local artwork",
-      features: ["Set of 2", "Handcrafted", "Local artwork", "Dishwasher safe"],
-      shopId: 2,
-    },
-    {
-      id: 203,
-      name: "Leather Journal",
-      price: 49.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.8,
-      reviews: 89,
-      inStock: true,
-      description: "Premium leather-bound journal with handmade paper",
-      features: ["Genuine leather", "Handmade paper", "200 pages", "Vintage design"],
-      shopId: 2,
-    },
-    {
-      id: 204,
-      name: "Wooden Wind Chimes",
-      price: 34.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.6,
-      reviews: 45,
-      inStock: false,
-      description: "Handcrafted wooden wind chimes with soothing tones",
-      features: ["Handcrafted", "Natural wood", "Soothing tones", "Weather resistant"],
-      shopId: 2,
-    },
-  ],
-  3: [
-    // Tech Travel Hub
-    {
-      id: 301,
-      name: "Wireless Travel Charger",
-      price: 59.99,
-      originalPrice: 79.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.7,
-      reviews: 234,
-      inStock: true,
-      description: "Fast wireless charging pad perfect for travel",
-      features: ["Fast charging", "Compact design", "Universal compatibility", "LED indicator"],
-      shopId: 3,
-    },
-    {
-      id: 302,
-      name: "Bluetooth Travel Speaker",
-      price: 89.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.8,
-      reviews: 167,
-      inStock: true,
-      description: "Portable Bluetooth speaker with premium sound quality",
-      features: ["12-hour battery", "Waterproof", "Premium sound", "Compact"],
-      shopId: 3,
-    },
-    {
-      id: 303,
-      name: "Travel Router",
-      price: 79.99,
-      image: "/placeholder.svg?height=300&width=300",
-      rating: 4.6,
-      reviews: 98,
-      inStock: true,
-      description: "Portable WiFi router for secure internet anywhere",
-      features: ["Secure connection", "Long battery life", "Multiple devices", "Compact"],
-      shopId: 3,
-    },
-  ],
-}
+import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Star, MapPin, Heart, Share2, Filter, ArrowLeft } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { shops } from "./shops-page";
+import { shopProducts } from "@/data/mocks/shop.mock";
 
 interface ShopPageProps {
-  shopId: number
-  onBack: () => void
-  onProductSelect: (productId: number) => void
+  shopId: number;
 }
 
-export function ShopPage({ shopId, onBack, onProductSelect }: ShopPageProps) {
-  const [searchQuery, setSearchQuery] = useState("")
+export function ShopPage({ shopId }: ShopPageProps) {
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const shop = shops.find((s) => s.id === shopId)
-  const products = shopProducts[shopId as keyof typeof shopProducts] || []
+  const shop = shops.find((s) => s.id === shopId);
+  const products = shopProducts[shopId as keyof typeof shopProducts] || [];
 
   if (!shop) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-950 dark:bg-gray-950 dark:text-gray-50">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Shop Not Found</h2>
           <Link href="/">
-            <Button>Back to Home</Button>
+            <Button className="bg-blue-600 hover:bg-blue-500 text-white">
+              Back to Home
+            </Button>
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+      product.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 text-gray-950 dark:bg-gray-950 dark:text-gray-50">
       {/* Mobile Header */}
-      <div className="md:hidden sticky top-0 z-10 bg-white border-b px-4 py-3">
+      <div className="md:hidden sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex items-center gap-3">
           <Link href="/">
-            <Button variant="ghost" size="icon">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-900 hover:bg-gray-100 dark:text-gray-50 dark:hover:bg-gray-800"
+            >
               <ArrowLeft className="w-6 h-6" />
             </Button>
           </Link>
-          <h1 className="text-lg font-bold truncate">{shop.name}</h1>
+          <h1 className="text-lg font-bold truncate text-gray-900 dark:text-gray-50">
+            {shop.name}
+          </h1>
         </div>
       </div>
 
       {/* Shop Header */}
-      <div className="bg-white border-b">
+      <div className="bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800">
         <div className="max-w-7xl mx-auto p-4 md:p-6">
           <div className="hidden md:block mb-4">
             <Link href="/">
-              <Button variant="ghost" className="mb-4">
+              <Button
+                variant="ghost"
+                className="mb-4 text-gray-900 hover:bg-gray-100 dark:text-gray-50 dark:hover:bg-gray-800"
+              >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Home
               </Button>
@@ -253,25 +89,45 @@ export function ShopPage({ shopId, onBack, onProductSelect }: ShopPageProps) {
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <Avatar className="w-12 h-12">
-                      <AvatarImage src={shop.avatar || "/placeholder.svg"} alt={shop.name} />
-                      <AvatarFallback>{shop.name[0]}</AvatarFallback>
+                      <AvatarImage
+                        src={shop.avatar || "/placeholder.svg"}
+                        alt={shop.name}
+                      />
+                      <AvatarFallback className="bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                        {shop.name[0]}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h1 className="text-2xl font-bold">{shop.name}</h1>
-                        {shop.verified && <Badge>Verified</Badge>}
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">
+                          {shop.name}
+                        </h1>
+                        {shop.verified && (
+                          <Badge className="bg-gray-100 text-gray-700 border-gray-200 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                            Verified
+                          </Badge>
+                        )}
                       </div>
-                      <Badge variant="outline" className="mt-1">
+                      <Badge
+                        variant="outline"
+                        className="mt-1 border-gray-200 text-gray-700 dark:border-gray-700 dark:text-gray-300"
+                      >
                         {shop.specialty}
                       </Badge>
                     </div>
                   </div>
-                  <p className="text-gray-600 mb-4">{shop.description}</p>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    {shop.description}
+                  </p>
                   <div className="flex items-center gap-6 text-sm">
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{shop.rating}</span>
-                      <span className="text-gray-500">({shop.reviews} reviews)</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-50">
+                        {shop.rating}
+                      </span>
+                      <span className="text-gray-500">
+                        ({shop.reviews} reviews)
+                      </span>
                     </div>
                     <div className="flex items-center gap-1 text-gray-500">
                       <MapPin className="w-4 h-4" />
@@ -280,10 +136,18 @@ export function ShopPage({ shopId, onBack, onProductSelect }: ShopPageProps) {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="icon">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="border-gray-200 text-gray-900 dark:border-gray-700 dark:text-white bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+                  >
                     <Heart className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="icon">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="border-gray-200 text-gray-900 dark:border-gray-700 dark:text-white bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+                  >
                     <Share2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -296,7 +160,9 @@ export function ShopPage({ shopId, onBack, onProductSelect }: ShopPageProps) {
       {/* Products Section */}
       <div className="max-w-7xl mx-auto p-4 md:p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold">Products ({filteredProducts.length})</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            Products ({filteredProducts.length})
+          </h2>
           <div className="flex gap-2">
             <div className="relative">
               <input
@@ -304,10 +170,14 @@ export function ShopPage({ shopId, onBack, onProductSelect }: ShopPageProps) {
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-3 pr-4 py-2 w-64 bg-white rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-3 pr-4 py-2 w-64 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-gray-900 dark:text-white bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
               <Filter className="w-4 h-4 mr-2" />
               Filter
             </Button>
@@ -316,7 +186,10 @@ export function ShopPage({ shopId, onBack, onProductSelect }: ShopPageProps) {
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
           {filteredProducts.map((product) => (
-            <Card key={product.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+            <Card
+              key={product.id}
+              className="cursor-pointer hover:shadow-lg transition-shadow dark:hover:shadow-gray-800/50"
+            >
               <Link href={`/product/${product.id}?shopId=${shopId}`}>
                 <CardContent className="p-3 md:p-4">
                   <div className="relative mb-3">
@@ -327,26 +200,42 @@ export function ShopPage({ shopId, onBack, onProductSelect }: ShopPageProps) {
                       height={300}
                       className="w-full h-32 md:h-40 object-cover rounded-lg"
                     />
-                    {product.originalPrice && <Badge className="absolute top-2 left-2 bg-red-500 text-xs">Sale</Badge>}
+                    {product.originalPrice && (
+                      <Badge className="absolute top-2 left-2 bg-red-600 text-white text-xs border-transparent dark:bg-red-700">
+                        Sale
+                      </Badge>
+                    )}
                     {!product.inStock && (
                       <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-medium text-sm">Out of Stock</span>
+                        <span className="text-white font-medium text-sm">
+                          Out of Stock
+                        </span>
                       </div>
                     )}
                   </div>
-                  <h3 className="font-semibold text-sm mb-2 line-clamp-2">{product.name}</h3>
+                  <h3 className="font-semibold text-sm mb-2 line-clamp-2 text-gray-900 dark:text-white">
+                    {product.name}
+                  </h3>
                   <div className="flex items-center gap-2 mb-2">
                     <div className="flex items-center gap-1">
                       <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      <span className="text-xs text-gray-600">{product.rating}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                        {product.rating}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-500">({product.reviews})</span>
+                    <span className="text-xs text-gray-500">
+                      ({product.reviews})
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-green-600">${product.price}</span>
+                      <span className="font-bold text-green-600 dark:text-green-400">
+                        ${product.price}
+                      </span>
                       {product.originalPrice && (
-                        <span className="text-xs text-gray-500 line-through">${product.originalPrice}</span>
+                        <span className="text-xs text-gray-500 line-through">
+                          ${product.originalPrice}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -357,14 +246,14 @@ export function ShopPage({ shopId, onBack, onProductSelect }: ShopPageProps) {
         </div>
 
         {filteredProducts.length === 0 && (
-          <div className="text-center py-12">
+          <div className="text-center py-12 text-gray-900 dark:text-white">
             <h3 className="text-lg font-semibold mb-2">No products found</h3>
             <p className="text-gray-500">Try adjusting your search terms</p>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export { shopProducts }
+export { shopProducts };

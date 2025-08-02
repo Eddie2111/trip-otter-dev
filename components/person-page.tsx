@@ -305,7 +305,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
       <DesktopSidebar />
       <main className="md:ml-64 flex-1 bg-gray-50 dark:bg-gray-950 overflow-auto">
         {/* Header */}
-        <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-800 sticky top-0 z-10">
+        {/* <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-800 sticky top-0 z-10">
           <div className="max-w-4xl mx-auto px-4 py-3">
             <div className="flex items-center gap-4">
               <Link href="/" shallow={true}>
@@ -327,7 +327,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         <div className="max-w-4xl mx-auto">
           {/* Cover Image */}

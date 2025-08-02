@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,15 +37,16 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
+import { CommentBox } from "./commentBox";
 
-const POSTS_PER_PAGE = 6;
+const POSTS_PER_PAGE = 3;
+
 
 export function PostContainer({ profileId }: { profileId: string }) {
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const observerRef = useRef<HTMLDivElement | null>(null);
 
-  // Fetches posts with infinite scrolling using useInfiniteQuery
   const {
     data,
     fetchNextPage,
@@ -72,17 +73,14 @@ export function PostContainer({ profileId }: { profileId: string }) {
       }
     },
     getNextPageParam: (lastPage, allPages) => {
-      // Determines the next page number for infinite scrolling
       const hasMoreData = lastPage.length === POSTS_PER_PAGE;
       return hasMoreData ? allPages.length + 1 : undefined;
     },
     initialPageParam: 1,
   });
 
-  // Flattens the paginated data into a single array of posts
   const posts = data?.pages?.flatMap((page) => page) || [];
 
-  // Sets up Intersection Observer for loading more posts when the observerRef element is in view
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -104,12 +102,10 @@ export function PostContainer({ profileId }: { profileId: string }) {
     };
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Displays a loading spinner if no posts have been loaded yet
   if (isLoading && posts.length === 0) {
     return <Loading />;
   }
 
-  // Displays an error message if fetching posts failed and no posts are displayed
   if (isError && posts.length === 0) {
     return (
       <div className="flex justify-center items-center h-48 text-red-600 dark:text-red-400">
@@ -132,21 +128,18 @@ export function PostContainer({ profileId }: { profileId: string }) {
             </div>
           )}
 
-      {/* Renders a loading spinner at the bottom if more pages are available or being fetched */}
       {(hasNextPage || isFetchingNextPage) && (
         <div ref={observerRef} className="flex justify-center py-4">
           {isFetchingNextPage && <Loading />}
         </div>
       )}
 
-      {/* Message displayed when all posts have been loaded */}
       {!hasNextPage && posts.length > 0 && !isFetchingNextPage && (
         <div className="flex justify-center py-4 text-gray-500 dark:text-gray-400">
           You've reached the end of the posts.
         </div>
       )}
 
-      {/* Displays an error if fetching more posts failed after initial load */}
       {isError && posts.length > 0 && (
         <div className="flex justify-center mt-6 text-red-600 dark:text-red-400">
           Error loading more posts: {error?.message || "Unknown error"}
@@ -188,7 +181,6 @@ export function PostCard({
   } | null>(null);
   const [editCommentText, setEditCommentText] = useState("");
 
-  // Handles liking/unliking a post with optimistic updates
   const likeMutation = useMutation({
     mutationFn: async () => useLikeApi.likePost(post._id),
     onMutate: async () => {
@@ -196,7 +188,7 @@ export function PostCard({
       const previousLikesCount = likesCount;
       setIsLiked((prev) => !prev);
       setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
-      return { previousIsLiked, previousLikesCount }; // Context for onError
+      return { previousIsLiked, previousLikesCount };
     },
     onError: (err, variables, context) => {
       setIsLiked(context?.previousIsLiked || false);
@@ -208,11 +200,10 @@ export function PostCard({
       );
     },
     onSettled: () => {
-      queryClient.invalidateQueries(["ProfileFeed", post.owner?._id]);
+      queryClient.invalidateQueries({ queryKey: ["ProfileFeed"] });
     },
   });
 
-  // Handles adding a comment with optimistic updates
   const addCommentMutation = useMutation({
     mutationFn: async (newCommentText: string) =>
       useCommentApi.createComment(post._id, newCommentText),
@@ -260,11 +251,10 @@ export function PostCard({
       );
     },
     onSettled: () => {
-      queryClient.invalidateQueries(["ProfileFeed", post.owner?._id]);
+      queryClient.invalidateQueries({ queryKey: ["ProfileFeed"] });
     },
   });
 
-  // Handles updating a comment with optimistic updates
   const updateCommentMutation = useMutation({
     mutationFn: async ({
       commentId,
@@ -293,11 +283,10 @@ export function PostCard({
       );
     },
     onSettled: () => {
-      queryClient.invalidateQueries(["ProfileFeed", post.owner?._id]);
+      queryClient.invalidateQueries({ queryKey: ["ProfileFeed"] });
     },
   });
 
-  // Handles deleting a comment with optimistic updates
   const deleteCommentMutation = useMutation({
     mutationFn: async (commentId: string) =>
       useCommentApi.deleteComment(commentId),
@@ -315,7 +304,7 @@ export function PostCard({
       );
     },
     onSettled: () => {
-      queryClient.invalidateQueries(["ProfileFeed", post.owner?._id]);
+      queryClient.invalidateQueries({ queryKey: ["ProfileFeed"] });
     },
   });
 
@@ -444,12 +433,7 @@ export function PostCard({
                 id={post._id}
                 type={"EDIT"}
               >
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start dark:text-gray-100 dark:hover:bg-gray-600"
-                >
-                  Edit Post
-                </Button>
+                <span>Edit Post</span>
               </PostDialog>
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -457,12 +441,7 @@ export function PostCard({
               className="dark:text-gray-100 dark:hover:bg-gray-600"
             >
               <PostDialog id={post._id} type={"DELETE"}>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-red-600 dark:text-red-400 dark:hover:bg-gray-600"
-                >
-                  Delete Post
-                </Button>
+                <span className="text-red-600">Delete Post</span>
               </PostDialog>
             </DropdownMenuItem>
             <DropdownMenuItem className="dark:text-gray-100 dark:hover:bg-gray-600">
@@ -475,15 +454,6 @@ export function PostCard({
               >
                 Show post
               </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="dark:text-gray-100 dark:hover:bg-gray-600">
-              <ReportModal
-                reportedBy={session?.user?.id ?? ""}
-                reportedUser={post?.owner?._id ?? ""}
-                relatedPostId={post?._id ?? ""}
-              >
-                <div className="border-0 w-full text-left">Report </div>
-              </ReportModal>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -654,53 +624,14 @@ export function PostCard({
           ))}
 
           {showComments[post._id] && (
-            <div className="mt-3 pt-3 border-t dark:border-gray-700">
-              <div className="flex items-center gap-2">
-                <Avatar className="w-6 h-6">
-                  <AvatarImage
-                    src={
-                      currentLoggedInUser?.image ||
-                      "/placeholder.svg?height=24&width=24"
-                    }
-                  />
-                  <AvatarFallback className="dark:bg-gray-700 dark:text-gray-300">
-                    {currentLoggedInUser?.name?.[0]?.toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    placeholder="Add a comment..."
-                    value={commentInputs[post._id] || ""}
-                    onChange={(e) =>
-                      handleCommentInputChange(post._id, e.target.value)
-                    }
-                    onKeyPress={(e) =>
-                      e.key === "Enter" && handleAddComment(post._id)
-                    }
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-600"
-                    disabled={
-                      !currentLoggedInUser || addCommentMutation.isPending
-                    }
-                  />
-                  {commentInputs[post._id]?.trim() && currentLoggedInUser && (
-                    <Button
-                      onClick={() => handleAddComment(post._id)}
-                      size="sm"
-                      disabled={addCommentMutation.isPending}
-                      className="absolute right-0 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600 rounded-full p-5 transition duration-300 ease-in-out disabled:bg-blue-500/50 dark:bg-blue-700 dark:hover:bg-blue-800 dark:disabled:bg-blue-700/50"
-                    >
-                      {addCommentMutation.isPending ? "Posting..." : "Post"}
-                    </Button>
-                  )}
-                </div>
-              </div>
-              {!currentLoggedInUser && (
-                <p className="text-xs text-red-500 mt-2 dark:text-red-400">
-                  Please log in to add comments.
-                </p>
-              )}
-            </div>
+            <CommentBox
+              postId={post._id}
+              currentLoggedInUser={currentLoggedInUser}
+              commentInputs={commentInputs}
+              handleCommentInputChange={handleCommentInputChange}
+              handleAddComment={handleAddComment}
+              addCommentMutation={addCommentMutation}
+            />
           )}
 
           {!showComments[post._id] && displayedComments.length > 2 && (

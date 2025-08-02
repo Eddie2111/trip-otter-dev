@@ -10,25 +10,26 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState, useCallback, useEffect } from "react";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { useMediaApi, useUserApi } from "@/lib/requests";
-import { Upload, Camera, X } from "lucide-react"; // Added X icon for removal
-import { useDropzone } from "react-dropzone"; // Import useDropzone
-import { useForm } from "react-hook-form"; // Import useForm
-import { zodResolver } from "@hookform/resolvers/zod"; // Import zodResolver
-import Image from "next/image"; // Import Image component
+import { Upload, Camera, X } from "lucide-react";
+import { useDropzone } from "react-dropzone";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
 import { getSanityMedia } from "@/lib/getSanityImage";
+import * as nsfwjs from "nsfwjs";
+import { toast } from "sonner"; // Assuming sonner is used for toast notifications
 
 type ImageType = "COVER" | "PROFILE";
 
 // Validation schema for image upload
 const imageUploadSchema = z.object({
   image: z
-    .any() // Use z.any() for File object, validation will be done in refine
+    .any()
     .refine((file) => file instanceof File, "Image is required.")
     .refine(
       (file) => file.size <= 5 * 1024 * 1024,
@@ -42,6 +43,15 @@ const imageUploadSchema = z.object({
 
 type ImageFormData = z.infer<typeof imageUploadSchema>;
 
+let nsfwModel: nsfwjs.NSFWJS | null = null;
+const loadNsfwModel = async () => {
+  if (!nsfwModel) {
+    console.log("Loading NSFW model...");
+    nsfwModel = await nsfwjs.load("/model.json");
+    console.log("NSFW model loaded.");
+  }
+};
+
 export function ProfileEditImages({
   type,
   children,
@@ -52,6 +62,15 @@ export function ProfileEditImages({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isNsfwModelLoading, setIsNsfwModelLoading] = useState(true);
+
+  // Load the NSFW model when the component mounts
+  useEffect(() => {
+    loadNsfwModel().finally(() => {
+      setIsNsfwModelLoading(false);
+    });
+  }, []);
 
   const form = useForm<ImageFormData>({
     resolver: zodResolver(imageUploadSchema),
@@ -96,18 +115,76 @@ export function ProfileEditImages({
   };
 
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
+    async (acceptedFiles: File[]) => {
       const file = acceptedFiles[0];
-      if (file) {
-        setImageFile(file);
-        setValue("image", file, { shouldValidate: true });
+      let fileSrc: string | undefined;
+      let processedFile = file;
+      if (file.type === "image/heic" || file.type === "image/heif") {
+        try {
+          toast.loading("Converting HEIC image...");
+          const heic2anyModule = await import("heic2any");
+          const heic2any = heic2anyModule.default;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setImagePreview(e.target?.result as string);
+          const convertedBlob = await heic2any({
+            blob: file,
+            toType: "image/jpeg",
+            quality: 0.8,
+          });
+          processedFile = new File(
+            [convertedBlob as Blob],
+            file.name.replace(/\.heic$/i, ".jpeg"),
+            { type: "image/jpeg" }
+          );
+          fileSrc = URL.createObjectURL(processedFile);
+        } catch (error) {
+          console.error("Error converting HEIC file:", error);
+          toast.error(
+            `Failed to process HEIC image: ${file.name}. Please try a different format.`
+          );
+          return;
+        }
+      } else {
+        fileSrc = URL.createObjectURL(file);
+      }
+      if (file) {
+        // const fileSrc = URL.createObjectURL(file);
+        const img = document.createElement("img");
+        img.src = fileSrc;
+        img.crossOrigin = "anonymous";
+
+        img.onload = async () => {
+          if (nsfwModel) {
+            const predictions = await nsfwModel.classify(img);
+            const isExplicit = predictions.some(
+              (p) =>
+                (p.className === "Porn" ||
+                  p.className === "Sexy" ||
+                  p.className === "Hentai") &&
+                p.probability > 0.5
+            );
+            if (isExplicit) {
+              toast.error("Explicit image detected, please upload a safe image.");
+              URL.revokeObjectURL(fileSrc);
+            } else {
+              setImageFile(processedFile);
+              setValue("image", processedFile, { shouldValidate: true });
+              setImagePreview(fileSrc);
+              clearErrors("image");
+            }
+          } else {
+            console.warn("NSFW model not loaded, skipping content check.");
+            setImageFile(processedFile);
+            setValue("image", processedFile, { shouldValidate: true });
+            setImagePreview(fileSrc);
+            clearErrors("image");
+          }
         };
-        reader.readAsDataURL(file);
-        clearErrors("image");
+
+        img.onerror = () => {
+          console.error("Error loading image for NSFW check:", file.name);
+          toast.error(`Failed to load image: ${file.name}.`);
+          URL.revokeObjectURL(fileSrc);
+        };
       }
     },
     [setValue, clearErrors]
@@ -119,41 +196,59 @@ export function ProfileEditImages({
       "image/jpeg": [".jpeg", ".jpg"],
       "image/png": [".png"],
       "image/webp": [".webp"],
+      "image/heic": [".heic"],
+      "image/heif": [".heif"],
     },
     maxFiles: 1,
+    disabled: isNsfwModelLoading,
   });
 
   const onSubmit = async (data: ImageFormData) => {
     setIsUploading(true);
-
     try {
-      const formData = new FormData();
-      formData.append("image", data.image);
-      formData.append("type", type.toLowerCase());
+      if (!imageFile) {
+        throw new Error("No image file selected.");
+      }
 
-      const response = await useMediaApi.uploadMedia(data.image) as any;
-      const mediaLink = await getSanityMedia(response.mediaId);
+      // Create a FormData object for the file upload
+      const formData = new FormData();
+      formData.append("file", imageFile);
+
+      // Perform the fetch call to the media upload API endpoint
+      const res = await fetch("/api/media", {
+        method: "POST",
+        body: formData,
+      });
+
+      // Handle the API response
+      if (!res.ok) {
+        const dataRes = await res.json();
+        throw new Error(dataRes.error || "Failed to upload image.");
+      }
+
+      const result = await res.json();
+      const mediaLink = await getSanityMedia(result.mediaId);
       const config = getModalConfig();
 
+      // Create the payload to update the user's profile with the new image URL
       const updatePayload = {
         [config.fieldName]: mediaLink.data.url,
       };
 
+      // Call the API to update the user's profile
       await useUserApi.updateUser(updatePayload);
 
-      console.log(`${type} image uploaded successfully:`, response);
-      setImageFile(null);
-      setImagePreview(null);
+      console.log(`${type} image uploaded successfully:`, result);
+      toast.success(`${config.title} updated successfully.`);
+
+      // Reset state and close the dialog
+      handleRemoveImage();
       reset();
+      setIsDialogOpen(false);
     } catch (error: any) {
       console.error("Error uploading image:", error);
-      // Display error message from API or Zod
-      if (error.response && error.response.data && error.response.data.error) {
-        form.setError("image", {
-          type: "manual",
-          message: error.response.data.error,
-        });
-      } else if (error instanceof z.ZodError) {
+      toast.error(error.message || "Failed to upload image. Please try again.");
+      if (error instanceof z.ZodError) {
         form.setError("image", {
           type: "manual",
           message: error.errors[0].message,
@@ -161,7 +256,7 @@ export function ProfileEditImages({
       } else {
         form.setError("image", {
           type: "manual",
-          message: "Failed to upload image. Please try again.",
+          message: error.message || "Failed to upload image. Please try again.",
         });
       }
     } finally {
@@ -171,15 +266,29 @@ export function ProfileEditImages({
 
   const handleRemoveImage = () => {
     setImageFile(null);
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
     setImagePreview(null);
     setValue("image", undefined);
     clearErrors("image");
   };
 
+  const handleDialogClose = () => {
+    // Revoke the object URL if the dialog is closed without submitting
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImageFile(null);
+    setImagePreview(null);
+    setIsDialogOpen(false);
+    reset();
+  };
+
   const config = getModalConfig();
 
   return (
-    <Dialog>
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
         {children || (
           <Badge variant="outline" className="cursor-pointer">
@@ -203,25 +312,38 @@ export function ProfileEditImages({
               <div className="flex flex-col gap-3">
                 <div
                   {...getRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                    isNsfwModelLoading
+                      ? "cursor-not-allowed bg-muted"
+                      : "cursor-pointer"
+                  } ${
                     isDragActive
                       ? "border-primary bg-primary/5"
                       : "border-muted-foreground/25 hover:border-primary/50"
                   } ${imageFile ? "hidden" : ""}`}
                 >
                   <input {...getInputProps()} />
-                  <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  {isDragActive ? (
-                    <p className="text-primary">Drop the image here...</p>
+                  {isNsfwModelLoading ? (
+                    <p className="text-muted-foreground">
+                      Loading NSFW model...
+                    </p>
                   ) : (
-                    <div>
-                      <p className="text-lg font-medium mb-2">
-                        Drag & drop image here, or click to select
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Supports: JPEG, PNG, WebP (Max 5MB)
-                      </p>
-                    </div>
+                    <>
+                      <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      {isDragActive ? (
+                        <p className="text-primary">Drop the image here...</p>
+                      ) : (
+                        <div>
+                          <p className="text-lg font-medium mb-2">
+                            Drag & drop image here, or click to select
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Supports: JPEG, PNG, WebP, HEIC, HEIF (Max
+                            5MB)
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -230,8 +352,8 @@ export function ProfileEditImages({
                     <Image
                       src={imagePreview}
                       alt="Image preview"
-                      width={type === "COVER" ? 400 : 200} // Adjust width for cover vs profile
-                      height={type === "COVER" ? 150 : 200} // Adjust height for cover vs profile
+                      width={type === "COVER" ? 400 : 200}
+                      height={type === "COVER" ? 150 : 200}
                       className={`w-full object-cover rounded-md border ${
                         type === "COVER" ? "h-32" : "h-48"
                       }`}
@@ -259,11 +381,18 @@ export function ProfileEditImages({
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleDialogClose}
+              >
                 Cancel
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={!imageFile || isUploading}>
+            <Button
+              type="submit"
+              disabled={!imageFile || isUploading || isNsfwModelLoading}
+            >
               {isUploading ? "Uploading..." : "Save changes"}
             </Button>
           </DialogFooter>

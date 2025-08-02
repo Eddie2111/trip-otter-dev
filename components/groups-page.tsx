@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Search,
   Users,
@@ -16,171 +16,55 @@ import {
   UserPlus,
   MessageCircle,
   Filter,
-  Camera,
-  Mountain,
-  Utensils,
-  Plane,
-  Heart,
-} from "lucide-react"
+  Sun,
+  Moon,
+} from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import Link from "next/link";
+import { allGroups, categories, trendingGroups } from "@/data/mocks/group.mock";
 
-const trendingGroups = [
-  {
-    id: 1,
-    name: "Travel Photography Masters",
-    description: "Share your best travel shots and learn from pros",
-    avatar: "/placeholder.svg?height=80&width=80",
-    coverImage: "/placeholder.svg?height=120&width=300",
-    members: 45000,
-    posts: 1200,
-    category: "Photography",
-    isPrivate: false,
-    tags: ["Photography", "Travel", "Tips"],
-    activity: "Very Active",
-    isJoined: false,
-    growthRate: "+15.2%",
-  },
-  {
-    id: 2,
-    name: "Digital Nomad Community",
-    description: "Remote workers sharing tips, locations, and experiences",
-    avatar: "/placeholder.svg?height=80&width=80",
-    coverImage: "/placeholder.svg?height=120&width=300",
-    members: 32000,
-    posts: 890,
-    category: "Lifestyle",
-    isPrivate: false,
-    tags: ["Remote Work", "Travel", "Lifestyle"],
-    activity: "Very Active",
-    isJoined: true,
-    growthRate: "+22.8%",
-  },
-  {
-    id: 3,
-    name: "Backpackers United",
-    description: "Budget travel tips and backpacking adventures worldwide",
-    avatar: "/placeholder.svg?height=80&width=80",
-    coverImage: "/placeholder.svg?height=120&width=300",
-    members: 28000,
-    posts: 756,
-    category: "Travel",
-    isPrivate: false,
-    tags: ["Backpacking", "Budget Travel", "Adventure"],
-    activity: "Active",
-    isJoined: false,
-    growthRate: "+18.5%",
-  },
-  {
-    id: 4,
-    name: "Foodie Adventures",
-    description: "Discover amazing cuisines and restaurants around the world",
-    avatar: "/placeholder.svg?height=80&width=80",
-    coverImage: "/placeholder.svg?height=120&width=300",
-    members: 38000,
-    posts: 1100,
-    category: "Food",
-    isPrivate: false,
-    tags: ["Food", "Restaurants", "Culture"],
-    activity: "Very Active",
-    isJoined: false,
-    growthRate: "+12.3%",
-  },
-]
 
-const allGroups = [
-  ...trendingGroups,
-  {
-    id: 5,
-    name: "Mountain Climbers Elite",
-    description: "For serious mountaineers and climbing enthusiasts",
-    avatar: "/placeholder.svg?height=80&width=80",
-    coverImage: "/placeholder.svg?height=120&width=300",
-    members: 15000,
-    posts: 420,
-    category: "Adventure",
-    isPrivate: true,
-    tags: ["Climbing", "Mountains", "Extreme Sports"],
-    activity: "Moderate",
-    isJoined: false,
-  },
-  {
-    id: 6,
-    name: "Solo Female Travelers",
-    description: "Safe travel tips and support for women traveling alone",
-    avatar: "/placeholder.svg?height=80&width=80",
-    coverImage: "/placeholder.svg?height=120&width=300",
-    members: 22000,
-    posts: 680,
-    category: "Travel",
-    isPrivate: false,
-    tags: ["Solo Travel", "Safety", "Women"],
-    activity: "Active",
-    isJoined: true,
-  },
-  {
-    id: 7,
-    name: "Luxury Travel Experiences",
-    description: "Premium destinations and high-end travel experiences",
-    avatar: "/placeholder.svg?height=80&width=80",
-    coverImage: "/placeholder.svg?height=120&width=300",
-    members: 12000,
-    posts: 340,
-    category: "Luxury",
-    isPrivate: true,
-    tags: ["Luxury", "Premium", "Exclusive"],
-    activity: "Moderate",
-    isJoined: false,
-  },
-  {
-    id: 8,
-    name: "Street Food Hunters",
-    description: "Finding the best street food in every corner of the world",
-    avatar: "/placeholder.svg?height=80&width=80",
-    coverImage: "/placeholder.svg?height=120&width=300",
-    members: 19000,
-    posts: 590,
-    category: "Food",
-    isPrivate: false,
-    tags: ["Street Food", "Local Cuisine", "Budget Eats"],
-    activity: "Active",
-    isJoined: false,
-  },
-]
-
-const categories = [
-  { name: "All", icon: Users, count: allGroups.length },
-  { name: "Travel", icon: Plane, count: 4 },
-  { name: "Photography", icon: Camera, count: 2 },
-  { name: "Food", icon: Utensils, count: 3 },
-  { name: "Adventure", icon: Mountain, count: 2 },
-  { name: "Lifestyle", icon: Heart, count: 1 },
-]
-
-interface GroupsPageProps {
-  onGroupSelect?: (groupId: number) => void
-}
-
-export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("All")
-  const [filteredGroups, setFilteredGroups] = useState(allGroups)
+export function GroupsPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [filteredGroups, setFilteredGroups] = useState(allGroups);
+  const [isAlertOpen, setIsAlertOpen] = useState(true);
 
   const handleCategoryFilter = (category: string) => {
-    setSelectedCategory(category)
+    setSelectedCategory(category);
     if (category === "All") {
-      setFilteredGroups(allGroups)
+      setFilteredGroups(allGroups);
     } else {
-      setFilteredGroups(allGroups.filter((group) => group.category === category))
+      setFilteredGroups(
+        allGroups.filter((group) => group.category === category)
+      );
     }
-  }
+  };
 
   const handleJoinToggle = (groupId: number) => {
     setFilteredGroups((prev) =>
-      prev.map((group) => (group.id === groupId ? { ...group, isJoined: !group.isJoined } : group)),
-    )
-  }
+      prev.map((group) =>
+        group.id === groupId ? { ...group, isJoined: !group.isJoined } : group
+      )
+    );
+  };
 
-  const GroupCard = ({ group, isTrending = false }: { group: any; isTrending?: boolean }) => (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
+  const GroupCard = ({
+    group,
+    isTrending = false,
+  }: {
+    group: any;
+    isTrending?: boolean;
+  }) => (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-not-allowed group bg-white dark:bg-slate-800 dark:border-slate-700">
       <div className="relative h-32 bg-gradient-to-r from-blue-400 to-purple-500">
         <div className="absolute inset-0 bg-black bg-opacity-20" />
         <div className="absolute top-3 right-3 flex gap-2">
@@ -191,13 +75,20 @@ export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
             </Badge>
           )}
           <div className="flex items-center gap-1 bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs">
-            {group.isPrivate ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+            {group.isPrivate ? (
+              <Lock className="w-3 h-3" />
+            ) : (
+              <Globe className="w-3 h-3" />
+            )}
             {group.isPrivate ? "Private" : "Public"}
           </div>
         </div>
         <div className="absolute bottom-3 left-3">
-          <Avatar className="w-16 h-16 border-4 border-white">
-            <AvatarImage src={group.avatar || "/placeholder.svg"} alt={group.name} />
+          <Avatar className="w-16 h-16 border-4 border-white dark:border-slate-800">
+            <AvatarImage
+              src={group.avatar || "/placeholder.svg"}
+              alt={group.name}
+            />
             <AvatarFallback>
               {group.name
                 .split(" ")
@@ -208,12 +99,16 @@ export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
         </div>
       </div>
 
-      <CardContent className="p-4" onClick={() => onGroupSelect(group.id ?? 0)}>
+      <CardContent className="p-4">
         <div className="mb-3">
-          <h3 className="font-bold text-lg mb-1 group-hover:text-blue-600 transition-colors">{group.name}</h3>
-          <p className="text-sm text-gray-600 line-clamp-2 mb-2">{group.description}</p>
+          <h3 className="font-bold text-lg mb-1 text-gray-900 dark:text-white">
+            {group.name}
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2 mb-2">
+            {group.description}
+          </p>
 
-          <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+          <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-slate-500 mb-3">
             <div className="flex items-center gap-1">
               <Users className="w-3 h-3" />
               <span>{group.members.toLocaleString()} members</span>
@@ -225,10 +120,10 @@ export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
             <div
               className={`px-2 py-1 rounded-full text-xs ${
                 group.activity === "Very Active"
-                  ? "bg-green-100 text-green-700"
+                  ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400"
                   : group.activity === "Active"
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-gray-100 text-gray-700"
+                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400"
+                  : "bg-gray-100 text-gray-700 dark:bg-gray-800/50 dark:text-gray-400"
               }`}
             >
               {group.activity}
@@ -244,12 +139,12 @@ export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
           </div>
         </div>
 
-        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex gap-2">
           <Button
             size="sm"
             variant={group.isJoined ? "outline" : "default"}
             className="flex-1"
-            onClick={() => handleJoinToggle(group.id)}
+            disabled
           >
             {group.isJoined ? (
               <>
@@ -263,18 +158,39 @@ export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
               </>
             )}
           </Button>
-          <Button size="sm" variant="outline">
+          <Button size="sm" variant="outline" disabled>
             <MessageCircle className="w-4 h-4" />
           </Button>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-white">
+      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="dark:text-white">
+              Feature coming soon
+            </AlertDialogTitle>
+            <AlertDialogDescription className="dark:text-slate-400">
+              The groups feature is under construction and will be available
+              soon. Stay with Trip Otter.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>
+              <Link href="/" className="w-full">
+                Back to Home
+              </Link>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
+      <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -282,17 +198,28 @@ export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
             </div>
             <div className="flex items-center gap-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
                 <Input
                   placeholder="Search groups..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-64"
+                  className="pl-10 w-64 dark:bg-slate-800 dark:border-slate-700 dark:text-white placeholder:text-gray-500"
+                  disabled
                 />
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled>
                 <Filter className="w-4 h-4 mr-2" />
                 Filters
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                // The actual onClick for toggling the theme would be provided by next-themes.
+                // For example: onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                // This button is just a placeholder and will not change the theme.
+              >
+                {/* The icon would also be dynamic based on the current theme from next-themes */}
+                <Moon className="w-4 h-4" />
               </Button>
             </div>
           </div>
@@ -305,14 +232,17 @@ export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
           <ScrollArea className="w-full">
             <div className="flex gap-2 pb-2">
               {categories.map((category) => {
-                const IconComponent = category.icon
+                const IconComponent = category.icon;
                 return (
                   <Button
                     key={category.name}
-                    variant={selectedCategory === category.name ? "default" : "outline"}
+                    variant={
+                      selectedCategory === category.name ? "default" : "outline"
+                    }
                     size="sm"
                     onClick={() => handleCategoryFilter(category.name)}
                     className="flex items-center gap-2 whitespace-nowrap"
+                    disabled
                   >
                     <IconComponent className="w-4 h-4" />
                     {category.name}
@@ -320,7 +250,7 @@ export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
                       {category.count}
                     </Badge>
                   </Button>
-                )
+                );
               })}
             </div>
           </ScrollArea>
@@ -334,8 +264,12 @@ export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Trending Groups</h2>
-                <p className="text-sm text-gray-600">Groups gaining popularity this week</p>
+                <h2 className="text-xl font-bold dark:text-white">
+                  Trending Groups
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Groups gaining popularity this week
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -353,10 +287,14 @@ export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
               <Users className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold">
-                {selectedCategory === "All" ? "All Groups" : `${selectedCategory} Groups`}
+              <h2 className="text-xl font-bold dark:text-white">
+                {selectedCategory === "All"
+                  ? "All Groups"
+                  : `${selectedCategory} Groups`}
               </h2>
-              <p className="text-sm text-gray-600">{filteredGroups.length} groups found</p>
+              <p className="text-sm text-gray-600 dark:text-slate-400">
+                {filteredGroups.length} groups found
+              </p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -367,5 +305,5 @@ export function GroupsPage({ onGroupSelect }: GroupsPageProps) {
         </section>
       </div>
     </div>
-  )
+  );
 }

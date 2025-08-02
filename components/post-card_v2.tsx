@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -17,11 +16,15 @@ import {
   Send,
   Bookmark,
   MoreHorizontal,
-  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { Loading } from "./ui/loading";
-import { useCommentApi, useFeedAPI, useLikeApi, useUserApi } from "@/lib/requests";
+import {
+  useCommentApi,
+  useFeedAPI,
+  useLikeApi,
+  useUserApi,
+} from "@/lib/requests";
 import { useSession } from "next-auth/react";
 
 import dayjs from "dayjs";
@@ -35,8 +38,17 @@ import { ReportModal } from "./report-modal";
 import { User } from "./feed/postCardV2/user";
 import { useWebsocket } from "@/lib/useWebsocket";
 import { Socket } from "socket.io-client";
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  useQuery,
+} from "@tanstack/react-query";
+import { CommentBox } from "./commentBox";
 
+// This is not part of PostCardV2, but it's needed for context.
+// Assuming this is the outer component that fetches the feed.
+const NUMBER_OF_POSTS = 3;
 
 export function PostContainer() {
   const { data: session } = useSession();
@@ -76,18 +88,20 @@ export function PostContainer() {
   } = useInfiniteQuery({
     queryKey: ["homeFeed"],
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await useFeedAPI.getFeed(pageParam as number, 10); // Fetch 10 posts per page
+      const response = await useFeedAPI.getFeed(
+        pageParam as number,
+        NUMBER_OF_POSTS
+      );
       if (response.status !== 200) {
         throw new Error(response.message || "Failed to fetch feed.");
       }
       return response.data;
     },
     getNextPageParam: (lastPage, allPages) => {
-      // Assuming lastPage is the array of items, and we need to check its length
-      if (lastPage.length < 10) { // If less than 10 items, it's the last page
+      if (lastPage.length < NUMBER_OF_POSTS) {
         return undefined;
       }
-      return allPages.length + 1; // Next page is current number of pages + 1
+      return allPages.length + 1;
     },
     initialPageParam: 1,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -134,7 +148,13 @@ export function PostContainer() {
     <div className="space-y-0 md:space-y-6 pb-20 md:pb-0 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {posts.length > 0
         ? posts.map((postItem) => (
-          <PostCardV2 key={postItem._id} post={postItem} session={session} socket={socket} isSocketConnected={ isConnected } />
+            <PostCardV2
+              key={postItem._id}
+              post={postItem}
+              session={session}
+              socket={socket}
+              isSocketConnected={isConnected}
+            />
           ))
         : !isLoading && (
             <div className="flex justify-center items-center h-48 text-gray-600 dark:text-gray-400">
@@ -152,10 +172,10 @@ export function PostContainer() {
         </div>
       )}
       {isError && posts.length > 0 && (
-          <div className="flex justify-center mt-6 text-red-600 dark:text-red-400">
-            Error loading more posts: {error?.message || "Unknown error"}
-          </div>
-        )}
+        <div className="flex justify-center mt-6 text-red-600 dark:text-red-400">
+          Error loading more posts: {error?.message || "Unknown error"}
+        </div>
+      )}
     </div>
   );
 }
@@ -175,12 +195,29 @@ export function PostCardV2({
       image?: string;
       username: string;
     };
-  } | null; // Session can be null if not logged in
+  } | null;
   socket: Socket<any, any>;
   isSocketConnected: boolean;
 }) {
   const currentLoggedInUser = session?.user;
   const queryClient = useQueryClient();
+
+  const { data: currentUserProfile, isLoading: isUserLoading } = useQuery({
+    queryKey: ["currentUserProfile", currentLoggedInUser?.id],
+    queryFn: async () => {
+      if (!currentLoggedInUser?.id) return null;
+      const response = await useUserApi.getUser(currentLoggedInUser.id);
+      if (response.status !== 200) {
+        throw new Error(response.message || "Failed to fetch user profile.");
+      }
+      return response;
+    },
+    enabled: !!currentLoggedInUser?.id,
+    staleTime: 1000 * 60 * 100, // 100 minutes cache time
+  });
+
+  const userImage =
+    currentUserProfile?.data?.profileImage ?? currentLoggedInUser?.image;
 
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>(
     {}
@@ -194,7 +231,6 @@ export function PostCardV2({
     ? post.comments
     : post.comments.slice(0, 4);
 
-  // Use local state for liked status and count for immediate UI feedback
   const [isLiked, setIsLiked] = useState(
     currentLoggedInUser
       ? post.likes.some(
@@ -225,23 +261,22 @@ export function PostCardV2({
     }));
   };
 
-  const createNotification = async (content: string, type:string, postUrl: string) => {
-    if (!isSocketConnected || !post?.owner?._id || !currentLoggedInUser?.id) return;
+  const createNotification = async (
+    content: string,
+    type: string,
+    postUrl: string
+  ) => {
+    if (
+      !isSocketConnected ||
+      !post?.owner?._id ||
+      !currentUserProfile?.profile?._id
+    )
+      return;
     console.log("trigger create notification");
     try {
-      const getUser = await useUserApi.getUser(currentLoggedInUser.id);
-      console.log(getUser, getUser?.data);
-      if (getUser?.data?.profile?._id) {
+      if (post.owner._id !== currentUserProfile.profile._id) {
         socket.emit("createNotification", {
-          createdBy: getUser.data.profile._id,
-          receiver: post.owner._id,
-          content,
-          type,
-          postUrl,
-          isRead: false,
-        });
-        console.log({
-          createdBy: getUser.data.profile._id,
+          createdBy: currentUserProfile.profile._id,
           receiver: post.owner._id,
           content,
           type,
@@ -253,27 +288,40 @@ export function PostCardV2({
       console.error("Error creating notification:", error);
     }
   };
-  
+
+  // --- Start of the fix ---
   const addCommentMutation = useMutation({
-    mutationFn: async ({ postId, content }: { postId: string; content: string }) => {
+    mutationFn: async ({
+      postId,
+      content,
+    }: {
+      postId: string;
+      content: string;
+    }) => {
       const response = await useCommentApi.createComment(postId, content);
       if (response.status !== 200) {
         throw new Error(response.message || "Failed to add comment.");
       }
       return response.data;
     },
-    onSuccess: (newCommentData, { postId }) => {
-      // Optimistically update the local post comments array
-      const newComment = {
-        _id: newCommentData._id,
-        content: newCommentData.content,
-        owner: newCommentData.owner || {
+    // Optimistic update
+    onMutate: async ({ postId, content }) => {
+      await queryClient.cancelQueries({ queryKey: ["homeFeed"] });
+
+      // Create a temporary comment object for the immediate UI update
+      const temporaryComment = {
+        _id: `temp-${Date.now()}`,
+        content,
+        owner: {
           _id: currentLoggedInUser?.id,
           username: currentLoggedInUser?.username,
+          profileImage: currentUserProfile?.profileImage,
         },
-        createdAt: newCommentData.createdAt,
+        createdAt: new Date().toISOString(),
       };
-      // Find the post in the cached data and update its comments
+
+      const previousPosts = queryClient.getQueryData(["homeFeed"]);
+
       queryClient.setQueryData(["homeFeed"], (oldData: any) => {
         if (!oldData) return oldData;
         return {
@@ -281,31 +329,46 @@ export function PostCardV2({
           pages: oldData.pages.map((page: IPostProps[]) =>
             page.map((p) =>
               p._id === postId
-                ? { ...p, comments: [...p.comments, newComment] }
+                ? { ...p, comments: [...p.comments, temporaryComment] }
                 : p
             )
           ),
         };
       });
 
-      setCommentInputs((prev) => ({
-        ...prev,
-        [postId]: "",
-      }));
+      setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
       setShowAllComments(true);
-      createNotification("commented on your post", "COMMENT", `/post/${postId}`);
+
+      return { previousPosts };
     },
-    onError: (error) => {
+    onSuccess: (newCommentData, { postId }, context) => {
+      // After success, we can use the server's data to ensure consistency.
+      // Invalidate the query to fetch the most up-to-date data.
+      queryClient.invalidateQueries({ queryKey: ["homeFeed"] });
+
+      // Create notification
+      createNotification(
+        "commented on your post",
+        "COMMENT",
+        `/post/${postId}`
+      );
+    },
+    onError: (error, { postId }, context) => {
+      // Rollback the optimistic update on error
       toast.error(error.message || "Failed to add comment.");
+      if (context?.previousPosts) {
+        queryClient.setQueryData(["homeFeed"], context.previousPosts);
+      }
     },
   });
 
-  const handleAddComment = async (postId: string) => {
+  const handleAddComment = (postId: string) => {
     const newCommentText = commentInputs[postId]?.trim();
     if (newCommentText && currentLoggedInUser) {
       addCommentMutation.mutate({ postId, content: newCommentText });
     }
   };
+  // --- End of the fix ---
 
   const likeMutation = useMutation({
     mutationFn: async (postId: string) => {
@@ -313,10 +376,9 @@ export function PostCardV2({
       if (response.status !== 200) {
         throw new Error(response.message || "Failed to like/unlike post.");
       }
-      return response.message; // Return message to distinguish like/unlike
+      return response.message;
     },
     onMutate: async (postId) => {
-      // Optimistic update
       const previousPosts = queryClient.getQueryData(["homeFeed"]);
       queryClient.setQueryData(["homeFeed"], (oldData: any) => {
         if (!oldData) return oldData;
@@ -326,8 +388,17 @@ export function PostCardV2({
             page.map((p) => {
               if (p._id === postId) {
                 const newLikes = isLiked
-                  ? p.likes.filter((like) => like.username !== currentLoggedInUser?.username)
-                  : [...p.likes, { _id: `temp-like-${Date.now()}`, username: currentLoggedInUser?.username || '', owner: currentLoggedInUser?.id || '' }];
+                  ? p.likes.filter(
+                      (like) => like.username !== currentLoggedInUser?.username
+                    )
+                  : [
+                      ...p.likes,
+                      {
+                        _id: `temp-like-${Date.now()}`,
+                        username: currentLoggedInUser?.username || "",
+                        owner: currentLoggedInUser?.id || "",
+                      },
+                    ];
                 return { ...p, likes: newLikes };
               }
               return p;
@@ -362,7 +433,13 @@ export function PostCardV2({
   };
 
   const updateCommentMutation = useMutation({
-    mutationFn: async ({ commentId, content }: { commentId: string; content: string }) => {
+    mutationFn: async ({
+      commentId,
+      content,
+    }: {
+      commentId: string;
+      content: string;
+    }) => {
       const response = await useCommentApi.updateComment(commentId, content);
       if (response.status !== 200) {
         throw new Error(response.message || "Failed to update comment.");
@@ -370,7 +447,6 @@ export function PostCardV2({
       return response.data;
     },
     onSuccess: (updatedCommentData, { commentId }) => {
-      // Optimistically update the local post comments array
       queryClient.setQueryData(["homeFeed"], (oldData: any) => {
         if (!oldData) return oldData;
         return {
@@ -382,7 +458,11 @@ export function PostCardV2({
                     ...p,
                     comments: p.comments.map((comment) =>
                       comment._id === commentId
-                        ? { ...comment, content: updatedCommentData.content, edited: true }
+                        ? {
+                            ...comment,
+                            content: updatedCommentData.content,
+                            edited: true,
+                          }
                         : comment
                     ),
                   }
@@ -392,7 +472,11 @@ export function PostCardV2({
         };
       });
       toast.success("Comment updated successfully!");
-      createNotification("updated comment on your post", "COMMENT", `/post/${post._id}`);
+      createNotification(
+        "updated comment on your post",
+        "COMMENT",
+        `/post/${post._id}`
+      );
       setEditingComment(null);
       setEditCommentText("");
     },
@@ -401,7 +485,11 @@ export function PostCardV2({
     },
   });
 
-  const handleEditComment = (commentId: string, index: number, text: string) => {
+  const handleEditComment = (
+    commentId: string,
+    index: number,
+    text: string
+  ) => {
     setEditingComment({ commentId, commentIndex: index, originalText: text });
     setEditCommentText(text);
   };
@@ -440,7 +528,6 @@ export function PostCardV2({
       return commentId;
     },
     onSuccess: (deletedCommentId) => {
-      // Optimistically remove the comment
       queryClient.setQueryData(["homeFeed"], (oldData: any) => {
         if (!oldData) return oldData;
         return {
@@ -450,7 +537,9 @@ export function PostCardV2({
               p._id === post._id
                 ? {
                     ...p,
-                    comments: p.comments.filter((comment) => comment._id !== deletedCommentId),
+                    comments: p.comments.filter(
+                      (comment) => comment._id !== deletedCommentId
+                    ),
                   }
                 : p
             )
@@ -479,31 +568,49 @@ export function PostCardV2({
         <User post={post} />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="w-8 h-8 dark:text-gray-400 dark:hover:bg-gray-700">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-8 h-8 dark:text-gray-400 dark:hover:bg-gray-700"
+            >
               <MoreHorizontal className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="dark:bg-gray-700 dark:border-gray-600">
+          <DropdownMenuContent
+            align="end"
+            className="dark:bg-gray-700 dark:border-gray-600"
+          >
             <DropdownMenuItem className="dark:text-gray-100 dark:hover:bg-gray-600">
-              <Link href={`/post/${post._id}/`} className="w-full">See post</Link>
+              <Link href={`/post/${post._id}/`} className="w-full">
+                See post
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem className="dark:text-gray-100 dark:hover:bg-gray-600">Save</DropdownMenuItem>
+            <DropdownMenuItem className="dark:text-gray-100 dark:hover:bg-gray-600">
+              Save
+            </DropdownMenuItem>
             {isValidId(session?.user?.id) && isValidId(post.owner?._id) && (
               <ReportModal
                 reportedBy={session?.user.id}
                 relatedPostId={post._id}
                 reportedUser={post?.owner._id}
               >
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="dark:text-gray-100 dark:hover:bg-gray-600">
+                <DropdownMenuItem
+                  onSelect={(e) => e.preventDefault()}
+                  className="dark:text-gray-100 dark:hover:bg-gray-600"
+                >
                   Report
                 </DropdownMenuItem>
               </ReportModal>
             )}
-            <DropdownMenuItem className="dark:text-red-400 dark:hover:bg-gray-600">Unfollow</DropdownMenuItem>
+            <DropdownMenuItem className="dark:text-red-400 dark:hover:bg-gray-600">
+              Unfollow
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="ml-6 text-gray-800 dark:text-gray-200">{post.caption}</div>
+      <div className="ml-6 text-gray-800 dark:text-gray-200">
+        {post.caption}
+      </div>
 
       {post.image && post.image.length > 0 && (
         <CardContent className="p-0 relative">
@@ -521,7 +628,9 @@ export function PostCardV2({
             >
               <Heart
                 className={`w-6 h-6 ${
-                  isLiked ? "fill-red-500 text-red-500" : "text-gray-600 dark:text-gray-400"
+                  isLiked
+                    ? "fill-red-500 text-red-500"
+                    : "text-gray-600 dark:text-gray-400"
                 }`}
               />
             </Button>
@@ -533,11 +642,19 @@ export function PostCardV2({
             >
               <MessageCircle className="w-6 h-6" />
             </Button>
-            <Button variant="ghost" size="icon" className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700"
+            >
               <Send className="w-6 h-6" />
             </Button>
           </div>
-          <Button variant="ghost" size="icon" className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700"
+          >
             <Bookmark className="w-6 h-6" />
           </Button>
         </div>
@@ -562,7 +679,7 @@ export function PostCardV2({
                   >
                     {comment?.owner?.username || session?.user?.username}
                   </Link>
-                  {editingComment?.commentId === comment._id ? ( // Use comment._id for editing check
+                  {editingComment?.commentId === comment._id ? (
                     <div className="mt-1">
                       <input
                         type="text"
@@ -608,7 +725,7 @@ export function PostCardV2({
                 </div>
                 {currentLoggedInUser &&
                   comment.owner?.username === currentLoggedInUser.username &&
-                  !(editingComment?.commentId === comment._id) && ( // Use comment._id for editing check
+                  !(editingComment?.commentId === comment._id) && (
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -620,7 +737,10 @@ export function PostCardV2({
                             <MoreHorizontal className="w-3 h-3" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="dark:bg-gray-700 dark:border-gray-600">
+                        <DropdownMenuContent
+                          align="end"
+                          className="dark:bg-gray-700 dark:border-gray-600"
+                        >
                           <DropdownMenuItem
                             onClick={() =>
                               handleEditComment(
@@ -634,9 +754,7 @@ export function PostCardV2({
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() =>
-                              handleDeleteComment(comment._id)
-                            }
+                            onClick={() => handleDeleteComment(comment._id)}
                             className="text-red-600 dark:text-red-400 dark:hover:bg-gray-600"
                           >
                             Delete
@@ -649,7 +767,7 @@ export function PostCardV2({
                 {comment.owner?.username !== currentLoggedInUser?.username &&
                   isValidId(session?.user?.id) &&
                   isValidId(comment.owner?._id) &&
-                  !(editingComment?.commentId === comment._id) && ( // Use comment._id for editing check
+                  !(editingComment?.commentId === comment._id) && (
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -661,7 +779,10 @@ export function PostCardV2({
                             <MoreHorizontal className="w-3 h-3" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="dark:bg-gray-700 dark:border-gray-600">
+                        <DropdownMenuContent
+                          align="end"
+                          className="dark:bg-gray-700 dark:border-gray-600"
+                        >
                           <ReportModal
                             reportedBy={session.user.id}
                             reportedUser={comment.owner._id}
@@ -676,9 +797,7 @@ export function PostCardV2({
                             </DropdownMenuItem>
                           </ReportModal>
                           <DropdownMenuItem
-                            onClick={() =>
-                              handleDeleteComment(comment._id)
-                            }
+                            onClick={() => handleDeleteComment(comment._id)}
                             className="text-red-600 dark:text-red-400 dark:hover:bg-gray-600"
                           >
                             Unfollow
@@ -713,42 +832,17 @@ export function PostCardV2({
           {showComments[post._id] && (
             <div className="mt-3 pt-3 border-t dark:border-gray-700">
               <div className="flex items-center gap-2">
-                <Avatar className="w-6 h-6">
-                  <AvatarImage
-                    src={
-                      currentLoggedInUser?.image ||
-                      "/placeholder.svg?height=24&width=24"
-                    }
-                  />
-                  <AvatarFallback className="dark:bg-gray-700 dark:text-gray-300">
-                    {currentLoggedInUser?.name?.[0]?.toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
                 <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    placeholder="Add a comment..."
-                    value={commentInputs[post._id] || ""}
-                    onChange={(e) =>
-                      handleCommentInputChange(post._id, e.target.value)
-                    }
-                    onKeyPress={(e) =>
-                      e.key === "Enter" && handleAddComment(post._id)
-                    }
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-600"
-                    disabled={!currentLoggedInUser || addCommentMutation.isPending}
+                  <CommentBox
+                    postId={post._id}
+                    currentLoggedInUser={currentLoggedInUser}
+                    commentInputs={commentInputs}
+                    handleCommentInputChange={handleCommentInputChange}
+                    handleAddComment={handleAddComment}
+                    addCommentMutation={addCommentMutation}
+                    userImage={userImage}
+                    handleFrontendIteractions={() => handleAddComment(post._id)}
                   />
-                  {commentInputs[post._id]?.trim() &&
-                    currentLoggedInUser && (
-                      <Button
-                        onClick={() => handleAddComment(post._id)}
-                        size="sm"
-                        disabled={addCommentMutation.isPending}
-                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 px-3 text-xs bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 dark:bg-blue-700 dark:hover:bg-blue-800 dark:disabled:bg-blue-700/50"
-                      >
-                        {addCommentMutation.isPending ? "posting..." : "post"}
-                      </Button>
-                    )}
                 </div>
               </div>
               {!currentLoggedInUser && (

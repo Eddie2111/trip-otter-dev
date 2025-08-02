@@ -1,5 +1,4 @@
 import { GroupsPage } from "@/components/groups-page";
-import { ShopsPage } from "@/components/shops-page";
 import { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {

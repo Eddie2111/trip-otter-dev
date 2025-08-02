@@ -3,42 +3,12 @@ import {
   generateUniqueFilename,
   generateUniqueVideoFilename,
 } from "@/lib/utils";
-import { client } from "@/sanity/lib/client";
 import RateLimiter_Middleware from "@/lib/rate-limiter.middleware";
 import { Buffer } from "buffer";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
-
-async function fetchImageDetails(imageId: string) {
-  const imageQuery = `*[_type == "images" && _id == $imageId]{
-    mainImage {
-      asset->{
-        url,
-        metadata {
-          dimensions {
-            width,
-            height
-          }
-        }
-      },
-      alt
-    }
-}[0]`;
-
-  return await client.fetch(imageQuery, { imageId });
-}
-async function fetchVideoDetails(videoId: string) {
-  const videoQuery = `*[_type == "videos" && _id == $videoId]{
-    video {
-      asset->{
-        url
-      },
-      alt
-    }
-}[0]`;
-
-  return await client.fetch(videoQuery, { videoId });
-}
+import { fetchImageDetails, fetchVideoDetails } from "./actions";
+import { client } from "@/sanity/lib/client";
 
 export async function GET(request: Request) {
   await RateLimiter_Middleware(request);
@@ -96,6 +66,16 @@ export async function POST(request: Request) {
 
     if (!file) {
       return Response.json({ error: "No file uploaded" }, { status: 400 });
+    }
+
+    const MAX_IMAGE_SIZE_MB = 10;
+    const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      return Response.json(
+        { error: `File size exceeds ${MAX_IMAGE_SIZE_MB}MB limit.` },
+        { status: 400 }
+      );
     }
 
     const allowedMimeTypesForImage = [

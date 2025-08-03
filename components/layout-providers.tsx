@@ -76,7 +76,7 @@ export default function LayoutProviders({
         <MobileHeader />
         <DesktopSidebar />
         {children}
-        <MobileNavigation />
+        <MobileNavigation profileId={session?.user?.id}  />
       </>
     );
   } else {

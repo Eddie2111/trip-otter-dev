@@ -42,10 +42,7 @@ const loadNsfwModel = async () => {
   }
 };
 
-// New component to handle the submit button's disabled state
-// It uses useWatch to only re-render when the caption value changes.
 function SubmitButton({ form, files, isSubmitting }) {
-  // useWatch subscribes to specific field changes without re-rendering the entire parent component.
   const caption = useWatch({
     control: form.control,
     name: "caption",
@@ -103,7 +100,7 @@ export function CreatePost({
         <DialogTrigger asChild>
           {children ? children : <Button>Create Post</Button>}
         </DialogTrigger>
-        <DialogContent className="p-4 sm:p-6 w-full h-full sm:w-auto sm:h-auto sm:max-w-[625px]">
+        <DialogContent className="p-4 sm:p-6 w-[95vw] max-h-[90vh] sm:w-auto sm:h-auto sm:max-w-[625px] overflow-y-auto">
           <DialogTitle></DialogTitle>
           <CreatePostForm
             onSubmit={createPostMutation.mutateAsync}

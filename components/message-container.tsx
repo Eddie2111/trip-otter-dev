@@ -6,8 +6,8 @@ import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 
 // Set the base title
-const BASE_TITLE = "Tripotter";
-const CHAT_LABEL = "Chat";
+// const BASE_TITLE = "Tripotter";
+// const CHAT_LABEL = "Chat";
 
 export const MessageContainer = () => {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -15,7 +15,6 @@ export const MessageContainer = () => {
   const { data: session, status } = useSession();
   const userId = session?.user?.id;
   const [error, setError] = useState<string | null>(null);
-  console.log(unreadMessageCount);
 
   // Refs for title flashing
   const titleFlashInterval = useRef<NodeJS.Timeout | null>(null);
@@ -32,79 +31,79 @@ export const MessageContainer = () => {
     unreadCountRef.current = unreadMessageCount;
   }, [unreadMessageCount]);
 
-  // Function to start title flashing
-  const startTitleFlashing = useCallback(() => {
-    if (titleFlashInterval.current) return; // Already flashing
+  // // Function to start title flashing
+  // const startTitleFlashing = useCallback(() => {
+  //   if (titleFlashInterval.current) return; // Already flashing
 
-    const flashTitle = `🔔 New Message! | ${BASE_TITLE}`;
+  //   const flashTitle = `🔔 New Message! | ${BASE_TITLE}`;
 
-    let isFlashTitle = false;
-    titleFlashInterval.current = setInterval(() => {
-      const currentCount = unreadCountRef.current;
+  //   let isFlashTitle = false;
+  //   titleFlashInterval.current = setInterval(() => {
+  //     const currentCount = unreadCountRef.current;
 
-      if (currentCount > 0) {
-        if (isFlashTitle) {
-          document.title = `${CHAT_LABEL}(${currentCount}) | ${BASE_TITLE}`;
-        } else {
-          document.title = flashTitle;
-        }
-        isFlashTitle = !isFlashTitle;
-      } else {
-        // Stop flashing if count reaches 0
-        if (titleFlashInterval.current) {
-          clearInterval(titleFlashInterval.current);
-          titleFlashInterval.current = null;
-        }
-        document.title = `${CHAT_LABEL} | ${BASE_TITLE}`;
-      }
-    }, 1000); // Flash every 1 second
-  }, []);
+  //     if (currentCount > 0) {
+  //       if (isFlashTitle) {
+  //         document.title = `${CHAT_LABEL}(${currentCount}) | ${BASE_TITLE}`;
+  //       } else {
+  //         document.title = flashTitle;
+  //       }
+  //       isFlashTitle = !isFlashTitle;
+  //     } else {
+  //       // Stop flashing if count reaches 0
+  //       if (titleFlashInterval.current) {
+  //         clearInterval(titleFlashInterval.current);
+  //         titleFlashInterval.current = null;
+  //       }
+  //       document.title = `${CHAT_LABEL} | ${BASE_TITLE}`;
+  //     }
+  //   }, 1000); // Flash every 1 second
+  // }, []);
 
-  // Function to stop title flashing
-  const stopTitleFlashing = useCallback(() => {
-    if (titleFlashInterval.current) {
-      clearInterval(titleFlashInterval.current);
-      titleFlashInterval.current = null;
-    }
-  }, []);
+  // // Function to stop title flashing
+  // const stopTitleFlashing = useCallback(() => {
+  //   if (titleFlashInterval.current) {
+  //     clearInterval(titleFlashInterval.current);
+  //     titleFlashInterval.current = null;
+  //   }
+  // }, []);
 
-  // Update document title whenever unread count changes
-  useEffect(() => {
-    if (unreadMessageCount > 0) {
-      const newTitle = `${CHAT_LABEL}(${unreadMessageCount}) | ${BASE_TITLE}`;
-      document.title = newTitle;
+  // // Update document title whenever unread count changes
+  // useEffect(() => {
+  //   if (unreadMessageCount > 0) {
+  //     const newTitle = `${CHAT_LABEL}(${unreadMessageCount}) | ${BASE_TITLE}`;
+  //     document.title = newTitle;
 
-      // Only start flashing if not already flashing
-      if (!titleFlashInterval.current) {
-        startTitleFlashing();
-      }
-    } else {
-      stopTitleFlashing();
-      document.title = `${CHAT_LABEL} | ${BASE_TITLE}`;
-    }
-  }, [unreadMessageCount, startTitleFlashing, stopTitleFlashing]);
+  //     // Only start flashing if not already flashing
+  //     if (!titleFlashInterval.current) {
+  //       startTitleFlashing();
+  //     }
+  //   } else {
+  //     stopTitleFlashing();
+  //     document.title = `${CHAT_LABEL} | ${BASE_TITLE}`;
+  //   }
+  // }, [unreadMessageCount, startTitleFlashing, stopTitleFlashing]);
 
-  // Stop flashing when component unmounts or page becomes visible
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        stopTitleFlashing();
-        // Set title to show current count without flashing when tab becomes visible
-        if (unreadMessageCount > 0) {
-          document.title = `${CHAT_LABEL}(${unreadMessageCount}) | ${BASE_TITLE}`;
-        } else {
-          document.title = `${CHAT_LABEL} | ${BASE_TITLE}`;
-        }
-      }
-    };
+  // // Stop flashing when component unmounts or page becomes visible
+  // useEffect(() => {
+  //   const handleVisibilityChange = () => {
+  //     if (!document.hidden) {
+  //       stopTitleFlashing();
+  //       // Set title to show current count without flashing when tab becomes visible
+  //       if (unreadMessageCount > 0) {
+  //         document.title = `${CHAT_LABEL}(${unreadMessageCount}) | ${BASE_TITLE}`;
+  //       } else {
+  //         document.title = `${CHAT_LABEL} | ${BASE_TITLE}`;
+  //       }
+  //     }
+  //   };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+  //   document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    return () => {
-      stopTitleFlashing();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [stopTitleFlashing, unreadMessageCount]);
+  //   return () => {
+  //     stopTitleFlashing();
+  //     document.removeEventListener("visibilitychange", handleVisibilityChange);
+  //   };
+  // }, [stopTitleFlashing, unreadMessageCount]);
 
   const handleLogin = useCallback(() => {
     if (
@@ -171,7 +170,7 @@ export const MessageContainer = () => {
 
   const handleChatLinkClick = () => {
     setUnreadMessageCount(0);
-    stopTitleFlashing();
+    // stopTitleFlashing();
   };
 
   return (

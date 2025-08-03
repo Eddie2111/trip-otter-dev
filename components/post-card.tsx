@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Loading } from "./ui/loading";
-import { useCommentApi, useFeedAPI, useLikeApi } from "@/lib/requests";
+import { useCommentApi, useFeedAPI, useLikeApi, useUserApi } from "@/lib/requests";
 import { useSession } from "next-auth/react";
 
 import dayjs from "dayjs";
@@ -35,6 +35,7 @@ import { ReportModal } from "./report-modal";
 import {
   useInfiniteQuery,
   useMutation,
+  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { CommentBox } from "./commentBox";
@@ -46,7 +47,6 @@ export function PostContainer({ profileId }: { profileId: string }) {
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const observerRef = useRef<HTMLDivElement | null>(null);
-
   const {
     data,
     fetchNextPage,
@@ -158,6 +158,21 @@ export function PostCard({
 }) {
   const currentLoggedInUser = session?.user;
   const queryClient = useQueryClient();
+    const { data: currentUserProfile, isLoading: isUserLoading } = useQuery({
+      queryKey: ["currentUserProfile", currentLoggedInUser?.id],
+      queryFn: async () => {
+        if (!currentLoggedInUser?.id) return null;
+        const response = await useUserApi.getUser(currentLoggedInUser.id);
+        if (response.status !== 200) {
+          throw new Error(response.message || "Failed to fetch user profile.");
+        }
+        return response;
+      },
+      enabled: !!currentLoggedInUser?.id,
+      staleTime: 1000 * 60 * 100, // 100 minutes cache time
+    });
+    const userImage =
+      currentUserProfile?.data?.profileImage ?? currentLoggedInUser?.image;
 
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>(
     {}
@@ -462,7 +477,7 @@ export function PostCard({
         {post.caption}
       </div>
       {post.image && post.image.length > 0 && (
-        <CardContent className="p-0 relative">
+        <CardContent className="p-4">
           <GridMedia media={post.image} />
         </CardContent>
       )}
@@ -631,6 +646,7 @@ export function PostCard({
               handleCommentInputChange={handleCommentInputChange}
               handleAddComment={handleAddComment}
               addCommentMutation={addCommentMutation}
+              userImage={userImage}
             />
           )}
 

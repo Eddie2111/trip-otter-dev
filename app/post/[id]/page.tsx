@@ -1,16 +1,14 @@
-import GetPost from "./action";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/auth";
-import dynamic from "next/dynamic";
-import { Loading } from "@/components/ui/loading";
 import { Metadata } from "next";
+
+import GetPost from "./action";
+import PostPage from "./_component";
 
 export async function generateMetadata({
   params,
 }: {
   params: { id: string };
 }): Promise<Metadata> {
-  const { id } = params;
+  const { id } = await params;
   let title = "Photo";
 
   try {
@@ -27,27 +25,17 @@ export async function generateMetadata({
   };
 }
 
-const PostCard = dynamic(
-  () => import("@/components/post-card").then((mod) => mod.PostCard),
-  {
-    loading: () => <Loading />,
-  }
-);
-
 export default async function Page({
   params,
 }: {
   params: { id: string };
 }) {
-  const { id } = params;
+  const { id } = await params;
   try {
     const postData = await GetPost(id);
-    const { data: session } = await getServerSession(authOptions);
     if (postData) {
       return (
-        <div className="md:ml-[300px] mx-10">
-          <PostCard key={postData._id} post={postData} session={session} />
-        </div>
+        <PostPage postData={postData} />
       );
     } else {
       return (

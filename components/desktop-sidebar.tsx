@@ -42,18 +42,18 @@ export function DesktopSidebar() {
             </Button>
           </Link>
 
-          <Link href="/people" passHref>
+          <Link href="/companions" passHref>
             <Button
-              variant={pathname === "/people" ? "default" : "ghost"}
+              variant={pathname === "/companions" ? "default" : "ghost"}
               className={cn(
                 "w-full justify-start gap-3 h-12 text-base",
-                pathname === "/people"
+                pathname === "/companions"
                   ? "dark:bg-blue-700 dark:text-white" // Active state dark mode
                   : "dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-gray-100" // Inactive state dark mode
               )}
             >
               <Users className="w-5 h-5" />
-              People
+              Companions
             </Button>
           </Link>
 

@@ -62,8 +62,8 @@ export function Sidebar() {
   // Define navigation items
   const navItems = [
     { href: "/", icon: Home, label: "Home" },
-    { href: "/people", icon: Users, label: "People" },
-    { href: "/chat", icon: MessageCircle, label: "Chat"},
+    { href: "/companions", icon: Users, label: "People" },
+    { href: "/chat", icon: MessageCircle, label: "Chat" },
     { href: "/groups", icon: Boxes, label: "Groups" },
     { href: "/shops", icon: MapPin, label: "Shops" },
     { href: "/settings", icon: Settings, label: "Settings" },

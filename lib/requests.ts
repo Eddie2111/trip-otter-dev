@@ -12,6 +12,18 @@ export class BaseAPI {
   }
 }
 
+export class CompanionAPI extends BaseAPI {
+  public getCompanions = async (userId: string, page: number, limit: number = 10): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/companion?userId=${userId}&page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+}
+
 export class AnalyticsAPI extends BaseAPI {
   public getAnalytics = async (): Promise<AxiosResponse> => {
     try {
@@ -491,3 +503,4 @@ export const useResetPasswordAPI = new ResetPasswordAPI();
 export const useReviewAPI = new ReviewAPI();
 export const useFeedAPI = new FeedAPI();
 export const useSearchAPI = new SearchAPI();
+export const useCompanionAPI = new CompanionAPI();

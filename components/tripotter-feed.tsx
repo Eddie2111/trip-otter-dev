@@ -4,27 +4,21 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Heart,
-  MessageCircle,
-  Camera,
-} from "lucide-react";
-import { SearchModal } from "./search-modal";
 import { signOut, useSession } from "next-auth/react";
 import { toast } from "sonner";
-import Link from "next/link";
+
 import { suggestedUsers } from "@/data/mocks/feed.mock";
 import { useRouter } from "next/navigation";
-import { DesktopHeader } from "./desktop-header";
+
 import { PostContainer } from "./post-card_v2";
-import { Sidebar } from "./mobile-sidebar";
+
 import { LoadingScreen } from "./ui/loading-splash";
-import MobileHeader from "./mobile-header";
+import { SuggestedUsers } from "./suggestedUsers";
+
 
 export function TripotterFeed() {
   const router = useRouter();
 
-  const [showSearchModal, setShowSearchModal] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const { data: session, status } = useSession();
 
@@ -40,19 +34,6 @@ export function TripotterFeed() {
   }, [status, session?.user?.id]);
 
   const isAuthenticated = status === "authenticated";
-
-  const handleLogout = async () => {
-    try {
-      await signOut({
-        redirect: true,
-        callbackUrl: "/login",
-      });
-      toast.success("Come back soon!");
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast.error("Something went wrong during logout. Please try again.");
-    }
-  };
 
   if (status === "loading") {
     return <LoadingScreen />;
@@ -141,41 +122,7 @@ export function TripotterFeed() {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {suggestedUsers.map((user) => (
-                    <div
-                      key={user.username}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage
-                            src={user.avatar || "/placeholder.svg"}
-                          />
-                          <AvatarFallback className="dark:bg-gray-700 dark:text-gray-300">
-                            {user.username[0].toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">
-                            {user.username}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {user.name}
-                          </div>
-                          <div className="text-xs text-gray-400 dark:text-gray-500">
-                            Followed by {user.mutualFollowers} others
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-blue-500 text-xs font-semibold dark:text-blue-400 dark:hover:bg-gray-700"
-                      >
-                        Follow
-                      </Button>
-                    </div>
-                  ))}
+                  <SuggestedUsers />
                 </div>
               </Card>
 

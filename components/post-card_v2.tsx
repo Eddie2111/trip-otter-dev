@@ -213,7 +213,7 @@ export function PostCardV2({
       return response;
     },
     enabled: !!currentLoggedInUser?.id,
-    staleTime: 1000 * 60 * 100, // 100 minutes cache time
+    staleTime: 1000 * 60 * 100,
   });
 
   const userImage =

@@ -103,7 +103,7 @@ export function CreatePost({
         <DialogTrigger asChild>
           {children ? children : <Button>Create Post</Button>}
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[625px]">
+        <DialogContent className="p-4 sm:p-6 w-full h-full sm:w-auto sm:h-auto sm:max-w-[625px]">
           <DialogTitle></DialogTitle>
           <CreatePostForm
             onSubmit={createPostMutation.mutateAsync}
@@ -126,6 +126,7 @@ export function CreatePostForm({
 }) {
   const [files, setFiles] = useState<File[]>([]);
   const { data: session } = useSession();
+  const [suggestions, setSuggestions] = useState([]);
 
   useEffect(() => {
     loadNsfwModel();
@@ -142,6 +143,40 @@ export function CreatePostForm({
       comments: [],
     },
   });
+
+  const locationValue = form.watch("location");
+
+  // Debounce the search to avoid too many API calls
+  useEffect(() => {
+    // Only run the effect if there's a location value
+    if (!locationValue || locationValue.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${locationValue}`,
+          {
+            headers: {
+              // The Nominatim usage policy requires a valid User-Agent
+              "User-Agent": "My Social App / 1.0",
+            },
+          }
+        );
+        if (!res.ok) throw new Error("Failed to fetch locations");
+        const data = await res.json();
+        setSuggestions(data);
+      } catch (error) {
+        console.error("Nominatim API error:", error);
+        toast.error("Failed to search for locations. Please try again.");
+      }
+    }, 500); // 500ms debounce time
+
+    // Cleanup function to clear the timeout
+    return () => clearTimeout(timeoutId);
+  }, [locationValue]);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -293,119 +328,115 @@ export function CreatePostForm({
   };
 
   return (
-    <div className="overflow-y-auto max-h-[80vh]">
-      <div>
-        <div className="p-1">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-2">Create New Post</h2>
-            <p className="text-muted-foreground">
-              Share your moment with the world
-            </p>
-          </div>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto p-1">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-2">Create New Post</h2>
+          <p className="text-muted-foreground">
+            Share your moment with the world
+          </p>
+        </div>
 
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleSubmit)}
-              className="space-y-6"
-            >
-              {/* Image Upload Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5" />
-                  <h3 className="text-lg font-medium">Images</h3>
-                  <span className="text-sm text-muted-foreground">
-                    ({files.length}/10)
-                  </span>
-                </div>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-6"
+          >
+            {/* Image Upload Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                <h3 className="text-lg font-medium">Images</h3>
+                <span className="text-sm text-muted-foreground">
+                  ({files.length}/10)
+                </span>
+              </div>
 
-                {/* Dropzone */}
-                <div
-                  {...getRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                    isDragActive
-                      ? "border-primary bg-primary/5"
-                      : "border-muted-foreground/25 hover:border-primary/50"
-                  } ${
-                    files.length >= 10 ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  <input {...getInputProps()} />
-                  <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  {isDragActive ? (
-                    <p className="text-primary">Drop the images here...</p>
-                  ) : (
-                    <div>
-                      <p className="text-lg font-medium mb-2">
-                        {files.length >= 10
-                          ? "Maximum 10 images allowed"
-                          : "Drag & drop images here, or click to select"}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Supports: JPEG, PNG, GIF, WebP, Heic (Max 10 images)
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Image Previews */}
-                {files.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {files.map((file, index) => (
-                      <div key={index} className="relative group">
-                        <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                          <Image
-                            src={URL.createObjectURL(file)} // This will now use the converted JPEG blob for HEIC files
-                            alt={`Preview ${index + 1}`}
-                            width={200}
-                            height={200}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() =>
-                            setFiles((prev) =>
-                              prev.filter((_, i) => i !== index)
-                            )
-                          }
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
+              {/* Dropzone */}
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  isDragActive
+                    ? "border-primary bg-primary/5"
+                    : "border-muted-foreground/25 hover:border-primary/50"
+                } ${files.length >= 10 ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <input {...getInputProps()} />
+                <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                {isDragActive ? (
+                  <p className="text-primary">Drop the images here...</p>
+                ) : (
+                  <div>
+                    <p className="text-lg font-medium mb-2">
+                      {files.length >= 10
+                        ? "Maximum 10 images allowed"
+                        : "Drag & drop images here, or click to select"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Supports: JPEG, PNG, GIF, WebP, Heic (Max 10 images)
+                    </p>
                   </div>
                 )}
               </div>
 
-              {/* Caption Field */}
-              <FormField
-                control={form.control}
-                name="caption"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Type className="h-4 w-4" />
-                      Caption <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Write a caption for your post..."
-                        className="min-h-[100px] resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Share what's on your mind or describe your post
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Image Previews */}
+              {files.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {files.map((file, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                        <Image
+                          src={URL.createObjectURL(file)} // This will now use the converted JPEG blob for HEIC files
+                          alt={`Preview ${index + 1}`}
+                          width={200}
+                          height={200}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() =>
+                          setFiles((prev) => prev.filter((_, i) => i !== index))
+                        }
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-              {/* Location Field */}
+            {/* Caption Field */}
+            <FormField
+              control={form.control}
+              name="caption"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Type className="h-4 w-4" />
+                    Caption <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Write a caption for your post..."
+                      className="min-h-[100px] resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Share what's on your mind or describe your post
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Location Field - Now with OpenStreetMap Nominatim */}
+            <div className="relative">
               <FormField
                 control={form.control}
                 name="location"
@@ -416,36 +447,63 @@ export function CreatePostForm({
                       Location <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="Where was this taken?" {...field} />
+                      <Input
+                        placeholder="Search for a location..."
+                        {...field}
+                        autocomplete="off"
+                      />
                     </FormControl>
                     <FormDescription>
-                      Add a location to help others discover your post
+                      Start typing to search for a location
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              {/* Dropdown for suggestions */}
+              {suggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                  {suggestions.map((suggestion) => (
+                    <div
+                      key={suggestion.place_id}
+                      className="p-2 cursor-pointer hover:bg-muted"
+                      onClick={() => {
+                        // Set the form value and clear suggestions
+                        form.setValue("location", suggestion.display_name, {
+                          shouldValidate: true,
+                        });
+                        setSuggestions([]);
+                      }}
+                    >
+                      {suggestion.display_name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-              {/* Submit Button */}
-              <div className="flex justify-end gap-4 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => form.reset()}
-                  disabled={isSubmitting}
-                >
-                  Clear
-                </Button>
-                {/* Use the new SubmitButton component to encapsulate the re-render logic */}
-                <SubmitButton
-                  form={form}
-                  files={files}
-                  isSubmitting={isSubmitting}
-                />
-              </div>
-            </form>
-          </Form>
-        </div>
+            {/* Submit Button */}
+            <div className="flex justify-end gap-4 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  form.reset();
+                  setSuggestions([]); // Also clear suggestions on reset
+                }}
+                disabled={isSubmitting}
+              >
+                Clear
+              </Button>
+              {/* Use the new SubmitButton component to encapsulate the re-render logic */}
+              <SubmitButton
+                form={form}
+                files={files}
+                isSubmitting={isSubmitting}
+              />
+            </div>
+          </form>
+        </Form>
       </div>
     </div>
   );

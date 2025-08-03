@@ -1,5 +1,7 @@
 import { connectToDatabase } from './mongo';
+import connectToDatabase_low from './dbConnect';
 import mongoose from 'mongoose';
+
 /**
  * A utility to wrap any MongoDB operation with a database connection.
  * @param operation - A function that takes a Mongoose model and returns a promise with the result.
@@ -9,7 +11,7 @@ export async function runDBOperation<T>(
   operation: () => Promise<T>
 ): Promise<T> {
   try {
-    await connectToDatabase();
+    await connectToDatabase_low();
 
     return await operation();
   } catch (error) {
@@ -33,13 +35,3 @@ export async function runDBOperationWithTransaction<T>(operation: (session: mong
     session.endSession();
   }
 }
-
-/**
- * example usage // !requires test
- *     const newUser = await runDBOperation(async () => {
- *      const user = new User({ name, email });
- *       User.findById(userId)
- *      await user.save();
- *          return user;
- *      });
- */

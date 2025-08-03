@@ -3,7 +3,19 @@ import { useEffect, useState } from "react";
 import { Home, PlusSquare, Search, Heart, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { usePathname, useRouter } from "next/navigation";
-import { CreatePost } from "./create-post";
+
+import Dynamic from "next/dynamic";
+import { LoadingSmall } from "./ui/loading";
+
+const CreatePost = Dynamic(
+  () => import("./create-post").then((mod) => mod.CreatePost),
+  {
+    ssr: true,
+    loading: () =>
+      <Button> <LoadingSmall /> </Button>,
+  }
+);
+
 
 export function MobileNavigation({ profileId }: { profileId: any }) {
   const router = useRouter();

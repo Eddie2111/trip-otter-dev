@@ -12,7 +12,7 @@ if (!global.mongoose) {
   global.mongoose = { conn: null, promise: null };
 }
 
-const RETRY_INTERVAL_MS = 2000;
+const RETRY_INTERVAL_MS = 3000;
 const MAX_CONNECTION_ATTEMPTS = 5;
 
 export const connectToDatabase = async () => {
@@ -25,7 +25,6 @@ export const connectToDatabase = async () => {
     throw new Error("Please define the MONGODB_URI environment variable");
   }
 
-  // Enhanced connection options with increased timeouts
   const options = {
     bufferCommands: false,
     serverSelectionTimeoutMS: 30000,
@@ -51,7 +50,6 @@ export const connectToDatabase = async () => {
     );
 
     try {
-      // Clear any existing failed connection attempts
       if (global.mongoose.conn && global.mongoose.conn.readyState === 0) {
         global.mongoose.conn = null;
         global.mongoose.promise = null;

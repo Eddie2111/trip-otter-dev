@@ -2,6 +2,8 @@ import { runDBOperation } from "@/lib/useDB";
 import profileSchema from "@/utils/schema/profile-schema";
 import { NextRequest } from "next/server";
 
+import "@/utils/schema/user-schema";
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const userId = searchParams.get("userId");

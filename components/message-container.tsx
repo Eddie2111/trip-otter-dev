@@ -176,7 +176,7 @@ export const MessageContainer = () => {
   return (
     <Link href="/chat" passHref onClick={handleChatLinkClick}>
       <button
-        className="relative p-2 rounded-full bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="relative p-2 rounded-full border-2 border-white text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         aria-label={`Messages (${unreadMessageCount} unread)`}
       >
         <MessageCircle className="h-6 w-6" />

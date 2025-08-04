@@ -30,7 +30,6 @@ import { IPostProps } from "@/types/post";
 import GridMedia from "./grid-media";
 import { toast } from "sonner";
 import { PostDialog } from "./post-dialog";
-import { ReportModal } from "./report-modal";
 
 import {
   useInfiniteQuery,
@@ -39,6 +38,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { CommentBox } from "./commentBox";
+import { useWebsocket } from "@/lib/useWebsocket";
+import { Socket } from "socket.io-client";
 
 const POSTS_PER_PAGE = 3;
 
@@ -46,6 +47,28 @@ const POSTS_PER_PAGE = 3;
 export function PostContainer({ profileId }: { profileId: string }) {
   const { data: session } = useSession();
   const queryClient = useQueryClient();
+  const [isConnected, setIsConnected] = useState(false);
+  const socket = useWebsocket({
+    path: "/notification",
+    shouldAuthenticate: true,
+    autoConnect: true,
+  });
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("connect", () => {
+        setIsConnected(true);
+      });
+      socket.on("disconnect", () => {
+        setIsConnected(false);
+      });
+
+      return () => {
+        socket.off("connect");
+        socket.off("disconnect");
+      };
+    }
+  }, [socket]);
   const observerRef = useRef<HTMLDivElement | null>(null);
   const {
     data,
@@ -119,7 +142,7 @@ export function PostContainer({ profileId }: { profileId: string }) {
     <div className="space-y-0 md:space-y-6 pb-20 md:pb-0 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {posts.length > 0
         ? posts.map((postItem) => (
-            <PostCard key={postItem._id} post={postItem} session={session} />
+            <PostCard key={postItem._id} post={postItem} session={session} socket={socket} isSocketConnected={isConnected}/>
           ))
         : !isLoading &&
           !isError && (
@@ -152,27 +175,74 @@ export function PostContainer({ profileId }: { profileId: string }) {
 export function PostCard({
   post,
   session,
+  socket,
+  isSocketConnected,
 }: {
   post: IPostProps;
   session: any;
+  socket: Socket<any, any>;
+  isSocketConnected: boolean;
 }) {
   const currentLoggedInUser = session?.user;
   const queryClient = useQueryClient();
-    const { data: currentUserProfile, isLoading: isUserLoading } = useQuery({
-      queryKey: ["currentUserProfile", currentLoggedInUser?.id],
-      queryFn: async () => {
-        if (!currentLoggedInUser?.id) return null;
-        const response = await useUserApi.getUser(currentLoggedInUser.id);
-        if (response.status !== 200) {
-          throw new Error(response.message || "Failed to fetch user profile.");
-        }
-        return response;
-      },
-      enabled: !!currentLoggedInUser?.id,
-      staleTime: 1000 * 60 * 100, // 100 minutes cache time
-    });
-    const userImage =
-      currentUserProfile?.data?.profileImage ?? currentLoggedInUser?.image;
+
+  const createNotification = async (
+    content: string,
+    type: string,
+    postUrl: string
+  ) => {
+    console.log("trigger create notification");
+    if (
+      !post?.owner?._id ||
+      !currentUserProfile?.data?.profile?._id
+    ) {
+      console.log(" one of the required params were missing to invoke a notification ");
+      console.log(
+        isSocketConnected,
+        post?.owner?._id,
+        currentUserProfile?.data?.profile?._id
+      );
+      return;
+    }
+    try {
+      if (post.owner._id !== currentUserProfile?.data?.profile?._id) {
+        socket.emit("createNotification", {
+          createdBy: currentUserProfile?.data?.profile?._id,
+          receiver: post.owner._id,
+          content,
+          type,
+          postUrl,
+          isRead: false,
+        });
+        console.log('created notification', {
+          createdBy: currentUserProfile?.data?.profile?._id,
+          receiver: post.owner._id,
+          content,
+          type,
+          postUrl,
+          isRead: false,
+        });
+      }
+    } catch (error) {
+      console.error("Error creating notification:", error);
+    }
+  };
+
+  const { data: currentUserProfile, isLoading: isUserLoading } = useQuery({
+    queryKey: ["currentUserProfile", currentLoggedInUser?.id],
+    queryFn: async () => {
+      if (!currentLoggedInUser?.id) return null;
+      const response = await useUserApi.getUser(currentLoggedInUser.id);
+      if (response.status !== 200) {
+        throw new Error(response.message || "Failed to fetch user profile.");
+      }
+      return response;
+    },
+    enabled: !!currentLoggedInUser?.id,
+    staleTime: 1000 * 60 * 100, // 100 minutes cache time
+  });
+  const userImage =
+    currentUserProfile?.data?.profileImage ?? currentLoggedInUser?.image;
 
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>(
     {}
@@ -203,6 +273,11 @@ export function PostCard({
       const previousLikesCount = likesCount;
       setIsLiked((prev) => !prev);
       setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
+      createNotification(
+        "liked your profile",
+        "LIKE",
+        `/post/${post._id}`
+      );
       return { previousIsLiked, previousLikesCount };
     },
     onError: (err, variables, context) => {
@@ -239,6 +314,11 @@ export function PostCard({
     },
     onSuccess: (response, variables, context) => {
       if (response.status === 200 && response.data) {
+        createNotification(
+        "commented on your post",
+        "COMMENT",
+        `/post/${post._id}`
+        );
         setDisplayedComments((prev) =>
           prev.map((comment) =>
             comment._id === context?._id
@@ -249,7 +329,6 @@ export function PostCard({
               : comment
           )
         );
-        toast.success("Comment added successfully!");
       } else {
         setDisplayedComments((prev) =>
           prev.filter((comment) => comment._id !== context?._id)
@@ -289,6 +368,11 @@ export function PostCard({
       );
       setEditingComment(null);
       setEditCommentText("");
+      createNotification(
+        "updated comment on your post",
+        "COMMENT",
+        `/post/${post._id}`
+      );
       return { previousComments };
     },
     onError: (err, variables, context) => {

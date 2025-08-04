@@ -208,7 +208,7 @@ export const FeedbackFormContainer = () => {
       <DropdownMenu onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
           <button
-            className="fixed bottom-4 right-4 p-4 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 ease-in-out z-50 transform hover:scale-105 dark:bg-blue-700 dark:hover:bg-blue-800 dark:focus:ring-blue-800"
+            className="fixed bottom-16 md:bottom-4 right-4 p-4 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 ease-in-out z-50 transform hover:scale-105 dark:bg-blue-700 dark:hover:bg-blue-800 dark:focus:ring-blue-800"
             aria-label="Open feedback form"
           >
             {formData.type === "bug" ? (

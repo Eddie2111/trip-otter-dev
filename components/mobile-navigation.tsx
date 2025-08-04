@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Home, PlusSquare, Search, Heart, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { usePathname, useRouter } from "next/navigation";
+import { SearchModal } from "./search-modal";
 
 import Dynamic from "next/dynamic";
 import { LoadingSmall } from "./ui/loading";
@@ -11,15 +12,18 @@ const CreatePost = Dynamic(
   () => import("./create-post").then((mod) => mod.CreatePost),
   {
     ssr: true,
-    loading: () =>
-      <Button> <LoadingSmall /> </Button>,
+    loading: () => (
+      <Button className="bg-white dark:bg-black">
+        <LoadingSmall />
+      </Button>
+    ),
   }
 );
-
 
 export function MobileNavigation({ profileId }: { profileId: any }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [showSearchModal, setShowSearchModal] = useState(false);
   const [currentPage, setCurrentPage] = useState<
     | "feed"
     | "chat"
@@ -56,76 +60,94 @@ export function MobileNavigation({ profileId }: { profileId: any }) {
     }
   }, [pathname]);
 
+  // Callback when a person is selected from the modal
+  const handlePersonSelect = (personId: string) => {
+    router.push(`/person/${personId}`);
+  };
+
+  // Callback when a shop is selected
+  const handleShopSelect = (shopId: string) => {
+    router.push(`/shop/${shopId}`);
+  };
+
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-around py-2">
-        {/* Home */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={
-            currentPage === "feed"
-              ? "text-black dark:text-white"
-              : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          }
-          onClick={() => router.push("/")}
-        >
-          <Home className="w-6 h-6" />
-        </Button>
+    <>
+      {/* Mobile Navigation Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-around py-2">
+          {/* Home */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={
+              currentPage === "feed"
+                ? "text-black dark:text-white"
+                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            }
+            onClick={() => router.push("/")}
+          >
+            <Home className="w-6 h-6" />
+          </Button>
 
-        {/* Search */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={
-            currentPage === "chat"
-              ? "text-black dark:text-white"
-              : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          }
-          onClick={() => router.push("/tripeasy")}
-        >
-          <Search className="w-6 h-6" />
-        </Button>
-
-        {/* Create Post */}
-        <CreatePost profileId={profileId}>
+          {/* Search - Opens Modal */}
           <Button
             variant="ghost"
             size="icon"
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            onClick={() => setShowSearchModal(true)}
+            aria-label="Open search"
           >
-            <PlusSquare className="w-6 h-6" />
+            <Search className="w-6 h-6" />
           </Button>
-        </CreatePost>
 
-        {/* Likes */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={
-            currentPage === "person"
-              ? "text-black dark:text-white"
-              : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          }
-          onClick={() => router.push("/person/likes")}
-        >
-          <Heart className="w-6 h-6" />
-        </Button>
+          {/* Create Post */}
+          <CreatePost profileId={profileId}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <PlusSquare className="w-6 h-6" />
+            </Button>
+          </CreatePost>
 
-        {/* Profile */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={
-            currentPage === "person"
-              ? "text-black dark:text-white"
-              : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          }
-          onClick={() => router.push("/person/me")}
-        >
-          <User className="w-6 h-6" />
-        </Button>
+          {/* Likes */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={
+              currentPage === "person"
+                ? "text-black dark:text-white"
+                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            }
+            onClick={() => router.push("/person/likes")}
+          >
+            <Heart className="w-6 h-6" />
+          </Button>
+
+          {/* Profile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={
+              currentPage === "person"
+                ? "text-black dark:text-white"
+                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            }
+            onClick={() => router.push("/person/me")}
+          >
+            <User className="w-6 h-6" />
+          </Button>
+        </div>
       </div>
-    </div>
+
+      {/* Search Modal */}
+      <SearchModal
+        isOpen={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        onPersonSelect={handlePersonSelect}
+        onShopSelect={handleShopSelect}
+      />
+    </>
   );
 }

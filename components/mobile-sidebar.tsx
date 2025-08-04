@@ -62,7 +62,7 @@ export function Sidebar() {
   // Define navigation items
   const navItems = [
     { href: "/", icon: Home, label: "Home" },
-    { href: "/companions", icon: Users, label: "People" },
+    { href: "/companions", icon: Users, label: "Companions" },
     { href: "/chat", icon: MessageCircle, label: "Chat" },
     { href: "/groups", icon: Boxes, label: "Groups" },
     { href: "/shops", icon: MapPin, label: "Shops" },
@@ -79,7 +79,7 @@ export function Sidebar() {
             onClick={toggleSidebar}
             className="rounded-full transition-all duration-300 hover:bg-gray-200 dark:hover:bg-gray-700"
           >
-            <Menu className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+            <Menu className="h-6 w-6 text-slate-100 dark:text-gray-300" />
             <span className="sr-only">Toggle Sidebar</span>
           </Button>
         </SheetTrigger>

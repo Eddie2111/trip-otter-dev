@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { FollowButton } from "@/components/follow-button";
+import Link from "next/link";
 
 const NUMBER_OF_PROFILES = 10;
 
@@ -80,7 +81,10 @@ export default function CompanionPage() {
       <div className="flex flex-col space-y-4">
         {allSuggestedUsers.length > 0 ? (
           allSuggestedUsers.map((profile) => (
-            <Card key={profile._id} className="flex flex-col max-w-[625px] max-h-[325px]">
+            <Card
+              key={profile._id}
+              className="flex flex-col max-w-[625px] max-h-[325px]"
+            >
               <CardHeader className="flex flex-row items-center space-x-4">
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={profile.user?.profileImage} />
@@ -90,22 +94,33 @@ export default function CompanionPage() {
                 </Avatar>
                 <div className="flex-1">
                   <CardTitle className="text-lg">
-                    {profile.user?.fullName}
+                    <Link
+                      href={`/person/${profile.user?._id}`}
+                      className="text-black hover:text-blue-500 duration-300"
+                    >
+                      {profile.user?.fullName}
+                    </Link>
                   </CardTitle>
-                  <CardDescription>@{profile.user?.username}</CardDescription>
+                  <CardDescription>
+                    <Link
+                      href={`/person/${profile.user?._id}`}
+                      className="text-blue-500 hover:text-blue-300 duration-300"
+                    >
+                      @{profile.user?.username}
+                    </Link>
+                  </CardDescription>
                 </div>
+                <FollowButton
+                  targetUserId={profile.user._id}
+                  initialIsFollowing={false}
+                />
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-500 line-clamp-2">
                   {profile.user?.bio || profile.user?.location}
                 </p>
               </CardContent>
-              <CardFooter className="flex justify-end">
-                <FollowButton
-                  targetUserId={profile.user._id}
-                  initialIsFollowing={false}
-                />
-              </CardFooter>
+              <CardFooter className="flex justify-end"></CardFooter>
             </Card>
           ))
         ) : (

@@ -43,6 +43,7 @@ interface SearchModalProps {
   onPersonSelect: (personId: string) => void; // Changed to string for _id
   onGroupSelect?: (groupId: number) => void;
   onShopSelect: (shopId: string) => void; // Changed to string for _id
+  children?: React.ReactNode
 }
 
 interface FilteredResults {
@@ -95,6 +96,7 @@ export function SearchModal({
   onPersonSelect,
   onGroupSelect,
   onShopSelect,
+  children,
 }: SearchModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
@@ -116,7 +118,6 @@ export function SearchModal({
   const fetchSearchResults = useCallback(async () => {
     if (!searchQuery.trim()) {
       setFilteredResults({
-        // ...mockSearchData, // Removed to prevent issues with commented out types
         people: [],
         hashtags: [],
         // shops: [],
@@ -136,7 +137,6 @@ export function SearchModal({
       let hashtagsQuery = "";
       let groupQuery = "";
 
-      // Only pass the query to the selected tab's parameter
       if (activeTab === "all") {
         profileQuery = searchQuery;
         shopQuery = searchQuery;

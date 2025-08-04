@@ -13,7 +13,6 @@ export function MobileHeader() {
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-3">
           <Sidebar />
-          <Camera className="w-6 h-6 text-white" />
           <h1 className="text-xl font-bold text-white">Tripotter</h1>
         </div>
         <div className="flex flex-row gap-4 items-center">

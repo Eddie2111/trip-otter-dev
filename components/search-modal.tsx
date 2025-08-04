@@ -19,23 +19,21 @@ import {
   Clock,
   TrendingUp,
   Users,
-  Store,
   Star,
   Wand2,
   Loader2,
-  MapPin,
   Hash,
 } from "lucide-react";
 import { ai } from "@/lib/gemini";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  mockSearchData,
   recentSearches,
   trendingSearches,
 } from "@/data/mocks/search.mock";
 import { useSearchAPI } from "@/lib/requests";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AIResponse } from "@/components/ai-response";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -108,10 +106,7 @@ export function SearchModal({
   const [error, setError] = useState<string | null>(null);
 
   const [aiPrompt, setAiPrompt] = useState("");
-  const [aiResponse, setAiResponse] = useState<{
-    suggestions: string[];
-    highlight: string[];
-  } | null>(null);
+  const [aiResponse, setAiResponse] = useState<any | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
@@ -275,6 +270,7 @@ export function SearchModal({
       setAiLoading(false);
     }
   };
+  console.log(aiResponse);
 
   const renderResults = () => {
     if (loading) {
@@ -647,30 +643,7 @@ export function SearchModal({
                   {aiError && (
                     <div className="text-red-500 text-sm mt-2">{aiError}</div>
                   )}
-
-                  {aiResponse && (
-                    <div className="mt-4 space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-md mb-2 flex items-center gap-2">
-                          <Wand2 className="w-4 h-4" />
-                          AI Suggestions
-                        </h4>
-                        <ul className="list-disc list-inside space-y-1">
-                          {aiResponse.suggestions.map((suggestion, index) => (
-                            <li key={index} className="text-sm">
-                              {aiResponse.highlight.includes(suggestion) ? (
-                                <span className="font-bold text-blue-600">
-                                  {suggestion}
-                                </span>
-                              ) : (
-                                suggestion
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  )}
+                  {aiResponse && <AIResponse answer={aiResponse} />}
                 </div>
               </TabsContent>
             </ScrollArea>

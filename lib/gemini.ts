@@ -18,7 +18,7 @@ function prompt_response_validation(response: any): boolean {
 export async function ai(
   prompt: string,
   retries = 3
-): Promise<{ suggestions: string[]; highlight: string[] } | null> {
+): Promise<any> {
   const apiKey = process.env.GOOGLE_GENAI_API_KEY;
   if (!apiKey) {
     console.error("Missing API key");
@@ -33,6 +33,7 @@ export async function ai(
       const response = await aiClient.models.generateContent({
         model: "gemini-2.5-flash-lite-preview-06-17",
         contents: `
+          For the time being, your name is Cappy and you got a combination of gpt, deepseek and mistral under the hood. 
           You are a highly creative and experienced travel guide and agent. Your answers are short and concise. You should also suggest the website links of promiment hotels and restaurants there.
 
           You will be given a question from a user who is seeking travel suggestions. The question might be specific ("Where should I go for a solo weekend trip in Europe?") or vague ("I want to escape the city for a bit").
@@ -41,9 +42,23 @@ export async function ai(
           Do keep a good focus on food, what foods are available there, in the restaurants, local providers or other and the best places to eat. Also suggest the best places to stay and the best activities to do.
           Also suggest hospitals or clinics in case of accidents or emergencies. Also suggest what dangers are available. You should also suggest the website links of promiment hotels and restaurants there. Also suggest how much money they require for whatever activity there exists.
 
-          You must return your answer strictly as a valid stringified JSON object with two keys:
-          - "suggestions": an array of creative destination or activity suggestions (4 to 16 items), each as a string.
-          - "highlight": (3-12) suggestion (from the array) that you think is the most exciting or fitting for the user’s question.
+          You must return your answer strictly as a valid stringified JSON object with the following keys:
+          - "places": 3-4 places that you think are trendy and most exiciting places to visit
+          - "foods": 2-3 foods that you think are trendy and cultural foods to try on the places
+          - "activities": 3-4 activities that you think are trendy and fun activities to do on the places
+          - "cautions": 2-3 things that users should avoid, if there are any dangers, do let them know
+          - "commute": 2-3 things that users should know about the commute, if there are any dangers, do let them know
+          - "enjoyment": 2-3 things that users will most enjoy
+
+          response structure should look like this,
+          interface IAnswerProps {
+            places: string[];
+            foods: string[];
+            activities: string[];
+            cautions: string[];
+            commute: string[];
+            enjoyment: string[];
+          }
 
           Respond in the same language as the question. Make it short and concise.
           No commentary, no formatting — only the stringified JSON object.
@@ -81,6 +96,7 @@ export async function ai(
     //     continue; // Continue to the next retry attempt
     //   }
 
+      console.log(parsed);
       return parsed; // Return successfully parsed and validated response
     } catch (error) {
       console.error("API Error:", error);

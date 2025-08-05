@@ -46,7 +46,11 @@ export async function GET(request: NextRequest) {
     }
   } catch (err) {
     console.log(err)
-    return new Response("Something went wrong", { status: 500 });
+    return Response.json({
+      message: "user not verified",
+      status: 400,
+      data: null,
+    })
   }
 }
 

@@ -103,14 +103,11 @@ export function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0099DB] to-[#00F0E4] dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 p-4">
       <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl dark:bg-gray-800/95 dark:border-gray-700">
         <CardHeader className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
-            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full">
-              <Camera className="w-8 h-8 text-white" />
-            </div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">
+            <CardTitle className="text-3xl font-bold tracking-widest bg-gradient-to-br from-[#0099DB] to-[#00F0E4] bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">
               Tripotter
             </CardTitle>
           </div>
@@ -379,14 +376,14 @@ export function SignupPage() {
                       <FormLabel className="text-sm text-gray-600 dark:text-gray-300">
                         I agree to the{" "}
                         <Link
-                          href="/terms"
+                          href="/misc/terms-and-condition"
                           className="px-0 h-auto text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline"
                         >
                           Terms of Service
                         </Link>{" "}
                         and{" "}
                         <Link
-                          href="/privacy"
+                          href="/misc/privacy-policy"
                           className="px-0 h-auto text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline"
                         >
                           Privacy Policy
@@ -402,7 +399,7 @@ export function SignupPage() {
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200
+                className="w-full h-12 bg-gradient-to-br from-[#0099DB] to-[#00F0E4] text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200
                 dark:from-blue-600 dark:to-purple-600 dark:hover:from-blue-700 dark:hover:to-purple-700"
                 disabled={isLoading}
               >
@@ -454,7 +451,7 @@ export function SignupPage() {
             </span>
             <Link
               href="/login"
-              className="text-blue-600 hover:text-blue-700 font-semibold dark:text-blue-400 dark:hover:text-blue-300"
+              className="text-[#0099DB] hover:text-blue-700 font-semibold dark:text-blue-400 dark:hover:text-blue-300"
             >
               Sign in
             </Link>

@@ -79,14 +79,11 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0099DB] to-[#00F0E4] dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 p-4">
       <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl dark:bg-gray-800/95 dark:border-gray-700">
         <CardHeader className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
-            <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full">
-              <Camera className="w-8 h-8 text-white" />
-            </div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-purple-400 dark:to-pink-400">
+            <CardTitle className="text-3xl font-bold tracking-widest bg-gradient-to-br from-[#0099DB] to-[#00F0E4] bg-clip-text text-transparent dark:from-purple-400 dark:to-pink-400">
               Tripotter
             </CardTitle>
           </div>
@@ -180,10 +177,9 @@ export function LoginPage() {
                     </FormItem>
                   )}
                 />
-
                 <Link
                   href="/forgot-password"
-                  className="px-0 text-purple-600 hover:text-purple-700 text-sm hover:underline dark:text-purple-400 dark:hover:text-purple-300"
+                  className="px-0 text-[#0099DB] hover:text-[#0099DB] text-sm hover:underline dark:text-purple-400 dark:hover:text-purple-300"
                 >
                   Forgot password?
                 </Link>
@@ -191,7 +187,7 @@ export function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200
+                className="w-full h-12 bg-gradient-to-br from-[#0099DB] to-[#00F0E4] text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200
                 dark:from-purple-600 dark:to-pink-600 dark:hover:from-purple-700 dark:hover:to-pink-700"
                 disabled={isLoading}
               >
@@ -241,7 +237,7 @@ export function LoginPage() {
             <Button
               onClick={handleDemoLogin}
               variant="ghost"
-              className="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+              className="text-sm font-bold text-white hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700 bg-gradient-to-br from-[#0099DB] to-[#00F0E4]"
             >
               Try Demo Account / I'm Feeling Lucky
             </Button>
@@ -253,7 +249,7 @@ export function LoginPage() {
             </span>
             <Link
               href="/signup"
-              className="text-purple-600 hover:text-purple-700 font-semibold dark:text-purple-400 dark:hover:text-purple-300"
+              className="text-[#0099DB] hover:text-purple-700 font-semibold dark:text-purple-400 dark:hover:text-purple-300"
             >
               Sign up
             </Link>

@@ -15,15 +15,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lock, Camera } from "lucide-react";
+import { Lock } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // Import useRouter
+import { useRouter } from "next/navigation";
 import axios from "axios";
-import { Loading } from "@/components/ui/loading";
+import { LoadingSmall } from "@/components/ui/loading";
 import { useResetPasswordAPI } from "@/lib/requests";
 
-// Define Zod schema for password reset input
 const resetPasswordSchema = z
   .object({
     newPassword: z
@@ -39,10 +38,10 @@ const resetPasswordSchema = z
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 interface ResetPasswordPageProps {
-  id: string; // The ID from the URL params
+  id: string;
 }
 
-export function ResetPasswordPage({ id }: ResetPasswordPagePageProps) {
+export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const router = useRouter();
@@ -80,7 +79,7 @@ export function ResetPasswordPage({ id }: ResetPasswordPagePageProps) {
       console.log(response);
 
       toast.success("Password has been reset successfully!");
-      router.push("/login"); // Redirect to login page after successful reset
+      router.push("/login");
     } catch (error) {
       console.error("Password reset error:", error);
       toast.error(
@@ -92,14 +91,11 @@ export function ResetPasswordPage({ id }: ResetPasswordPagePageProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0099DB] to-[#00F0E4] dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 p-4">
       <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl dark:bg-gray-800/95 dark:border-gray-700">
         <CardHeader className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
-            <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full">
-              <Camera className="w-8 h-8 text-white" />
-            </div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-purple-400 dark:to-pink-400">
+            <CardTitle className="text-3xl font-bold tracking-widest bg-gradient-to-br from-[#0099DB] to-[#00F0E4] bg-clip-text text-transparent dark:from-purple-400 dark:to-pink-400">
               Tripotter
             </CardTitle>
           </div>
@@ -128,7 +124,7 @@ export function ResetPasswordPage({ id }: ResetPasswordPagePageProps) {
               </CardContent>
             </Card>
           ) : (
-            <Loading />
+            <LoadingSmall />
           )}
           <Form {...resetPasswordForm}>
             <form
@@ -185,7 +181,7 @@ export function ResetPasswordPage({ id }: ResetPasswordPagePageProps) {
               />
               <Button
                 type="submit"
-                className="w-full h-12 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200
+                className="w-full h-12 bg-gradient-to-br from-[#0099DB] to-[#00F0E4] text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200
                 dark:from-purple-600 dark:to-pink-600 dark:hover:from-purple-700 dark:hover:to-pink-700"
                 disabled={isLoading}
               >
@@ -197,7 +193,7 @@ export function ResetPasswordPage({ id }: ResetPasswordPagePageProps) {
           <div className="text-center">
             <Link
               href="/login"
-              className="text-purple-600 hover:text-purple-700 font-semibold dark:text-purple-400 dark:hover:text-purple-300"
+              className="text-[#0099DB] hover:text-purple-700 font-semibold dark:text-purple-400 dark:hover:text-purple-300"
             >
               Back to Login
             </Link>

@@ -289,7 +289,6 @@ export function PostCardV2({
     }
   };
 
-  // --- Start of the fix ---
   const addCommentMutation = useMutation({
     mutationFn: async ({
       postId,
@@ -354,7 +353,6 @@ export function PostCardV2({
       );
     },
     onError: (error, { postId }, context) => {
-      // Rollback the optimistic update on error
       toast.error(error.message || "Failed to add comment.");
       if (context?.previousPosts) {
         queryClient.setQueryData(["homeFeed"], context.previousPosts);
@@ -368,7 +366,6 @@ export function PostCardV2({
       addCommentMutation.mutate({ postId, content: newCommentText });
     }
   };
-  // --- End of the fix ---
 
   const likeMutation = useMutation({
     mutationFn: async (postId: string) => {

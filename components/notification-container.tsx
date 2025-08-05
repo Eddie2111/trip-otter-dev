@@ -169,7 +169,6 @@ export const NotificationContainer = () => {
           return;
         }
 
-        // Process notifications in smaller batches to avoid overwhelming the backend
         const batchSize = 5;
         const batches = [];
 
@@ -177,7 +176,6 @@ export const NotificationContainer = () => {
           batches.push(unreadNotifications.slice(i, i + batchSize));
         }
 
-        // Process batches sequentially with small delays
         const processBatch = async (batchIndex: number) => {
           if (batchIndex >= batches.length) {
             setIsMarkingAllAsRead(false);
@@ -206,7 +204,6 @@ export const NotificationContainer = () => {
 
           await Promise.all(promises);
 
-          // Small delay between batches to prevent overwhelming the backend
           setTimeout(() => processBatch(batchIndex + 1), 100);
         };
 
@@ -229,13 +226,11 @@ export const NotificationContainer = () => {
         return;
       }
 
-      // This would require a new backend endpoint that handles multiple IDs at once
       socket.emit(
         "markMultipleNotificationsAsRead",
         { userId, notificationIds: unreadNotificationIds },
         (response: any[] | null) => {
           if (response) {
-            // Update all notifications at once
             setNotifications((prev) =>
               prev.map((notif) => {
                 const updated = response.find((r) => r._id === notif._id);
@@ -243,7 +238,6 @@ export const NotificationContainer = () => {
               })
             );
           } else {
-            // Fallback: optimistically update all
             setNotifications((prev) =>
               prev.map((notif) =>
                 unreadNotificationIds.includes(notif._id!)
@@ -278,7 +272,6 @@ export const NotificationContainer = () => {
     }
   };
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (markAllTimeoutRef.current) {
@@ -313,17 +306,16 @@ export const NotificationContainer = () => {
     <DropdownMenu
       onOpenChange={(open) => {
         if (open && unreadCount > 0) {
-          // Use the debounced version to prevent overwhelming the backend
           markAllAsReadDebounced();
         }
       }}
     >
       <DropdownMenuTrigger asChild>
         <button
-          className="relative p-2 rounded-full bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="relative p-2 text-white rounded-full border-2 border-white hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:hover:bg-gray-600 dark:focus:ring-blue-400"
           aria-label="Notifications"
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-5 w-5 dark:text-white" />
           {unreadCount > 0 && (
             <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2">
               {unreadCount}
@@ -331,28 +323,30 @@ export const NotificationContainer = () => {
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-80 md:w-96 p-0">
+      <DropdownMenuContent className="w-80 md:w-96 p-0 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700">
         <DropdownMenuLabel className="flex justify-between items-center p-4">
-          <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+            Notifications
+          </h3>
           {unreadCount > 0 && (
             <button
               onClick={markAllAsReadDebounced}
               disabled={isMarkingAllAsRead}
               className={`text-sm ${
                 isMarkingAllAsRead
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-blue-600 hover:underline"
+                  ? "text-gray-400 cursor-not-allowed dark:text-gray-500"
+                  : "text-blue-600 hover:underline dark:text-blue-400 dark:hover:underline"
               }`}
             >
               {isMarkingAllAsRead ? "Marking..." : "Mark all as read"}
             </button>
           )}
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="dark:bg-gray-700" />
         <DropdownMenuGroup className="max-h-80 overflow-y-auto">
           {notifications.length === 0 ? (
             <DropdownMenuItem
-              className="p-4 text-gray-500 text-center justify-center"
+              className="p-4 text-gray-500 text-center justify-center dark:text-gray-400"
               disabled
             >
               No new notifications.
@@ -361,10 +355,10 @@ export const NotificationContainer = () => {
             notifications.map((notification) => (
               <DropdownMenuItem
                 key={notification._id}
-                className={`p-4 border-b border-gray-100 ${
+                className={`p-4 border-b border-gray-100 dark:border-gray-700 ${
                   !notification.isRead
-                    ? "bg-blue-50 hover:bg-blue-100"
-                    : "bg-white hover:bg-gray-50"
+                    ? "bg-blue-50 hover:bg-blue-100 dark:bg-gray-700 dark:hover:bg-gray-600"
+                    : "bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
                 } flex justify-between items-start`}
                 onSelect={(e) => e.preventDefault()}
               >
@@ -372,11 +366,11 @@ export const NotificationContainer = () => {
                   className="flex items-start flex-1 cursor-pointer"
                   onClick={() => markAsRead(notification._id!)}
                 >
-                  <span className="mr-3">
+                  <span className="mr-3 dark:text-gray-200">
                     {getNotificationIcon(notification.type)}
                   </span>
                   <div className="flex-1">
-                    <p className="text-sm text-gray-800">
+                    <p className="text-sm text-gray-800 dark:text-gray-100">
                       <span className="font-medium">
                         {notification?.createdBy?.user?.fullName ?? " "}
                       </span>{" "}
@@ -387,13 +381,13 @@ export const NotificationContainer = () => {
                         href={notification.postUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline text-xs mt-1 block"
+                        className="text-blue-500 hover:underline text-xs mt-1 block dark:text-blue-400 dark:hover:underline"
                         onClick={(e) => e.stopPropagation()}
                       >
                         View Post
                       </a>
                     )}
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                       {formatDate(notification.createdAt)}
                     </p>
                   </div>
@@ -403,7 +397,7 @@ export const NotificationContainer = () => {
                     e.stopPropagation();
                     handleDeleteNotification(notification._id!);
                   }}
-                  className="ml-2 p-1 rounded-full hover:bg-gray-200 text-gray-500 hover:text-red-500 transition-colors duration-200"
+                  className="ml-2 p-1 rounded-full hover:bg-gray-200 text-gray-500 hover:text-red-500 transition-colors duration-200 dark:hover:bg-gray-700 dark:text-gray-400 dark:hover:text-red-400"
                   aria-label="Delete notification"
                 >
                   <XCircle className="h-4 w-4" />
@@ -412,13 +406,13 @@ export const NotificationContainer = () => {
             ))
           )}
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="dark:bg-gray-700" />
         <DropdownMenuItem className="p-2 text-center justify-center">
           <button
             onClick={() => {
               /* Implement navigation to a full notifications page if needed */
             }}
-            className="text-blue-600 hover:underline text-sm"
+            className="text-blue-600 hover:underline text-sm dark:text-blue-400 dark:hover:underline"
           >
             See All
           </button>

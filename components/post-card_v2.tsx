@@ -46,8 +46,6 @@ import {
 } from "@tanstack/react-query";
 import { CommentBox } from "./commentBox";
 
-// This is not part of PostCardV2, but it's needed for context.
-// Assuming this is the outer component that fetches the feed.
 const NUMBER_OF_POSTS = 3;
 
 export function PostContainer() {
@@ -266,17 +264,23 @@ export function PostCardV2({
     type: string,
     postUrl: string
   ) => {
-    if (
-      !isSocketConnected ||
-      !post?.owner?._id ||
-      !currentUserProfile?.profile?._id
-    )
-      return;
     console.log("trigger create notification");
+    if (
+      !post?.owner?._id ||
+      !currentUserProfile?.data?.profile?._id
+    ) {
+      console.log(" one of the required params were missing to invoke a notification ");
+      console.log(
+        isSocketConnected,
+        post?.owner?._id,
+        currentUserProfile?.data?.profile?._id
+      );
+      return;
+    }
     try {
-      if (post.owner._id !== currentUserProfile.profile._id) {
+      if (post.owner._id !== currentUserProfile?.data?.profile?._id) {
         socket.emit("createNotification", {
-          createdBy: currentUserProfile.profile._id,
+          createdBy: currentUserProfile?.data?.profile?._id,
           receiver: post.owner._id,
           content,
           type,
@@ -314,7 +318,7 @@ export function PostCardV2({
         owner: {
           _id: currentLoggedInUser?.id,
           username: currentLoggedInUser?.username,
-          profileImage: currentUserProfile?.profileImage,
+          profileImage: currentUserProfile?.data?.profileImage,
         },
         createdAt: new Date().toISOString(),
       };

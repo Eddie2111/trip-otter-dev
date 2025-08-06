@@ -65,7 +65,7 @@ export function CreatePost({
   children,
   profileId,
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   profileId: string;
 }) {
   const searchParams = useSearchParams();

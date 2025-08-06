@@ -45,6 +45,7 @@ import {
   useQuery,
 } from "@tanstack/react-query";
 import { CommentBox } from "./commentBox";
+import ContentCreator from "./content-creator-modal";
 
 const NUMBER_OF_POSTS = 3;
 
@@ -144,6 +145,7 @@ export function PostContainer() {
 
   return (
     <div className="space-y-0 md:space-y-6 pb-20 md:pb-0 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      {session?.user?.id ? <ContentCreator profileId={session?.user?.id} /> : <div></div>}
       {posts.length > 0
         ? posts.map((postItem) => (
             <PostCardV2

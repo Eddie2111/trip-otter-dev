@@ -73,7 +73,9 @@ import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 // --- Styles ---
 import "@/components/richtext-editor/tiptap-templates/simple/simple-editor.scss";
 
-import content from "@/components/richtext-editor/tiptap-templates/simple/data/content.json";
+// Import the Zustand store
+import { useContentStore } from "@/components/richtext-editor/state-hooks/content-store";
+
 
 const MainToolbarContent = ({
   onHighlighterClick,
@@ -191,6 +193,9 @@ export function SimpleEditor() {
   >("main")
   const toolbarRef = React.useRef<HTMLDivElement>(null)
 
+  // Get content and the update function from the Zustand store
+  const { content, updateContent } = useContentStore();
+
   const editor = useEditor({
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
@@ -229,8 +234,13 @@ export function SimpleEditor() {
         onError: (error) => console.error("Upload failed:", error),
       }),
     ],
-    content,
-  })
+    // Initialize the editor with content from the Zustand store
+    content: content,
+    // Update the Zustand store whenever the editor's content changes
+    onUpdate: ({ editor }) => {
+      updateContent(editor.getHTML());
+    },
+  });
 
   const rect = useCursorVisibility({
     editor,
@@ -279,3 +289,5 @@ export function SimpleEditor() {
     </div>
   )
 }
+
+export default SimpleEditor;

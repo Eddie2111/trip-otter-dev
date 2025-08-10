@@ -41,7 +41,7 @@ export function DesktopHeader({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 ml-64">
             {/* Changed text color to white for better contrast with the gradient */}
-            <Image src="/logo.webp" height={40} width={40} alt="logo" />
+            <Image src="/logo-nobg.webp" height={40} width={40} alt="logo" />
             {/* Link for the home/dashboard page */}
             <Link href="/" passHref>
               {/* Changed text color to white for better contrast with the gradient */}

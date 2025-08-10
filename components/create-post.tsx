@@ -453,7 +453,7 @@ export function CreatePostForm({
                       <Input
                         placeholder="Search for a location..."
                         {...field}
-                        autocomplete="off"
+                        autoComplete="off"
                       />
                     </FormControl>
                     <FormDescription>

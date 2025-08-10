@@ -490,8 +490,8 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
             <div className="mt-4 space-y-3">
               <div className="whitespace-pre-line text-gray-800 dark:text-gray-200">
                 {displayPersonData?.bio ? (
-                  displayPersonData?.bio
-                ) : (
+                  displayPersonData.bio
+                ) : selfProfile ? (
                   <ProfileEditModal type="BIO" defaultData={displayPersonData}>
                     <Badge
                       variant="secondary"
@@ -500,6 +500,10 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                       + Add bio
                     </Badge>
                   </ProfileEditModal>
+                ) : (
+                  <span className="text-gray-600 dark:text-gray-300">
+                    No bio added
+                  </span>
                 )}
               </div>
               <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-300">
@@ -507,7 +511,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                   <MapPin className="w-4 h-4" />
                   {displayPersonData.location ? (
                     displayPersonData.location
-                  ) : (
+                  ) : selfProfile ? (
                     <ProfileEditModal
                       type="LOCATION"
                       defaultData={displayPersonData}
@@ -516,7 +520,13 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                         + Add Location
                       </Badge>
                     </ProfileEditModal>
-                  )}
+                  ) :
+                      (
+                        <span className="text-gray-600 dark:text-gray-300">
+                          No location added
+                        </span>
+                      )
+                }
                 </div>
                 <div className="flex items-center gap-1">
                   {displayPersonData.socials ? (

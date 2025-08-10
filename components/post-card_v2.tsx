@@ -52,6 +52,24 @@ const NUMBER_OF_POSTS = 3;
 export function PostContainer() {
   const { data: session } = useSession();
   const queryClient = useQueryClient();
+  const currentLoggedInUser = session?.user;
+
+  const { data: currentUserProfile, isLoading: isUserLoading } = useQuery({
+    queryKey: ["currentUserProfile", currentLoggedInUser?.id],
+    queryFn: async () => {
+      if (!currentLoggedInUser?.id) return null;
+      const response = await useUserApi.getUser(currentLoggedInUser.id);
+      if (response.status !== 200) {
+        throw new Error(response.message || "Failed to fetch user profile.");
+      }
+      return response;
+    },
+    enabled: !!currentLoggedInUser?.id,
+    staleTime: 1000 * 60 * 100,
+  });
+
+  const userImage =
+    currentUserProfile?.data?.profileImage ?? currentLoggedInUser?.image;
 
   const [isConnected, setIsConnected] = useState(false);
   const socket = useWebsocket({
@@ -145,13 +163,19 @@ export function PostContainer() {
 
   return (
     <div className="space-y-0 md:space-y-6 pb-20 md:pb-0 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      {session?.user?.id ? <ContentCreator profileId={session?.user?.id} /> : <div></div>}
+      {session?.user?.id ? (
+        <ContentCreator profileId={session?.user?.id} userImage={userImage} />
+      ) : (
+        <div></div>
+      )}
       {posts.length > 0
         ? posts.map((postItem) => (
             <PostCardV2
               key={postItem._id}
               post={postItem}
               session={session}
+              currentUserProfile={currentUserProfile}
+              userImage={userImage}
               socket={socket}
               isSocketConnected={isConnected}
             />
@@ -182,11 +206,15 @@ export function PostContainer() {
 
 export function PostCardV2({
   post,
+  currentUserProfile,
+  userImage,
   session,
   socket,
   isSocketConnected,
 }: {
   post: IPostProps;
+  currentUserProfile: any;
+  userImage: any
   session: {
     user: {
       id: string;
@@ -202,22 +230,22 @@ export function PostCardV2({
   const currentLoggedInUser = session?.user;
   const queryClient = useQueryClient();
 
-  const { data: currentUserProfile, isLoading: isUserLoading } = useQuery({
-    queryKey: ["currentUserProfile", currentLoggedInUser?.id],
-    queryFn: async () => {
-      if (!currentLoggedInUser?.id) return null;
-      const response = await useUserApi.getUser(currentLoggedInUser.id);
-      if (response.status !== 200) {
-        throw new Error(response.message || "Failed to fetch user profile.");
-      }
-      return response;
-    },
-    enabled: !!currentLoggedInUser?.id,
-    staleTime: 1000 * 60 * 100,
-  });
+  // const { data: currentUserProfile, isLoading: isUserLoading } = useQuery({
+  //   queryKey: ["currentUserProfile", currentLoggedInUser?.id],
+  //   queryFn: async () => {
+  //     if (!currentLoggedInUser?.id) return null;
+  //     const response = await useUserApi.getUser(currentLoggedInUser.id);
+  //     if (response.status !== 200) {
+  //       throw new Error(response.message || "Failed to fetch user profile.");
+  //     }
+  //     return response;
+  //   },
+  //   enabled: !!currentLoggedInUser?.id,
+  //   staleTime: 1000 * 60 * 100,
+  // });
 
-  const userImage =
-    currentUserProfile?.data?.profileImage ?? currentLoggedInUser?.image;
+  // const userImage =
+  //   currentUserProfile?.data?.profileImage ?? currentLoggedInUser?.image;
 
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>(
     {}
@@ -267,11 +295,10 @@ export function PostCardV2({
     postUrl: string
   ) => {
     console.log("trigger create notification");
-    if (
-      !post?.owner?._id ||
-      !currentUserProfile?.data?.profile?._id
-    ) {
-      console.log(" one of the required params were missing to invoke a notification ");
+    if (!post?.owner?._id || !currentUserProfile?.data?.profile?._id) {
+      console.log(
+        " one of the required params were missing to invoke a notification "
+      );
       console.log(
         isSocketConnected,
         post?.owner?._id,
@@ -645,21 +672,21 @@ export function PostCardV2({
             >
               <MessageCircle className="w-6 h-6" />
             </Button>
-            <Button
+            {/* <Button
               variant="ghost"
               size="icon"
               className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700"
             >
               <Send className="w-6 h-6" />
-            </Button>
+            </Button> */}
           </div>
-          <Button
+          {/* <Button
             variant="ghost"
             size="icon"
             className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700"
           >
             <Bookmark className="w-6 h-6" />
-          </Button>
+          </Button> */}
         </div>
 
         <div className="font-semibold text-sm mb-2 text-gray-900 dark:text-gray-100">

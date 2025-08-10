@@ -47,7 +47,7 @@ const formSchema = z.object({
 
 type JournalFormData = z.infer<typeof formSchema>;
 
-export default function CreateJournal() {
+export function CreateJournal() {
   const [journeyDialogOpen, setJourneyDialogOpen] = useState(false);
   
   const { content } = useContentStore();

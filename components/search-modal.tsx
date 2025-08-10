@@ -26,10 +26,7 @@ import {
 } from "lucide-react";
 import { ai } from "@/lib/gemini";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  recentSearches,
-  trendingSearches,
-} from "@/data/mocks/search.mock";
+import { recentSearches, trendingSearches } from "@/data/mocks/search.mock";
 import { useSearchAPI } from "@/lib/requests";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -41,7 +38,7 @@ interface SearchModalProps {
   onPersonSelect: (personId: string) => void; // Changed to string for _id
   onGroupSelect?: (groupId: number) => void;
   onShopSelect: (shopId: string) => void; // Changed to string for _id
-  children?: React.ReactNode
+  children?: React.ReactNode;
 }
 
 interface FilteredResults {
@@ -155,7 +152,6 @@ export function SearchModal({
 
       const apiData = response.data;
 
-      // Filter mock data for locations and groups based on search query
       // const filteredLocations = mockSearchData.locations.filter((loc) =>
       //   loc.name.toLowerCase().includes(searchQuery.toLowerCase())
       // );
@@ -220,7 +216,6 @@ export function SearchModal({
   const clearSearch = () => {
     setSearchQuery("");
     setFilteredResults({
-      // ...mockSearchData, // Removed to prevent issues with commented out types
       people: [],
       hashtags: [],
       // shops: [],
@@ -229,23 +224,23 @@ export function SearchModal({
     });
   };
 
-  const handlePersonClick = (personId: string) => {
-    onPersonSelect(personId);
-    router.push(`/person/${personId}`);
-    onClose();
-  };
+  // const handlePersonClick = (personId: string) => {
+  //   onPersonSelect(personId);
+  //   router.push(`/person/${personId}`);
+  //   onClose();
+  // };
 
-  const handleGroupClick = (groupId: number) => {
-    if (onGroupSelect) {
-      onGroupSelect(groupId);
-    }
-    onClose();
-  };
+  // const handleGroupClick = (groupId: number) => {
+  //   if (onGroupSelect) {
+  //     onGroupSelect(groupId);
+  //   }
+  //   onClose();
+  // };
 
-  const handleShopClick = (shopId: string) => {
-    onShopSelect(shopId);
-    onClose();
-  };
+  // const handleShopClick = (shopId: string) => {
+  //   onShopSelect(shopId);
+  //   onClose();
+  // };
 
   const handleGenerateAIResponse = async () => {
     if (!aiPrompt.trim()) {
@@ -270,7 +265,6 @@ export function SearchModal({
       setAiLoading(false);
     }
   };
-  console.log(aiResponse);
 
   const renderResults = () => {
     if (loading) {
@@ -616,29 +610,42 @@ export function SearchModal({
               {/* AI Tab Content */}
               <TabsContent value="ai" className="mt-0">
                 <div className="space-y-4">
-                  <Textarea
-                    placeholder="Tell me about your travel preferences, e.g., 'I want a relaxing beach vacation in Europe with good seafood and historical sites.'"
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    className="min-h-[100px] rounded-md"
-                  />
-                  <Button
-                    onClick={handleGenerateAIResponse}
-                    disabled={aiLoading}
-                    className="w-full rounded-md"
-                  >
-                    {aiLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="mr-2 h-4 w-4" />
-                        Ask AI
-                      </>
-                    )}
-                  </Button>
+                  {aiResponse ? (
+                    <Button
+                      className="w-full rounded-md"
+                      onClick={() => setAiPrompt("")}
+                    >
+                      Ask another question?
+                    </Button>
+                  ) : (
+                    <Textarea
+                      placeholder="Tell me about your travel preferences, e.g., 'I want a relaxing beach vacation in Europe with good seafood and historical sites.'"
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      className="min-h-[100px] rounded-md"
+                    />
+                  )}
+                  {aiResponse ? (
+                    <div></div>
+                  ) : (
+                    <Button
+                      onClick={handleGenerateAIResponse}
+                      disabled={aiLoading}
+                      className="w-full rounded-md"
+                    >
+                      {aiLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="mr-2 h-4 w-4" />
+                          Ask AI
+                        </>
+                      )}
+                    </Button>
+                  )}
 
                   {aiError && (
                     <div className="text-red-500 text-sm mt-2">{aiError}</div>

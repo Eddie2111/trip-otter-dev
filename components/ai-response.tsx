@@ -16,7 +16,7 @@ export const AIResponse = ({ answer }: { answer: IAnswerProps }) => {
     <div></div>;
   } else {
     return (
-      <ScrollArea className="h-[460px] my-8">
+      <div className="h-[35vh] my-8 overflow-y-auto">
         <div>
           <div>
             <h2 className="text-lg font-bold mb-4 border-b pb-2 border-gray-200 dark:border-gray-700">
@@ -120,7 +120,7 @@ export const AIResponse = ({ answer }: { answer: IAnswerProps }) => {
             </ul>
           </div>
         </div>
-      </ScrollArea>
+      </div>
     );
   }
 };

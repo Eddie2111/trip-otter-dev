@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { FollowButton } from "./follow-button";
+import Link from "next/link";
 
 const NUMBER_OF_PROFILES = 5;
 
@@ -105,13 +106,19 @@ export function SuggestedUsers() {
                   {profile.user?.username?.[0]?.toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+              <div className="flex flex-col">
+                <Link
+                  href={`/person/${profile.user._id}`}
+                  className="font-semibold text-sm text-gray-900 dark:text-gray-100 hover:text-blue-500 duration-300"
+                >
                   {profile.user?.username}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                </Link>
+                <Link
+                  href={`/person/${profile.user._id}`}
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-blue-500 duration-300"
+                >
                   {profile.user?.fullName}
-                </div>
+                </Link>
               </div>
             </div>
             <FollowButton

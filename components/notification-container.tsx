@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   XCircle,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface NotificationDocument {
   _id?: string;
@@ -41,7 +42,7 @@ interface NotificationDocument {
 }
 
 export const NotificationContainer = () => {
-  const [notifications, setNotifications] = useState<any[]>(
+  const [notifications, setNotifications] = useState<NotificationDocument[]>(
     []
   );
   const [isConnected, setIsConnected] = useState(false);
@@ -49,7 +50,7 @@ export const NotificationContainer = () => {
   const { data: session } = useSession();
   const userId = session?.user?.id;
   const markAllTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  const router = useRouter();
   const socket = useWebsocket({
     path: "/notification",
     shouldAuthenticate: true,
@@ -212,46 +213,6 @@ export const NotificationContainer = () => {
     }, 300);
   };
 
-  // OPTION 2: Single API call approach (requires backend changes)
-  const markAllAsReadSingle = () => {
-    if (socket && !isMarkingAllAsRead) {
-      setIsMarkingAllAsRead(true);
-
-      const unreadNotificationIds = notifications
-        .filter((notif) => !notif.isRead)
-        .map((notif) => notif._id!);
-
-      if (unreadNotificationIds.length === 0) {
-        setIsMarkingAllAsRead(false);
-        return;
-      }
-
-      socket.emit(
-        "markMultipleNotificationsAsRead",
-        { userId, notificationIds: unreadNotificationIds },
-        (response: any[] | null) => {
-          if (response) {
-            setNotifications((prev) =>
-              prev.map((notif) => {
-                const updated = response.find((r) => r._id === notif._id);
-                return updated || notif;
-              })
-            );
-          } else {
-            setNotifications((prev) =>
-              prev.map((notif) =>
-                unreadNotificationIds.includes(notif._id!)
-                  ? { ...notif, isRead: true }
-                  : notif
-              )
-            );
-          }
-          setIsMarkingAllAsRead(false);
-        }
-      );
-    }
-  };
-
   const handleDeleteNotification = (id: string) => {
     if (socket) {
       socket.emit(
@@ -312,7 +273,7 @@ export const NotificationContainer = () => {
     >
       <DropdownMenuTrigger asChild>
         <button
-          className="relative p-2 text-white rounded-full border-2 border-white hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:hover:bg-gray-600 dark:focus:ring-blue-400"
+          className="relative p-2 text-white rounded-full border-2 border-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:hover:bg-gray-600 dark:focus:ring-blue-400 hover:bg-white hover:text-black duration-300"
           aria-label="Notifications"
         >
           <Bell className="h-5 w-5 dark:text-white" />
@@ -410,7 +371,7 @@ export const NotificationContainer = () => {
         <DropdownMenuItem className="p-2 text-center justify-center">
           <button
             onClick={() => {
-              /* Implement navigation to a full notifications page if needed */
+              router.push("/notifications")
             }}
             className="text-blue-600 hover:underline text-sm dark:text-blue-400 dark:hover:underline"
           >

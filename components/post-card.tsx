@@ -591,21 +591,21 @@ export function PostCard({
             >
               <MessageCircle className="w-6 h-6" />
             </Button>
-            <Button
+            {/* <Button
               variant="ghost"
               size="icon"
               className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700"
             >
               <Send className="w-6 h-6" />
-            </Button>
+            </Button> */}
           </div>
-          <Button
+          {/* <Button
             variant="ghost"
             size="icon"
             className="w-8 h-8 p-0 dark:text-gray-400 dark:hover:bg-gray-700"
           >
             <Bookmark className="w-6 h-6" />
-          </Button>
+          </Button> */}
         </div>
 
         <div className="font-semibold text-sm mb-2 text-gray-900 dark:text-gray-100">

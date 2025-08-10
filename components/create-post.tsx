@@ -42,7 +42,13 @@ const loadNsfwModel = async () => {
   }
 };
 
-function SubmitButton({ form, files, isSubmitting }) {
+interface ISubmitProps {
+  form: any;
+  files: File[];
+  isSubmitting: boolean;
+}
+
+function SubmitButton({ form, files, isSubmitting }: ISubmitProps) {
   const caption = useWatch({
     control: form.control,
     name: "caption",
@@ -65,7 +71,7 @@ export function CreatePost({
   children,
   profileId,
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   profileId: string;
 }) {
   const searchParams = useSearchParams();
@@ -447,7 +453,7 @@ export function CreatePostForm({
                       <Input
                         placeholder="Search for a location..."
                         {...field}
-                        autocomplete="off"
+                        autoComplete="off"
                       />
                     </FormControl>
                     <FormDescription>

@@ -25,6 +25,13 @@ export const metadata: Metadata = {
       },
     ],
   },
+  metadataBase: new URL("https://tripotter.net"),
+  alternates: {
+    canonical: "/",
+    languages: {
+      "en-US": "/en-US",
+    },
+  },
 };
 
 export default function RootLayout({

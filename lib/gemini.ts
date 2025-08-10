@@ -96,7 +96,7 @@ export async function ai(
     //     continue; // Continue to the next retry attempt
     //   }
 
-      console.log(parsed);
+    //   console.log(parsed);
       return parsed; // Return successfully parsed and validated response
     } catch (error) {
       console.error("API Error:", error);

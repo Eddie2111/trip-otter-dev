@@ -33,6 +33,11 @@ const postSchema = new Schema<PostDocument>(
       type: String,
       required: false,
     }],
+    postType: {
+      type: String,
+      enum: ['POST', 'JOURNAL'],
+      default: 'POST',
+    },
     comments: [
       {
         type: Schema.Types.ObjectId,

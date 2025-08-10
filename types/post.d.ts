@@ -10,6 +10,7 @@ export interface Post {
   owner: UserDocument;
   comments: Comment[];
   hashtags: string[];
+  postType: 'POST' | 'JOURNAL';
 }
 
 export interface PostDocument extends Post, Document {

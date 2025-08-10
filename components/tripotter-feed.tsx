@@ -1,37 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { signOut, useSession } from "next-auth/react";
-import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
-import { suggestedUsers } from "@/data/mocks/feed.mock";
 import { useRouter } from "next/navigation";
 
 import { PostContainer } from "./post-card_v2";
 
 import { LoadingScreen } from "./ui/loading-splash";
 import { SuggestedUsers } from "./suggestedUsers";
+import Link from "next/link";
 
 
 export function TripotterFeed() {
   const router = useRouter();
-
-  const [userData, setUserData] = useState<any>(null);
-  const { data: session, status } = useSession();
-
-  useEffect(() => {
-    async function fetchData() {
-      if (status === 'authenticated') {
-        const _userData = await fetch(`api/users?id=${session?.user?.id}`);
-        const data = await _userData.json();
-        setUserData(data);
-      }
-    }
-    fetchData();
-  }, [status, session?.user?.id]);
+  const { status } = useSession();
 
   const isAuthenticated = status === "authenticated";
 
@@ -113,13 +96,12 @@ export function TripotterFeed() {
                   <h3 className="font-semibold text-gray-500 dark:text-gray-300">
                     Suggested for you
                   </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs font-semibold text-gray-700 dark:text-gray-200 dark:hover:bg-gray-700"
+                  <Link
+                    href="/companions"
+                    className="text-xs font-semibold text-gray-700 dark:text-gray-200 dark:hover:bg-gray-700 hover:underline"
                   >
                     See All
-                  </Button>
+                  </Link>
                 </div>
                 <div className="space-y-3">
                   <SuggestedUsers />

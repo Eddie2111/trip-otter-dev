@@ -22,7 +22,6 @@ import {
 import Link from "next/link";
 
 import { useCommentApi, useLikeApi } from "@/lib/requests";
-import { useSession } from "next-auth/react";
 
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";

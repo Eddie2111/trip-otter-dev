@@ -89,6 +89,7 @@ export async function getAllReviews({
             path: "user",
             select: "username email fullName profileImage",
           })
+          .sort({ createdAt: -1 })
           .lean()
           .exec()
     );

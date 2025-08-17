@@ -12,250 +12,6 @@ export class BaseAPI {
   }
 }
 
-export class CompanionAPI extends BaseAPI {
-  public getCompanions = async (userId: string, page: number, limit: number = 10): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.get(`/api/companion?userId=${userId}&page=${page}&limit=${limit}`);
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-}
-
-export class AnalyticsAPI extends BaseAPI {
-  public getAnalytics = async (): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.get("/api/analytics");
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-}
-
-export class AuthAPI extends BaseAPI {
-  public signUp = async (data: SignUpData): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.post("/api/auth/signup", data);
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-}
-
-export class PostAPI extends BaseAPI {
-  public getPosts = async (): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.get("/api/posts");
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-  public getPost = async (id: string): Promise<AxiosResponse> => {
-    if (!id) throw new Error("Post ID is required");
-    try {
-      const response = await this.apiClient.get(`/api/posts?id=${id}`);
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-  public createPost = async (data: any): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.post("/api/posts", data);
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-  public deletePost = async (id: string): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.delete(`/api/posts?id=${id}`);
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-  public updatePost = async (data: {
-    postId: string;
-    caption?: string;
-    location?: string;
-  }): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.patch(`/api/posts`, data);
-      return response.data;
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data: any; status: number };
-        message: string;
-      };
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-}
-class MediaAPI extends BaseAPI {
-  public getMedia = async (): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.get("/api/media");
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-  public uploadMedia = async (file: File): Promise<AxiosResponse> => {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await this.apiClient.post("/api/media", formData);
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-  public deleteMedia = async (id: string): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.delete(`/api/media/${id}`);
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-}
-
-class LikeAPI extends BaseAPI {
-  public likePost = async (postId: string): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.post(`/api/reaction`, {
-        post: postId,
-      });
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-  public getLikes = async (id: string): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.get(`/api/reaction?id=${id}`);
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-}
-
-class CommentAPI extends BaseAPI {
-  public createComment = async (
-    postId: string,
-    comment: string
-  ): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.post(`/api/comment/`, {
-        content: comment,
-        post: postId,
-      });
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-  public getComments = async (postId: string): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.get(
-        `/api/posts/${postId}/comments`
-      );
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-  public updateComment = async (
-    commentId: string,
-    comment: string
-  ): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.patch(`/api/comment`, {
-        id: commentId,
-        content: comment,
-      });
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-  public deleteComment = async (commentId: string): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.delete(
-        `/api/comment?id=${commentId}`
-      );
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-}
-
-class FollowAPI extends BaseAPI {
-  /**
-   * Toggles the follow status for a given target user.
-   * If the current user is already following, it unfollows. If not, it follows.
-   * @param {string} targetUserId - The ID of the user to follow/unfollow.
-   * @returns {Promise<AxiosResponse>} The API response indicating the new follow status and counts.
-   */
-  public toggleFollow = async (
-    targetUserId: string
-  ): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.post(`/api/followers`, {
-        targetUserId,
-      });
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-
-  /**
-   * Retrieves the list of followers or users being followed for a given profile.
-   * @param {string} profileId - The ID of the profile to retrieve data for.
-   * @param {'followers' | 'following'} type - Specifies whether to retrieve 'followers' or 'following' list.
-   * @returns {Promise<AxiosResponse>} The API response containing the list of users.
-   */
-  public getFollowersOrFollowing = async (
-    profileId: string,
-    type: "followers" | "following"
-  ): Promise<AxiosResponse> => {
-    try {
-      const response = await this.apiClient.get(
-        `/api/followers?profileId=${profileId}&type=${type}`
-      );
-      return response.data;
-    } catch (error) {
-      const axiosError = error as any;
-      throw axiosError.response?.data || axiosError.message;
-    }
-  };
-}
-
 class UserAPI extends BaseAPI {
   public getUser = async (id: string): Promise<AxiosResponse> => {
     try {
@@ -480,10 +236,346 @@ class SearchAPI extends BaseAPI {
     hashtags?: string
   ): Promise<any> => {
     try {
-      const response = await this.apiClient.get(`/api/search?page=${page}&profile=${profile}&group=${group}&shop=${shop}&hashtags=${hashtags}`);
+      const response = await this.apiClient.get(
+        `/api/search?page=${page}&profile=${profile}&group=${group}&shop=${shop}&hashtags=${hashtags}`
+      );
       return response.data;
     } catch (error) {
       const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+}
+
+class CompanionAPI extends BaseAPI {
+  public getCompanions = async (
+    userId: string,
+    page: number,
+    limit: number = 5
+  ): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(
+        `/api/companion?userId=${userId}&page=${page}&limit=${limit}`
+      );
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+}
+
+class AnalyticsAPI extends BaseAPI {
+  public getAnalytics = async (): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get("/api/analytics");
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+}
+
+class AuthAPI extends BaseAPI {
+  public signUp = async (data: SignUpData): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post("/api/auth/signup", data);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+}
+
+class PostAPI extends BaseAPI {
+  public getPosts = async (): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get("/api/posts");
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public getPost = async (id: string): Promise<AxiosResponse> => {
+    if (!id) throw new Error("Post ID is required");
+    try {
+      const response = await this.apiClient.get(`/api/posts?id=${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public createPost = async (data: any): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post("/api/posts", data);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public deletePost = async (id: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.delete(`/api/posts?id=${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public updatePost = async (data: {
+    postId: string;
+    caption?: string;
+    location?: string;
+  }): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.patch(`/api/posts`, data);
+      return response.data;
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: { data: any; status: number };
+        message: string;
+      };
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+}
+class MediaAPI extends BaseAPI {
+  public getMedia = async (): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get("/api/media");
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public uploadMedia = async (file: File): Promise<AxiosResponse> => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await this.apiClient.post("/api/media", formData);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public deleteMedia = async (id: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.delete(`/api/media/${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+}
+
+class LikeAPI extends BaseAPI {
+  public likePost = async (postId: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`/api/reaction`, {
+        post: postId,
+      });
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public getLikes = async (id: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/reaction?id=${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+}
+
+class CommentAPI extends BaseAPI {
+  public createComment = async (
+    postId: string,
+    comment: string
+  ): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`/api/comment/`, {
+        content: comment,
+        post: postId,
+      });
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public getComments = async (postId: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(
+        `/api/posts/${postId}/comments`
+      );
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public updateComment = async (
+    commentId: string,
+    comment: string
+  ): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.patch(`/api/comment`, {
+        id: commentId,
+        content: comment,
+      });
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public deleteComment = async (commentId: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.delete(
+        `/api/comment?id=${commentId}`
+      );
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+}
+
+class FollowAPI extends BaseAPI {
+  /**
+   * Toggles the follow status for a given target user.
+   * If the current user is already following, it unfollows. If not, it follows.
+   * @param {string} targetUserId - The ID of the user to follow/unfollow.
+   * @returns {Promise<AxiosResponse>} The API response indicating the new follow status and counts.
+   */
+  public toggleFollow = async (
+    targetUserId: string
+  ): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`/api/followers`, {
+        targetUserId,
+      });
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+
+  /**
+   * Retrieves the list of followers or users being followed for a given profile.
+   * @param {string} profileId - The ID of the profile to retrieve data for.
+   * @param {'followers' | 'following'} type - Specifies whether to retrieve 'followers' or 'following' list.
+   * @returns {Promise<AxiosResponse>} The API response containing the list of users.
+   */
+  public getFollowersOrFollowing = async (
+    profileId: string,
+    type: "followers" | "following"
+  ): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(
+        `/api/followers?profileId=${profileId}&type=${type}`
+      );
+      return response.data;
+    } catch (error) {
+      const axiosError = error as any;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+}
+
+class TribeAPI extends BaseAPI {
+  public createTribe = async (data: any): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`/api/tribe`, data);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public getTribe = async (id: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/tribe?id=${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public getTribeMembers = async (id: string, page: number, limit: number): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(
+        `/api/tribe?id=${id}&members=true&page=${page}&limit=${limit}`
+      );
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public getTribePosts = async (id: string, page: number, limit: number): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(
+        `/api/tribe?id=${id}&posts=true&page=${page}&limit=${limit}`
+      );
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public getUserTribes = async (id: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/tribe?user=${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public getTribes = async (
+    page: number,
+    limit: number
+  ): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(
+        `/api/tribe?page=${page}&limit=${limit}`
+      );
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public updateTribe = async (data: any): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.patch(`/api/tribe`, data);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public deleteTribe = async (id: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.delete(`/api/tribe?id=${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
       throw axiosError.response?.data || axiosError.message;
     }
   };
@@ -504,3 +596,4 @@ export const useReviewAPI = new ReviewAPI();
 export const useFeedAPI = new FeedAPI();
 export const useSearchAPI = new SearchAPI();
 export const useCompanionAPI = new CompanionAPI();
+export const useTribeAPI = new TribeAPI();

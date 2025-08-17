@@ -80,6 +80,9 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0099DB] to-[#00F0E4] dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 p-4">
+          <h1 className="hidden"> Tripotter is a social media platform for travelers to
+            share their experiences and photos. Join today!
+          </h1>
       <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl dark:bg-gray-800/95 dark:border-gray-700">
         <CardHeader className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">

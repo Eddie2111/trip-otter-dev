@@ -15,7 +15,7 @@ export async function runDBOperation<T>(
 
     return await operation();
   } catch (error) {
-    console.error('Database operation failed:', error);
+    console.error('Database operation failed:', JSON.stringify(error));
     throw new Error('Database operation failed');
   }
 }

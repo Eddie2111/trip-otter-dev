@@ -1,4 +1,4 @@
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { UserDocument } from './user.d';
 
 export interface Post {
@@ -11,6 +11,7 @@ export interface Post {
   comments: Comment[];
   hashtags: string[];
   postType: 'POST' | 'JOURNAL';
+  fromGroup: Types.ObjectId;
 }
 
 export interface PostDocument extends Post, Document {

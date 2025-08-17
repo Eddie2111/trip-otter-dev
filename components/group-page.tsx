@@ -26,27 +26,28 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { events, groupData, members, posts } from "@/data/mocks/group.mock";
+import { useRouter } from "next/navigation";
 
-// Define the component props
-interface GroupPageProps {
-  groupId: number;
-  onBack: () => void;
+interface TribePageProps {
+  tribeId: any;
 }
 
-export function GroupPage({ groupId, onBack }: GroupPageProps) {
+export function TribePage({ tribeId }: TribePageProps) {
   const [activeTab, setActiveTab] = useState("posts");
   const [newPost, setNewPost] = useState("");
   const [isJoined, setIsJoined] = useState(false);
+  const router = useRouter();
 
   const group = groupData[groupId as keyof typeof groupData] || groupData[1];
-
+  const onBack = () => {
+    router.push("/groups");
+  }
   const handleJoinGroup = () => {
     setIsJoined(!isJoined);
   };
 
   const handleCreatePost = () => {
     if (newPost.trim()) {
-      // Handle post creation
       setNewPost("");
     }
   };

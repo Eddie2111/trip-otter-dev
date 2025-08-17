@@ -15,6 +15,7 @@ interface IPostBody {
   caption?: string | undefined;
   location?: string | undefined;
   comments?: string[] | undefined;
+  fromGroup?: string;
 }
 
 export async function GET(request: NextRequest): Promise<Response> {
@@ -124,10 +125,21 @@ export async function POST(request: Request) {
   try {
     const createPost = await runDBOperationWithTransaction(async () => {
       const hashtags = postBody.caption?.match(/#[a-zA-Z0-9]+/g) || [];
-      const newPost = new postsSchema({
-        ...postBody,
-        hashtags,
-      });
+      let newPost: any;
+      if (postBody.fromGroup) {
+        newPost = new postsSchema({
+          ...postBody,
+          hashtags,
+          fromGroup: postBody.fromGroup,
+        });
+        await newPost.save();
+        return newPost;
+      } else {
+        newPost = new postsSchema({
+          ...postBody,
+          hashtags,
+        });
+      }
       await newPost.save();
 
       const updateResult = await profileSchema.findOneAndUpdate(

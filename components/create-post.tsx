@@ -70,9 +70,11 @@ function SubmitButton({ form, files, isSubmitting }: ISubmitProps) {
 export function CreatePost({
   children,
   profileId,
+  groupId,
 }: {
   children?: React.ReactNode;
   profileId: string;
+  groupId?: string;
 }) {
   const searchParams = useSearchParams();
   const formParam = searchParams.get("form");
@@ -84,7 +86,9 @@ export function CreatePost({
 
   const createPostMutation = useMutation({
     mutationFn: async (data: PostCreateInput) => {
-      return usePostApi.createPost(data);
+      return groupId
+        ? usePostApi.createPost({ ...data, groupId })
+        : usePostApi.createPost(data);
     },
     onSuccess: () => {
       setIsOpen(false);

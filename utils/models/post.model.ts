@@ -13,6 +13,7 @@ export const postCreateSchema = z.object({
   location: z.string().optional(),
   owner: objectIdSchema.refine((val) => mongoose.Types.ObjectId.isValid(val), "Owner must be a valid ObjectId"),
   comments: z.array(objectIdSchema).optional(),
+  groupId: z.string().optional(),
 })
 
 export type PostCreateInput = z.infer<typeof postCreateSchema>

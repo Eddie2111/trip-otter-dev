@@ -44,6 +44,18 @@ const profileSchema = new Schema<ProfileDocument>(
         type: Schema.Types.ObjectId,
         ref: 'Report',
       }
+    ],
+    tribesCreated: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Tribe',
+      },
+    ],
+    tribesJoined: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Tribe',
+      }
     ]
   },
   {

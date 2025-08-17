@@ -43,9 +43,9 @@ const tribeSchema = new Schema<TribeDocument>(
     },
     name: {
       type: String,
-      required: [true, "Group name is required"],
-      minlength: [2, "Group name must be at least 2 characters"],
-      maxlength: [50, "Group name must be less than 50 characters"],
+      required: [true, "Tribe name is required"],
+      minlength: [2, "Tribe name must be at least 2 characters"],
+      maxlength: [50, "Tribe name must be less than 50 characters"],
     },
     users: [
       {

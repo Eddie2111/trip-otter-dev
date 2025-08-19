@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,8 +14,9 @@ import {
 import { CreateTribeForm } from "./create-tribe.form";
 
 export function CreateTribeModal() {
+  const [isOpen, setIsOpen] = useState<boolean>(false);
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button>Create Your Tribe</Button>
       </DialogTrigger>
@@ -26,6 +28,7 @@ export function CreateTribeModal() {
           </DialogDescription>
         </DialogHeader>
         <CreateTribeForm
+          submitTrigger={setIsOpen}
           closeButton={
             <DialogClose asChild>
               <Button type="button" variant="secondary">

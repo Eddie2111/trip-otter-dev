@@ -190,8 +190,7 @@ export function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-gradient-to-br from-[#0099DB] to-[#00F0E4] text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200
-                dark:from-purple-600 dark:to-pink-600 dark:hover:from-purple-700 dark:hover:to-pink-700"
+                className="w-full h-12 bg-gradient-to-br from-[#0099DB] to-[#00F0E4] text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
                 disabled={isLoading}
               >
                 {isLoading ? "Signing in..." : "Sign In"}

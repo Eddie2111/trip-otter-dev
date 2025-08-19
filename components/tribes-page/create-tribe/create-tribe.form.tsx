@@ -22,6 +22,7 @@ import {
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   TribeCreateSchema,
   TribeCreateInput,
@@ -38,6 +39,7 @@ import { useSession } from "next-auth/react";
 import { getSanityMedia } from "@/lib/getSanityImage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTribeAPI } from "@/lib/requests";
+import { XCircle } from 'lucide-react';
 
 async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
@@ -65,109 +67,100 @@ const loadNsfwModel = async () => {
   }
 };
 
-function ImageDropzone({
-  onFileUploaded,
-  label,
-  existingImage,
-}: {
-  onFileUploaded: (url: string) => void;
+interface ImageDropzoneProps {
+  onFileSelected: (file: File | null) => void;
   label: string;
-  existingImage?: string;
-}) {
-  const [preview, setPreview] = useState(existingImage || "");
-  const [uploading, setUploading] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
+  value?: File | string | null;
+}
+
+function ImageDropzone({ onFileSelected, label, value }: ImageDropzoneProps) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     loadNsfwModel();
   }, []);
 
+  useEffect(() => {
+    if (value instanceof File) {
+      const url = URL.createObjectURL(value);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else if (typeof value === 'string' && value) {
+      setPreviewUrl(value);
+      return;
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [value]);
+
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      const filteredFiles: File[] = [];
-      const imagePromises = acceptedFiles.map(async (file) => {
-        if (!file.type.startsWith("image/")) return;
+      const file = acceptedFiles[0];
+      if (!file || !file.type.startsWith("image/")) {
+        toast.error("Please drop an image file.");
+        return;
+      }
 
-        let processedFile = file;
-        let fileSrc: string | undefined;
+      let processedFile = file;
+      let fileSrc: string | undefined;
 
-        if (file.type === "image/heic" || file.type === "image/heif") {
-          try {
-            const heic2anyModule = await import("heic2any");
-            const heic2any = heic2anyModule.default;
-
-            const convertedBlob = await heic2any({
-              blob: file,
-              toType: "image/jpeg",
-              quality: 0.8,
-            });
-            processedFile = new File(
-              [convertedBlob as Blob],
-              file.name.replace(/\.heic$/i, ".jpeg"),
-              { type: "image/jpeg" }
-            );
-            fileSrc = URL.createObjectURL(processedFile);
-          } catch {
-            toast.error(`Failed to process HEIC image: ${file.name}`);
-            return;
-          }
-        } else {
-          fileSrc = URL.createObjectURL(file);
+      if (file.type === "image/heic" || file.type === "image/heif") {
+        try {
+          const heic2anyModule = await import("heic2any");
+          const heic2any = heic2anyModule.default;
+          const convertedBlob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 });
+          processedFile = new File([convertedBlob as Blob], file.name.replace(/\.heic$/i, ".jpeg"), { type: "image/jpeg" });
+          fileSrc = URL.createObjectURL(processedFile);
+        } catch {
+          toast.error(`Failed to process HEIC image: ${file.name}`);
+          return;
         }
+      } else {
+        fileSrc = URL.createObjectURL(file);
+      }
 
-        if (!fileSrc) return;
+      if (!fileSrc) return;
 
-        const img = document.createElement("img");
-        img.src = fileSrc;
+      const img = document.createElement("img");
+      img.src = fileSrc;
 
-        return new Promise<void>((resolve) => {
-          img.onload = async () => {
-            if (nsfwModel) {
-              const predictions = await nsfwModel.classify(img);
-              const isExplicit = predictions.some(
-                (p) =>
-                  (p.className === "Porn" ||
-                    p.className === "Sexy" ||
-                    p.className === "Hentai") &&
-                  p.probability > 0.5
-              );
+      const imageLoadPromise = new Promise<void>((resolve, reject) => {
+        img.onload = async () => {
+          if (nsfwModel) {
+            const predictions = await nsfwModel.classify(img);
+            const isExplicit = predictions.some(
+              (p) =>
+                (p.className === "Porn" || p.className === "Sexy" || p.className === "Hentai") &&
+                p.probability > 0.5
+            );
 
-              if (isExplicit) {
-                toast.error("Explicit image detected.");
-              } else {
-                filteredFiles.push(processedFile);
-              }
+            if (isExplicit) {
+              toast.error("Explicit image detected.");
+              reject(new Error("Explicit image detected."));
             } else {
-              filteredFiles.push(processedFile);
+              onFileSelected(processedFile);
+              resolve();
             }
-            URL.revokeObjectURL(fileSrc);
+          } else {
+            onFileSelected(processedFile);
             resolve();
-          };
-          img.onerror = () => {
-            toast.error(`Failed to load image: ${file.name}`);
-            URL.revokeObjectURL(fileSrc);
-            resolve();
-          };
-        });
+          }
+          URL.revokeObjectURL(fileSrc);
+        };
+        img.onerror = () => {
+          toast.error(`Failed to load image: ${file.name}`);
+          URL.revokeObjectURL(fileSrc);
+          reject(new Error("Failed to load image."));
+        };
       });
 
-      await Promise.all(imagePromises);
-
-      const finalFile = filteredFiles[0];
-      if (!finalFile) return;
-
       try {
-        setUploading(true);
-        const uploadedUrl = await uploadImage(finalFile);
-        setPreview(uploadedUrl);
-        onFileUploaded(uploadedUrl);
+        await imageLoadPromise;
       } catch (err) {
-        toast.error("Image upload failed");
-      } finally {
-        setUploading(false);
+        console.error(err);
       }
     },
-    [onFileUploaded]
+    [onFileSelected]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -179,25 +172,32 @@ function ImageDropzone({
     multiple: false,
   });
 
+  const handleCancel = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onFileSelected(null);
+  };
+
   return (
     <div className="space-y-2">
       <FormLabel>{label}</FormLabel>
       <div
         {...getRootProps()}
         className={cn(
-          "border border-dashed rounded-md px-4 py-10 text-center cursor-pointer transition",
+          "relative border border-dashed rounded-md px-4 py-10 text-center cursor-pointer transition",
           isDragActive ? "bg-muted/50" : "bg-muted"
         )}
       >
         <input {...getInputProps()} />
-        {uploading ? (
-          <p>Uploading...</p>
-        ) : preview ? (
-          <img
-            src={preview}
-            alt="Preview"
-            className="max-h-40 mx-auto object-cover rounded-md"
-          />
+        {previewUrl ? (
+          <>
+            <img src={previewUrl} alt="Preview" className="max-h-40 mx-auto object-cover rounded-md" />
+            <button
+                onClick={handleCancel}
+                className="absolute top-2 right-2 text-red-500 hover:text-red-700 p-1 bg-white rounded-full shadow-md"
+            >
+                <XCircle size={16} />
+            </button>
+          </>
         ) : (
           <p>Drag & drop or click to upload</p>
         )}
@@ -206,22 +206,37 @@ function ImageDropzone({
   );
 }
 
+// Define a separate Zod schema for the form's local state to handle the File objects
+const FormSchema = z.object({
+  name: z.string().min(1, "Name is required."),
+  description: z.string().min(1, "Description is required."),
+  category: z.enum(TribeCategory.options),
+  privacy: z.enum(TribePrivacy.options),
+  tags: z.array(z.string()),
+  coverImage: z.union([z.instanceof(File), z.string(), z.null()]).optional(),
+  profileImage: z.union([z.instanceof(File), z.string(), z.null()]).optional(),
+});
+
 export function CreateTribeForm({
+  submitTrigger,
   closeButton,
 }: {
+  submitTrigger: (arg0: boolean)=>void;
   closeButton: React.ReactNode;
 }) {
   const { data: session } = useSession();
-  const form = useForm<TribeCreateInput>({
-    resolver: zodResolver(TribeCreateSchema),
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+
+  const form = useForm<z.infer<typeof FormSchema>>({
+    resolver: zodResolver(FormSchema), // Use the new local schema for validation
     defaultValues: {
       name: "",
       description: "",
       category: "COMMUNITY",
       privacy: "PUBLIC",
       tags: [],
-      coverImage: "",
-      profileImage: "",
+      coverImage: null,
+      profileImage: null,
     },
   });
 
@@ -239,16 +254,49 @@ export function CreateTribeForm({
     },
   });
 
-  const onSubmit = async (data: TribeCreateInput) => {
+  const onSubmit = async (data: z.infer<typeof FormSchema>) => {
     try {
+      setIsUploadingImages(true);
+
+      const uploadedImageUrls: { coverImage?: string; profileImage?: string } = {};
+
+      if (data.coverImage instanceof File) {
+        uploadedImageUrls.coverImage = await uploadImage(data.coverImage);
+      } else if (typeof data.coverImage === 'string' && data.coverImage) {
+        uploadedImageUrls.coverImage = data.coverImage;
+      }
+
+      if (data.profileImage instanceof File) {
+        uploadedImageUrls.profileImage = await uploadImage(data.profileImage);
+      } else if (typeof data.profileImage === 'string' && data.profileImage) {
+        uploadedImageUrls.profileImage = data.profileImage;
+      }
+
+      setIsUploadingImages(false);
+
       const ownerId = (session?.user?.id as string) ?? "";
 
+      // Construct a new payload to match the original API schema
+      const payload: TribeCreateInput = {
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        privacy: data.privacy,
+        tags: data.tags,
+        coverImage: uploadedImageUrls.coverImage || null,
+        profileImage: uploadedImageUrls.profileImage || null,
+      };
+
       await createTribe({
-        ...data,
+        ...payload,
         createdBy: ownerId,
       });
+
+      submitTrigger(false);
     } catch (error) {
+      setIsUploadingImages(false);
       console.error("Error creating tribe:", error);
+      toast.error("Tribe creation failed. Please try again.");
     }
   };
 
@@ -370,8 +418,8 @@ export function CreateTribeForm({
             <FormItem>
               <ImageDropzone
                 label="Cover Image"
-                onFileUploaded={field.onChange}
-                existingImage={field.value}
+                onFileSelected={field.onChange}
+                value={field.value}
               />
               <FormDescription>This will be public</FormDescription>
               <FormMessage />
@@ -386,8 +434,8 @@ export function CreateTribeForm({
             <FormItem>
               <ImageDropzone
                 label="Profile Image"
-                onFileUploaded={field.onChange}
-                existingImage={field.value}
+                onFileSelected={field.onChange}
+                value={field.value}
               />
               <FormDescription>This will be public</FormDescription>
               <FormMessage />
@@ -395,8 +443,8 @@ export function CreateTribeForm({
           )}
         />
 
-        <Button type="submit" disabled={isLoading}>
-          Create Tribe
+        <Button type="submit" disabled={isLoading || isUploadingImages}>
+          {isUploadingImages ? "Uploading Images..." : (isLoading ? "Creating Tribe..." : "Create Tribe")}
         </Button>
         {closeButton}
       </form>

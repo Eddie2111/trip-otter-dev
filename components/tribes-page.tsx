@@ -3,27 +3,28 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+// import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+// import { Badge } from "@/components/ui/badge";
+// import { ScrollArea } from "@/components/ui/scroll-area";
+import CreateTribeForm from "@/components/tribes-page/create-tribe";
 
 import {
   Search,
   Users,
-  TrendingUp,
-  Lock,
-  Globe,
-  UserPlus,
-  MessageCircle,
   Filter,
-  Moon,
+  // TrendingUp,
+  // Lock,
+  // Globe,
+  // UserPlus,
+  // MessageCircle,
+  // Moon,
 } from "lucide-react";
 
 import { TribeCard } from "./tribes-page/tribe-card";
-import Link from "next/link";
+// import Link from "next/link";
 import { allGroups, categories, trendingGroups } from "@/data/mocks/group.mock";
 import { useTribeAPI } from "@/lib/requests";
 import { LoadingScreen } from "./ui/loading-splash";
@@ -70,9 +71,7 @@ export function TribesPage_Header_V1({children}: {children: React.ReactNode}) {
                 <Filter className="w-4 h-4 mr-2" />
                 Filters
               </Button>
-              <Button variant="outline" size="sm">
-                <Moon className="w-4 h-4" />
-              </Button>
+              <CreateTribeForm />
             </div>
           </div>
         </div>

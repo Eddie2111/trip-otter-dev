@@ -77,7 +77,7 @@ export function ReportModal({
     defaultValues: {
       reportedBy,
       reportedUser,
-      scope: "Post", // Set a default value for the dropdown
+      scope: "Post",
       reason: "",
       reasonDescription: "",
       relatedComment: relatedCommentId || "", // Ensure default is empty string if undefined

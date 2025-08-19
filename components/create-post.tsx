@@ -329,8 +329,6 @@ export function CreatePostForm({
     } catch (error) {
       console.error("Error submitting post:", error);
       // Error toast is now handled by the onError callback in the parent CreatePost component
-    } finally {
-      // No need to set submitting state here, useMutation handles it automatically
     }
   };
 

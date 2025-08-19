@@ -19,7 +19,7 @@ export const TribeCategory = z.enum([
 
 export const TribePrivacy = z.enum(["PUBLIC", "PRIVATE"]);
 
-const BaseFields = {
+export const TribeBaseFields = {
   // serial: z.string().uuid().default(() => uuidv4()),
   description: z.string().max(4096, "Description must be less than 4096 characters"),
   category: TribeCategory.default("COMMUNITY"),
@@ -35,15 +35,15 @@ const BaseFields = {
 };
 
 export const TribeDocumentSchema = z.object({
-  ...BaseFields,
-  createdAt: z.date().or(z.string().datetime()).optional(),
-  updatedAt: z.date().or(z.string().datetime()).optional(),
-  _id: objectId.optional(),
+  ...TribeBaseFields,
+  // createdAt: z.date().or(z.string().datetime()).optional(),
+  // updatedAt: z.date().or(z.string().datetime()).optional(),
+  // _id: objectId.optional(),
 });
 
 // For creating a Tribe (server will add timestamps/_id)
 export const TribeCreateSchema = z.object({
-  ...BaseFields,
+  ...TribeBaseFields,
 });
 // If you want to prevent client-supplied serial on create, use:
 // export const TribeCreateSchema = z.object({ ...BaseFields }).omit({ serial: true });
@@ -51,7 +51,7 @@ export const TribeCreateSchema = z.object({
 // For updating a Tribe (all fields optional, but keep constraints)
 export const TribeUpdateSchema = z
   .object({
-    ...BaseFields,
+    ...TribeBaseFields,
   })
   .partial();
 

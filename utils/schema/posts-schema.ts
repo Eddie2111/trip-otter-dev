@@ -38,6 +38,11 @@ const postSchema = new Schema<PostDocument>(
       enum: ['POST', 'JOURNAL'],
       default: 'POST',
     },
+    fromGroup: {
+      type: Schema.Types.ObjectId,
+      ref: 'Tribe',
+      required: false,
+    },
     comments: [
       {
         type: Schema.Types.ObjectId,

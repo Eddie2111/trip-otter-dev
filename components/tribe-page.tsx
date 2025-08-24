@@ -25,20 +25,34 @@ import {
   Pin,
 } from "lucide-react";
 import Image from "next/image";
-import { events, groupData, members, posts } from "@/data/mocks/group.mock";
+import { useRouter } from "next/navigation";
 
-// Define the component props
-interface GroupPageProps {
-  groupId: number;
-  onBack: () => void;
+interface TribePageProps {
+  tribeData: ITribeData;
+}
+interface ITribeData {
+    _id: any;
+    description: string;
+    category: string;
+    tags: string[];
+    coverImage: string;
+    profileImage: string;
+    name: string;
+    users: any;
+    posts: any;
+    createdBy: any;
+    privacy: string;
+    serial: string;
+    createdAt: Date;
+    updatedAt: Date;
+    __v: number;
 }
 
-export function GroupPage({ groupId, onBack }: GroupPageProps) {
+export function TribePage_v1({ tribeData }: TribePageProps) {
   const [activeTab, setActiveTab] = useState("posts");
   const [newPost, setNewPost] = useState("");
   const [isJoined, setIsJoined] = useState(false);
-
-  const group = groupData[groupId as keyof typeof groupData] || groupData[1];
+  const router = useRouter();
 
   const handleJoinGroup = () => {
     setIsJoined(!isJoined);
@@ -46,13 +60,23 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
 
   const handleCreatePost = () => {
     if (newPost.trim()) {
-      // Handle post creation
       setNewPost("");
     }
   };
 
+  const onBack = () => {
+    router.push("/groups");
+  };
+
+  if (!tribeData) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Tribe not found.
+      </div>
+    );
+  }
+
   return (
-    // Main container with dark mode background and text colors
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-50">
       {/* Header */}
       <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-800 sticky top-0 z-10">
@@ -67,10 +91,10 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
               <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </Button>
             <div>
-              <h1 className="font-semibold dark:text-white">{group.name}</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {group.privacy} group • {group.members} members
-              </p>
+              <h1 className="font-semibold dark:text-white">{tribeData.name}</h1>
+              {/* <p className="text-sm text-gray-500 dark:text-gray-400">
+                {tribeData.privacy} group • {members.length} members
+              </p> */}
             </div>
           </div>
         </div>
@@ -80,7 +104,7 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
         {/* Cover Image */}
         <div className="relative h-48 md:h-64 bg-gradient-to-r from-blue-400 to-purple-500">
           <Image
-            src={group.coverImage || "/placeholder.svg"}
+            src={tribeData.coverImage || "/placeholder.svg"}
             alt="Group cover"
             fill
             className="object-cover"
@@ -94,34 +118,34 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
             <div className="flex flex-col md:flex-row md:items-end gap-4">
               {/* Avatar with dark mode border */}
               <Avatar className="w-32 h-32 border-4 border-white dark:border-gray-900 shadow-lg">
-                <AvatarImage src={group.avatar || "/placeholder.svg"} />
+                <AvatarImage src={tribeData.profileImage || "/placeholder.svg"} />
                 <AvatarFallback className="text-2xl">
-                  {group.name[0]}
+                  {tribeData.name}
                 </AvatarFallback>
               </Avatar>
 
               <div className="md:mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <h1 className="text-2xl font-bold dark:text-white">
-                    {group.name}
+                    {tribeData.name}
                   </h1>
-                  {group.privacy === "Public" ? (
+                  {tribeData.privacy === "PUBLIC" ? (
                     <Globe className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   ) : (
                     <Lock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   )}
                 </div>
                 <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300 mb-2">
-                  <span>
-                    <strong>{group.members}</strong> members
+                  {/* <span>
+                    <strong>{members.length}</strong> members
                   </span>
                   <span>
-                    <strong>{group.posts}</strong> posts
-                  </span>
-                  <Badge variant="outline">{group.category}</Badge>
+                    <strong>{posts.length}</strong> posts
+                  </span> */}
+                  <Badge variant="outline">{tribeData.category}</Badge>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Created {group.created}
+                  Created {new Date(tribeData.createdAt).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -150,30 +174,29 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
           {/* Description */}
           <div className="mt-4">
             <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
-              {group.description}
+              {tribeData.description}
             </p>
           </div>
 
-          {/* Admins */}
+          {/* Admins - Assuming the payload doesn't have admins, using a placeholder */}
           <div className="mt-4">
             <h3 className="font-semibold mb-2 dark:text-white">Admins</h3>
             <div className="flex gap-3">
-              {group.admins.map((admin, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={admin.avatar || "/placeholder.svg"} />
-                    <AvatarFallback>{admin.name[0]}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium dark:text-white">
-                      {admin.name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      @{admin.username}
-                    </p>
-                  </div>
+              {/* Replace with a loop through actual admin data if available */}
+              <div className="flex items-center gap-2">
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src="/placeholder.svg" />
+                  <AvatarFallback>A</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium dark:text-white">
+                    Admin Name
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    @admin_username
+                  </p>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </div>
@@ -245,13 +268,12 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
 
               {/* Posts */}
               <div className="space-y-6">
-                {posts.map((post) => (
+                {/* {posts.map((post) => (
                   <Card
                     key={post.id}
                     className="dark:bg-gray-900 dark:border-gray-800"
                   >
                     <CardContent className="p-0">
-                      {/* Post Header */}
                       <div className="p-4 pb-0">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
@@ -301,14 +323,12 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
                         </div>
                       </div>
 
-                      {/* Post Content */}
                       <div className="px-4 py-3">
                         <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
                           {post.content}
                         </p>
                       </div>
 
-                      {/* Post Image */}
                       {post.image && (
                         <div className="relative aspect-video">
                           <Image
@@ -320,7 +340,6 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
                         </div>
                       )}
 
-                      {/* Post Actions */}
                       <div className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-6">
@@ -353,7 +372,7 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                ))} */}
               </div>
             </TabsContent>
 
@@ -367,7 +386,7 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
                   Create Event
                 </Button>
               </div>
-
+{/* 
               {events.map((event) => (
                 <Card
                   key={event.id}
@@ -404,14 +423,14 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              ))} */}
             </TabsContent>
 
             <TabsContent value="members" className="mt-0 p-4 space-y-4">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold dark:text-white">
-                  Members ({group.members})
-                </h2>
+                {/* <h2 className="text-lg font-semibold dark:text-white">
+                  Members ({members.length})
+                </h2> */}
                 <Button variant="outline">
                   <Users className="w-4 h-4 mr-2" />
                   Invite Members
@@ -419,7 +438,7 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
               </div>
 
               <div className="space-y-3">
-                {members.map((member) => (
+                {/* {members.map((member) => (
                   <Card
                     key={member.username}
                     className="dark:bg-gray-900 dark:border-gray-800"
@@ -465,7 +484,7 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                ))} */}
               </div>
             </TabsContent>
 
@@ -475,7 +494,7 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
                   About This Group
                 </h2>
                 <p className="text-gray-700 dark:text-gray-200 leading-relaxed">
-                  {group.description}
+                  {tribeData.description}
                 </p>
               </div>
 
@@ -486,16 +505,23 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
                   Group Rules
                 </h3>
                 <div className="space-y-2">
-                  {group.rules.map((rule, index) => (
-                    <div key={index} className="flex items-start gap-2">
-                      <span className="text-blue-600 dark:text-blue-400 font-semibold">
-                        {index + 1}.
-                      </span>
-                      <span className="text-gray-700 dark:text-gray-200">
-                        {rule}
-                      </span>
-                    </div>
-                  ))}
+                  {/* Assuming rules are not in payload, using a placeholder */}
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                      1.
+                    </span>
+                    <span className="text-gray-700 dark:text-gray-200">
+                      Be respectful and supportive.
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                      2.
+                    </span>
+                    <span className="text-gray-700 dark:text-gray-200">
+                      No spam or self-promotion.
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -506,27 +532,29 @@ export function GroupPage({ groupId, onBack }: GroupPageProps) {
                   <span className="text-gray-500 dark:text-gray-400">
                     Privacy:
                   </span>
-                  <p className="font-medium dark:text-white">{group.privacy}</p>
+                  <p className="font-medium dark:text-white">{tribeData.privacy}</p>
                 </div>
                 <div>
                   <span className="text-gray-500 dark:text-gray-400">
                     Created:
                   </span>
-                  <p className="font-medium dark:text-white">{group.created}</p>
+                  <p className="font-medium dark:text-white">
+                    {new Date(tribeData.createdAt).toLocaleDateString()}
+                  </p>
                 </div>
                 <div>
                   <span className="text-gray-500 dark:text-gray-400">
                     Category:
                   </span>
                   <p className="font-medium dark:text-white">
-                    {group.category}
+                    {tribeData.category}
                   </p>
                 </div>
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400">
+                  {/* <span className="text-gray-500 dark:text-gray-400">
                     Posts:
                   </span>
-                  <p className="font-medium dark:text-white">{group.posts}</p>
+                  <p className="font-medium dark:text-white">{posts.length}</p> */}
                 </div>
               </div>
             </TabsContent>

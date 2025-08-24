@@ -7,10 +7,13 @@ import RateLimiter_Middleware from "@/lib/rate-limiter.middleware";
 import { Buffer } from "buffer";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
-import { fetchImageDetails, fetchVideoDetails } from "./actions";
+import { deleteAsset, fetchImageDetails, fetchVideoDetails } from "./actions";
 import { client } from "@/sanity/lib/client";
+import { runDBOperation } from "@/lib/useDB";
+import mediaSchema from "@/utils/schema/media-schema";
+import { NextRequest } from "next/server";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   await RateLimiter_Middleware(request);
   const isAuthenticated = await getServerSession(authOptions);
   if (!isAuthenticated?.user?.id) {
@@ -54,7 +57,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   await RateLimiter_Middleware(request);
   const isAuthenticated = await getServerSession(authOptions);
   if (!isAuthenticated?.user?.id) {
@@ -131,6 +134,7 @@ export async function POST(request: Request) {
 
       const uniqueFilename = generateUniqueFilename();
 
+      // uploading the asset and generate asset id
       const assetResponse = await client.assets.upload(
         "image",
         optimizedImageBuffer,
@@ -140,6 +144,7 @@ export async function POST(request: Request) {
         }
       );
 
+      // creating a document based on the uploaded asset id
       const docResponse = await client.create({
         _type: "images",
         mainImage: {
@@ -151,6 +156,16 @@ export async function POST(request: Request) {
           alt: uniqueFilename.split(".")[0],
         },
       });
+
+      // storing the media data
+      await runDBOperation(async()=>{
+        const mediaDataPayload = new mediaSchema({
+          mediaType: 'IMAGE',
+          documentId: docResponse._id,
+          assetId: assetResponse._id,
+        });
+        await mediaDataPayload.save();
+      })
 
       return Response.json({
         message: "Image uploaded, optimized, and stored in Sanity successfully",
@@ -181,7 +196,7 @@ export async function POST(request: Request) {
       const uniqueFilename = generateUniqueVideoFilename(mimeType.split("/")[1]);
       console.log("unique file name: ", uniqueFilename);
 
-      // Upload the video to Sanity
+      // Upload the video and get the asset id
       const assetResponse = await client.assets.upload("file", fileBuffer, {
         filename: uniqueFilename,
         contentType: mimeType,
@@ -201,7 +216,16 @@ export async function POST(request: Request) {
           alt: uniqueFilename.split(".")[0],
         },
       });
-      console.log("this is docResponse: ", docResponse);
+
+      // storing the media data
+      await runDBOperation(async()=>{
+        const mediaDataPayload = new mediaSchema({
+          mediaType: 'VIDEO',
+          documentId: docResponse._id,
+          assetId: assetResponse._id,
+        });
+        await mediaDataPayload.save();
+      })
 
       return Response.json({
         message: "Video uploaded and stored in Sanity successfully",
@@ -215,7 +239,23 @@ export async function POST(request: Request) {
   }
 }
 
-export async function OPTIONS(request: Request) {
+export async function DELETE(request: NextRequest) {
+  await RateLimiter_Middleware(request);
+  const isAuthenticated = await getServerSession(authOptions);
+  if (!isAuthenticated?.user?.id) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const searchParams = request.nextUrl.searchParams;
+  const mediaId = searchParams.get("id");
+
+  if (!mediaId) {
+    return Response.json({ error: "Media ID is required" }, { status: 400 });
+  }
+  const response = await deleteAsset(mediaId);
+  return Response.json(response);
+}
+
+export async function OPTIONS(request: NextRequest) {
   return new Response(null, {
     status: 200,
     headers: {

@@ -70,9 +70,11 @@ function SubmitButton({ form, files, isSubmitting }: ISubmitProps) {
 export function CreatePost({
   children,
   profileId,
+  groupId,
 }: {
   children?: React.ReactNode;
   profileId: string;
+  groupId?: string;
 }) {
   const searchParams = useSearchParams();
   const formParam = searchParams.get("form");
@@ -84,7 +86,9 @@ export function CreatePost({
 
   const createPostMutation = useMutation({
     mutationFn: async (data: PostCreateInput) => {
-      return usePostApi.createPost(data);
+      return groupId
+        ? usePostApi.createPost({ ...data, groupId })
+        : usePostApi.createPost(data);
     },
     onSuccess: () => {
       setIsOpen(false);
@@ -325,8 +329,6 @@ export function CreatePostForm({
     } catch (error) {
       console.error("Error submitting post:", error);
       // Error toast is now handled by the onError callback in the parent CreatePost component
-    } finally {
-      // No need to set submitting state here, useMutation handles it automatically
     }
   };
 

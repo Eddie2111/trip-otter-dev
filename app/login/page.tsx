@@ -6,7 +6,8 @@ export async function generateMetadata(): Promise<Metadata> {
       template: "Login",
       default: "Login",
     },
-    description: "Log in to TripOtter",
+    description:
+      "Tripotter is a social media platform for travelers to share their experiences and photos",
   };
 }
 

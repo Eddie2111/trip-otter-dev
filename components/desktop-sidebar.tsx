@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Home, User, Users, ShoppingBag, Settings, LogOut } from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
+import { Home, Users, ShoppingBag, Settings, LogOut, LoaderPinwheel } from "lucide-react";
+import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -57,22 +57,22 @@ export function DesktopSidebar() {
             </Button>
           </Link>
 
-          <Link href="/groups" passHref>
+          <Link href="/tribes" passHref>
             <Button
               variant={
-                pathname === "/groups" || pathname.startsWith("/group")
+                pathname === "/tribes" || pathname.startsWith("/tribe")
                   ? "default"
                   : "ghost"
               }
               className={cn(
                 "w-full justify-start gap-3 h-12 text-base",
-                pathname === "/groups" || pathname.startsWith("/group")
+                pathname === "/tribes" || pathname.startsWith("/tribe")
                   ? "dark:bg-blue-700 dark:text-white" // Active state dark mode
                   : "dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-gray-100" // Inactive state dark mode
               )}
             >
-              <User className="w-5 h-5" />
-              Groups
+              <LoaderPinwheel className="w-5 h-5" />
+              Tribes
             </Button>
           </Link>
 

@@ -18,9 +18,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/logo.webp",
-        width: 600,
-        height: 600,
+        url: "/banner.jpg",
+        width: 1536,
+        height: 1024,
         alt: "Tripotter Logo",
       },
     ],

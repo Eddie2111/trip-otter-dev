@@ -8,6 +8,7 @@ import {
   UserPlus,
   MessageCircle,
 } from "lucide-react";
+import Link from "next/link";
 
 interface ITribe {
   __v: number;
@@ -38,20 +39,20 @@ export const TribeCard = ({ group }: { group: ITribe }) => (
       style={{ backgroundImage: `url(${group.coverImage})` }}
     >
       <div className="absolute inset-0 bg-black bg-opacity-30" />
-      
+
       {/* Privacy Badge */}
-        {group.privacy === "PRIVATE" ? (
-          <div className="absolute top-3 right-3 flex items-center gap-1 bg-violet-500 bg-opacity-50 text-white px-2 py-1 rounded-full text-xs font-semibold">
-            <Lock className="w-3 h-3" />
-            {group.privacy}
-          </div>
-        ) : (
-          <div className="absolute top-3 right-3 flex items-center gap-1 bg-teal-500 bg-opacity-50 text-white px-2 py-1 rounded-full text-xs font-semibold">
+      {group.privacy === "PRIVATE" ? (
+        <div className="absolute top-3 right-3 flex items-center gap-1 bg-violet-500 bg-opacity-50 text-white px-2 py-1 rounded-full text-xs font-semibold">
+          <Lock className="w-3 h-3" />
+          {group.privacy}
+        </div>
+      ) : (
+        <div className="absolute top-3 right-3 flex items-center gap-1 bg-teal-500 bg-opacity-50 text-white px-2 py-1 rounded-full text-xs font-semibold">
           <Globe className="w-3 h-3" />
           {group.privacy}
-          </div>
-        )}
-      
+        </div>
+      )}
+
       {/* Profile Image Avatar */}
       <div className="absolute bottom-3 left-3 transform -translate-y-1/2">
         <Avatar className="w-16 h-16 border-4 border-white dark:border-slate-800">
@@ -72,8 +73,8 @@ export const TribeCard = ({ group }: { group: ITribe }) => (
     {/* Content Section */}
     <CardContent className="p-4 pt-10">
       <div className="mb-3">
-        <h3 className="font-bold text-lg mb-1 text-gray-900 dark:text-white">
-          {group.name}
+        <h3 className="font-bold text-lg mb-1 text-gray-900 dark:text-white hover:text-blue-500 underline duration-300">
+          <Link href={`/tribes/${group.serial}`}>{group.name}</Link>
         </h3>
         <p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2 mb-2">
           {group.description}
@@ -82,7 +83,11 @@ export const TribeCard = ({ group }: { group: ITribe }) => (
         {/* Tags */}
         <div className="flex flex-wrap gap-1 mb-3">
           {group.tags.map((tag: string) => (
-            <Badge key={tag} variant="secondary" className="text-xs rounded-full">
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="text-xs rounded-full"
+            >
               {tag}
             </Badge>
           ))}

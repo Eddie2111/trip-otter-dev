@@ -65,6 +65,19 @@ export async function getTribe(id: string) {
   }
 }
 
+export async function getTribeBySerial(serial: string) { 
+  try {
+    const tribe = await runDBOperation(async () => {
+      const data = await tribesSchema.find({ serial }).lean().exec();
+      return data;
+    })
+    return tribe;
+  } catch (error) {
+    const errResponse = error as unknown as { message: string; code: number };
+    return errResponse;
+  }
+}
+
 export async function getTribes(page: string, limit: string) {
   try {
     const _page = parseInt(page)-1;

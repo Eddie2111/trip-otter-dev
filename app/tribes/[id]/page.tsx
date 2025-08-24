@@ -1,12 +1,12 @@
-import { GroupPage } from "@/components/group-page";
-
+import { getTribeBySerial } from "@/app/api/tribe/tribe.action";
+import { runDBOperation } from "@/lib/useDB";
+import { Metadata } from "next";
+import { TribePage_v1 } from "@/components/tribe-page";
 interface GroupPageProps {
   params: {
     id: string;
   };
 }
-
-/* generate meta data when needed, scraped from /posts/[id] page
 
 export async function generateMetadata({
   params,
@@ -14,12 +14,15 @@ export async function generateMetadata({
   params: { id: string };
 }): Promise<Metadata> {
   const { id } = await params;
-  let title = "Group";
+  let title = "Tribe";
 
   try {
-    const postData = await GetPost(id);
-    if (postData && postData.caption) {
-      const words = postData.caption.split(/\s+/).filter(Boolean);
+    const tribeData = await runDBOperation(async ()=>{
+      const tribe = await getTribeBySerial(id);
+      return JSON.parse(JSON.stringify(tribe))[0];
+    });
+    if (tribeData && tribeData.name) {
+      const words = tribeData.name.split(/\s+/).filter(Boolean);
       title = words.slice(0, 5).join(" ");
     }
   } catch (error) {
@@ -29,9 +32,17 @@ export async function generateMetadata({
     title: title,
   };
 }
-*/
 
-export default async function GroupsPage({ params }: GroupPageProps) {
-    const groupId = await params;
-    return <GroupPage groupId={groupId.id} />;
+export default async function TribePage({ params }: GroupPageProps) {
+    const tribeParams = await params;
+    const { id: tribeId } = tribeParams;
+    const tribeData = await runDBOperation(async ()=>{
+      const tribe = await getTribeBySerial(tribeId);
+      return JSON.parse(JSON.stringify(tribe));
+    });
+    return (
+      <div className="md:ml-[270px]">
+        <TribePage_v1 tribeData={tribeData} />
+      </div>
+    )
 }

@@ -49,4 +49,5 @@ export interface IPostProps {
   };
   serial: string;
   updatedAt: string;
+  fromGroup?: string;
 }

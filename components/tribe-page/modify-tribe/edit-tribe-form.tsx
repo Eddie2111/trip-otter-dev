@@ -28,7 +28,7 @@ import {
   TribeCreateInput,
   TribeCategory,
   TribePrivacy,
-} from "./create-tribe.validation";
+} from "@/components/tribes-page/create-tribe/create-tribe.validation";
 
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
@@ -40,6 +40,9 @@ import { getSanityMedia } from "@/lib/getSanityImage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTribeAPI } from "@/lib/requests";
 import { XCircle } from 'lucide-react';
+import { useActionState } from "react";
+import { runDBOperation } from "@/lib/useDB";
+import { getTribeBySerial } from "@/app/api/tribe/tribe.action";
 
 async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
@@ -216,17 +219,37 @@ const FormSchema = z.object({
   coverImage: z.union([z.instanceof(File), z.string(), z.null()]).optional(),
   profileImage: z.union([z.instanceof(File), z.string(), z.null()]).optional(),
 });
+async function getTribeData(tribeId: string) {
+  const tribeData = await runDBOperation(async ()=>{
+    const tribe = await getTribeBySerial(tribeId);
+    return JSON.parse(JSON.stringify(tribe));
+  });
+  return tribeData;
+}
 
-export function CreateTribeForm({
+export function EditTribeForm({
+  tribeSerial,
   submitTrigger,
   closeButton,
 }: {
+  tribeSerial: string;
   submitTrigger: (arg0: boolean)=>void;
   closeButton: React.ReactNode;
 }) {
   const { data: session } = useSession();
   const [isUploadingImages, setIsUploadingImages] = useState(false);
-
+  const [tribeData, setTribeData] = useState<any | null>([]);
+  useEffect(()=>{
+    async function fetchData() {
+      if(!tribeData) {
+        const response = await getTribeData(tribeSerial);
+        setTribeData(response);
+      } else {
+        return;
+      }
+    }
+    fetchData();
+  },[])
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema), // Use the new local schema for validation
     defaultValues: {
@@ -243,7 +266,7 @@ export function CreateTribeForm({
   const queryClient = useQueryClient();
 
   const { mutateAsync: createTribe, isLoading } = useMutation({
-    mutationFn: (data: any) => useTribeAPI.createTribe(data),
+    mutationFn: (data: any) => useTribeAPI.updateTribe(data),
     onSuccess: () => {
       toast.success("Tribe created!");
       queryClient.invalidateQueries({ queryKey: ["ProfileFeed"] });
@@ -283,8 +306,8 @@ export function CreateTribeForm({
         category: data.category,
         privacy: data.privacy,
         tags: data.tags,
-        coverImage: uploadedImageUrls.coverImage || null,
-        profileImage: uploadedImageUrls.profileImage || null,
+        coverImage: uploadedImageUrls.coverImage || "",
+        profileImage: uploadedImageUrls.profileImage || "",
       };
 
       await createTribe({

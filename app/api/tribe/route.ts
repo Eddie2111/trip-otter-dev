@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get("user") ?? "";
   const member = searchParams.get("member") ?? "";
   const posts = searchParams.get("posts") ?? "";
-  if (serverSession?.user?.id) {
+  // if (serverSession?.user?.id) {
   let payload: any;
   if (
     member === "true" &&
@@ -63,15 +63,15 @@ export async function GET(request: NextRequest) {
     status: 200,
     data: payload,
   });
-  }
-  return Response.json({
-    message: "Unauthorized",
-    status: 401,
-    method: request.method,
-  });
+  // }
+  // return Response.json({
+  //   message: "Unauthorized",
+  //   status: 401,
+  //   method: request.method,
+  // });
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const serverSession = await getServerSession(authOptions);
   if (serverSession?.user?.id) {
     const body = await request.json();

@@ -40,7 +40,7 @@ const postSchema = new Schema<PostDocument>(
     },
     fromGroup: {
       type: Schema.Types.ObjectId,
-      ref: 'Tribe',
+      ref: 'tribes',
       required: false,
     },
     comments: [

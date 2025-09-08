@@ -1,5 +1,5 @@
 import { TribeDocument } from '@/types/tribes.d';
-import { model, models, Schema } from 'mongoose';;
+import { model, models, Schema } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
 const tribeSchema = new Schema<TribeDocument>(

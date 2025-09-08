@@ -87,7 +87,7 @@ export function CreatePost({
   const createPostMutation = useMutation({
     mutationFn: async (data: PostCreateInput) => {
       return groupId
-        ? usePostApi.createPost({ ...data, groupId })
+        ? usePostApi.createPost({ ...data, fromGroup: groupId })
         : usePostApi.createPost(data);
     },
     onSuccess: () => {
@@ -167,7 +167,6 @@ export function CreatePostForm({
           `https://nominatim.openstreetmap.org/search?format=json&q=${locationValue}`,
           {
             headers: {
-              // The Nominatim usage policy requires a valid User-Agent
               "User-Agent": "My Social App / 1.0",
             },
           }
@@ -184,7 +183,7 @@ export function CreatePostForm({
     // Cleanup function to clear the timeout
     return () => clearTimeout(timeoutId);
   }, [locationValue]);
-
+  const [_isSubmitting, setIsSubmitting] = useState(false);
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
       const filteredFiles: File[] = [];
@@ -290,6 +289,7 @@ export function CreatePostForm({
 
   const handleSubmit = async (data: PostCreateInput) => {
     // isSubmitting is now handled by useMutation's isLoading
+    setIsSubmitting(true);
     if (files.length === 0 && !data.caption?.trim()) {
       toast.error("Please add a caption or at least one image");
       return;
@@ -326,8 +326,11 @@ export function CreatePostForm({
 
       setFiles([]);
       form.reset();
+      setIsSubmitting(false);
     } catch (error) {
       console.error("Error submitting post:", error);
+      toast.error("Failed to create post");
+      setIsSubmitting(false);
       // Error toast is now handled by the onError callback in the parent CreatePost component
     }
   };
@@ -504,7 +507,7 @@ export function CreatePostForm({
               <SubmitButton
                 form={form}
                 files={files}
-                isSubmitting={isSubmitting}
+                isSubmitting={_isSubmitting}
               />
             </div>
           </form>

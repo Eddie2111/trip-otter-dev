@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosResponse, AxiosInstance } from "axios";
 import { SignUpData } from "@/types/requests.d";
+import { IPayloadProps } from "@/app/api/tribe/search/route";
 
 export class BaseAPI {
   protected readonly apiClient: AxiosInstance;
@@ -344,6 +345,7 @@ class PostAPI extends BaseAPI {
     }
   };
 }
+
 class MediaAPI extends BaseAPI {
   public getMedia = async (): Promise<AxiosResponse> => {
     try {
@@ -579,6 +581,42 @@ class TribeAPI extends BaseAPI {
       throw axiosError.response?.data || axiosError.message;
     }
   };
+  public joinTribe = async (tribeId: string, userId: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`api/tribe/join`, {tribeId, userId});
+      return response.data;
+    } catch(error){
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public getJoinedTribes = async (userId: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`api/tribe/join?userId=${userId}`);
+      return response.data;
+    } catch(error){
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public isTribeMember = async (userId: string, tribeId: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/tribe/join?userId=${userId}&tribeId=${tribeId}&requestType=memberCheck`);
+      return response.data;
+    } catch(error){
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public searchTribe = async (query: string, filterData: IPayloadProps): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`api/tribe/search?searchText=${query}`, filterData);
+      return response.data;
+    } catch(error){
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
 }
 
 export const useAuthApi = new AuthAPI();

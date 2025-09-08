@@ -1,7 +1,8 @@
 import { getTribeBySerial } from "@/app/api/tribe/tribe.action";
 import { runDBOperation } from "@/lib/useDB";
 import { Metadata } from "next";
-import { TribePage_v1 } from "@/components/tribe-page";
+import TribePage_v1 from "@/components/tribe-page";
+
 interface GroupPageProps {
   params: {
     id: string;

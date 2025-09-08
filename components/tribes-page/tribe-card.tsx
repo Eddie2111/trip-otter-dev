@@ -9,29 +9,27 @@ import {
   MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
-
-interface ITribe {
-  __v: number;
-  _id: string;
-  category: string;
-  coverImage: string;
-  createdAt: string;
-  createdBy: string;
-  description: string;
-  name: string;
-  privacy: "PUBLIC" | "PRIVATE";
-  profileImage: string;
-  serial: string;
-  tags: string[];
-  updatedAt: string;
-}
+import { ITribe } from "@/types/tribes";
+import { toast } from "sonner";
+import { useTribeAPI } from "@/lib/requests";
+import { useSession } from "next-auth/react";
 
 /**
  * Renders a card for a group using the ITribe data type.
  * @param {object} props - The component props.
  * @param {ITribe} props.group - The group data to display.
  */
-export const TribeCard = ({ group }: { group: ITribe }) => (
+export const TribeCard = ({ group }: { group: ITribe }) => {
+  const { data: session } = useSession();
+  const onJoinRequest = async()=> {
+    try {
+      await useTribeAPI.joinTribe(group._id, session?.user?.id);
+    } catch(err) {
+      console.log(err);
+    }
+    toast.success("Request sent successfully");
+  }
+  return (
   <Card className="overflow-hidden rounded-xl hover:shadow-lg transition-shadow group bg-white dark:bg-slate-800 dark:border-slate-700">
     {/* Cover Image Section */}
     <div
@@ -98,9 +96,8 @@ export const TribeCard = ({ group }: { group: ITribe }) => (
       <div className="flex gap-2">
         <Button
           size="sm"
-          variant="default"
-          className="flex-1 rounded-full font-semibold"
-          disabled
+          onClick={onJoinRequest}
+          className="flex-1 rounded-full font-semibold hover:shadow-sm duration-300"
         >
           <UserPlus className="w-4 h-4 mr-2" />
           {group.privacy === "PRIVATE" ? "Request" : "Join"}
@@ -112,3 +109,4 @@ export const TribeCard = ({ group }: { group: ITribe }) => (
     </CardContent>
   </Card>
 );
+}

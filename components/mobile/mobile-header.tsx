@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
-import { Camera, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
+import { NotificationContainer } from "../notification-container";
 import { Sidebar } from "./mobile-sidebar";
-import { NotificationContainer } from "./notification-container";
 
 export function MobileHeader() {
   return (

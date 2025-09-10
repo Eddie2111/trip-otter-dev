@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { useContentStore } from "@/components/richtext-editor/state-hooks/content-store";
 import Dynamic from "next/dynamic";
-import { LoadingSmall } from "./ui/loading";
+import { LoadingSmall } from "../../ui/loading";
 
 const SimpleEditor = Dynamic(
   () =>

@@ -518,6 +518,15 @@ class TribeAPI extends BaseAPI {
       throw axiosError.response?.data || axiosError.message;
     }
   };
+  public getTribeBySerial = async (serial: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/tribe?serial=${serial}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
   public getTribeMembers = async (id: string, page: number, limit: number): Promise<AxiosResponse> => {
     try {
       const response = await this.apiClient.get(
@@ -563,9 +572,9 @@ class TribeAPI extends BaseAPI {
       throw axiosError.response?.data || axiosError.message;
     }
   };
-  public updateTribe = async (data: any): Promise<AxiosResponse> => {
+  public updateTribe = async (serial:string, data: any): Promise<AxiosResponse> => {
     try {
-      const response = await this.apiClient.patch(`/api/tribe`, data);
+      const response = await this.apiClient.patch(`/api/tribe?serial=${serial}`, data);
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError;

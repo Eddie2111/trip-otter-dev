@@ -27,8 +27,8 @@ export const TribeValidationSchema = z.object({
     .optional(),
   category: TribeCategorySchema.default("COMMUNITY"),
   tags: z.array(z.string()).default([]),
-  coverImage: z.string().url().optional(),
-  profileImage: z.string().url().optional(),
+  coverImage: z.string().optional(),
+  profileImage: z.string().optional(),
   name: z
     .string()
     .min(2, "Group name must be at least 2 characters")
@@ -286,7 +286,7 @@ export async function getUsersTribe(id: string, page: string, limit: string) {
 export async function updateTribe(id: string, data: ITribePlain) {
   try {
     const tribe = await runDBOperation(async () => {
-      return await tribesSchema.findByIdAndUpdate(id, data, { new: true });
+      return await tribesSchema.findOneAndUpdate({serial: id}, data, { new: true });
     });
     return tribe;
   } catch (error) {
@@ -298,7 +298,7 @@ export async function updateTribe(id: string, data: ITribePlain) {
 export async function deleteTribeAction(id: string) {
   try {
     const tribe = await runDBOperation(async () => {
-      return await tribesSchema.findByIdAndDelete(id);
+      return await tribesSchema.findOneAndDelete({ serial: id })
     });
     return tribe;
   } catch (error) {

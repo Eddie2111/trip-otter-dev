@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function GridMedia({ media, className }: { media: string[], className?: string }) {
+export function GridMedia({ media, className }: { media: string[], className?: string }) {
   let mediaLinks: string[] = [];
   media.forEach((item) => {
     if (typeof item === "string" && item.includes("https://")) {

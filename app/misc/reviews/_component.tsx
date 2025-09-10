@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import {
   MessageSquareText,
@@ -12,18 +12,16 @@ import {
   XCircle,
   User,
   Loader2,
-  ArrowLeft,
 } from "lucide-react";
 import { useReviewAPI } from "@/lib/requests";
-import GridMedia from "@/components/grid-media";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 
 dayjs.extend(relativeTime);
 
 import type { ReviewDocument, ReviewCardProps } from "./types";
+import { GridMedia } from "@/components/feed/shared/grid-media";
 
 export const ReviewCard: React.FC<ReviewCardProps> = ({ review }) => {
   const mediaUrls = review.media?.map((mediaItem) => mediaItem.url) || [];

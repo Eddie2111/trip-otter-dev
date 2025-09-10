@@ -41,6 +41,11 @@ export interface IPostProps {
     username: string;
   }>;
   location: string;
+  fromGroup?: {
+    _id: string;
+    serial: string;
+    name: string;
+  }
   owner?: {
     _id: string;
     fullName: string;

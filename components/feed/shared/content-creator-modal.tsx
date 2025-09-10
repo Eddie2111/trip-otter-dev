@@ -23,10 +23,10 @@ import {
   // Compass,
 } from "lucide-react";
 import Dynamic from "next/dynamic";
-import { LoadingSmall } from "./ui/loading";
+import { LoadingSmall } from "@/components/ui/loading";
 
 const CreatePost = Dynamic(
-  () => import("./create-post").then((mod) => mod.CreatePost),
+  () => import("../shared/create-post").then((mod) => mod.CreatePost),
   {
     ssr: false,
     loading: ()=> <Button className="bg-white dark:bg-black"><LoadingSmall /></Button>

@@ -1,10 +1,8 @@
 import { z } from "zod";
-import { v4 as uuidv4 } from "uuid";
 
 export const objectId = z
   .string()
   .regex(/^[a-f\d]{24}$/i, "Invalid ObjectId");
-
 
 export const TribeCategory = z.enum([
   "JOURNEY",
@@ -20,7 +18,6 @@ export const TribeCategory = z.enum([
 export const TribePrivacy = z.enum(["PUBLIC", "PRIVATE"]);
 
 export const TribeBaseFields = {
-  // serial: z.string().uuid().default(() => uuidv4()),
   description: z.string().max(4096, "Description must be less than 4096 characters"),
   category: TribeCategory.default("COMMUNITY"),
   tags: z.array(z.string()).optional(),
@@ -36,26 +33,18 @@ export const TribeBaseFields = {
 
 export const TribeDocumentSchema = z.object({
   ...TribeBaseFields,
-  // createdAt: z.date().or(z.string().datetime()).optional(),
-  // updatedAt: z.date().or(z.string().datetime()).optional(),
-  // _id: objectId.optional(),
 });
 
-// For creating a Tribe (server will add timestamps/_id)
 export const TribeCreateSchema = z.object({
   ...TribeBaseFields,
 });
-// If you want to prevent client-supplied serial on create, use:
-// export const TribeCreateSchema = z.object({ ...BaseFields }).omit({ serial: true });
 
-// For updating a Tribe (all fields optional, but keep constraints)
 export const TribeUpdateSchema = z
   .object({
     ...TribeBaseFields,
   })
   .partial();
 
-// Types
 export type TribeDocumentZ = z.infer<typeof TribeDocumentSchema>;
 export type TribeCreateInput = z.infer<typeof TribeCreateSchema>;
 export type TribeUpdateInput = z.infer<typeof TribeUpdateSchema>;

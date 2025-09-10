@@ -32,7 +32,7 @@ dayjs.extend(relativeTime);
 import { useSession } from "next-auth/react";
 
 import { useFollowApi, useUserApi } from "@/lib/requests";
-import { PostContainer } from "./post-card";
+import PostContainer from "@/components/feed/profile";
 import { ProfileEditModal } from "./profile-page/profile-edit-modal";
 import { ProfileEditImages } from "./profile-page/profile-edit-images";
 import { FollowModal } from "./follow-modal";
@@ -41,7 +41,7 @@ import { useWebsocket } from "@/lib/useWebsocket";
 import { PersonPageProps, IPost } from "@/types/person";
 
 const CreatePost = Dynamic(
-  () => import("./create-post").then((mod) => mod.CreatePost),
+  () => import("./feed/shared/create-post").then((mod) => mod.CreatePost),
   {
     ssr: true,
     loading: () =>
@@ -223,8 +223,6 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
       }
     },
     onSettled: () => {
-      // Always refetch after error or success to ensure the client state is
-      // synchronized with the server state.
       queryClient.invalidateQueries({ queryKey: ["user", personId] });
     },
   });
@@ -237,7 +235,6 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
     followMutation.mutate(_personData._id);
   };
 
-  // TanStack Query for Followers/Following Lists (Conditional Fetching)
   const { data: followersList = [], isLoading: isFollowersLoading } = useQuery<
     UserDocument[],
     Error
@@ -272,13 +269,10 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
     staleTime: 1000 * 60 * 1, // Cache following for 1 minute
   });
 
-  // Display loading state for the main profile
-  // Show loading if session is still loading OR if profile query is loading
   if (sessionStatus === "loading" || isProfileLoading) {
     return <Loading />;
   }
 
-  // Display error state for the main profile
   if (isProfileError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
@@ -289,7 +283,6 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
     );
   }
 
-  // If data is still null after loading and no error, it means user not found.
   if (!personProfile) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">

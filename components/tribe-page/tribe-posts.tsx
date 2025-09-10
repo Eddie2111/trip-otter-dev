@@ -37,7 +37,6 @@ export function TribePosts({ tribeId }: { tribeId: string }) {
 
   const fetchPosts = async ({ pageParam = 1 }) => {
     const response = await useTribeAPI.getTribePosts(tribeId, pageParam, 10);
-    console.log('what is this', response.data)
     return response.data;
   };
 

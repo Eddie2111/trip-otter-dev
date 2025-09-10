@@ -5,6 +5,7 @@ import postsSchema from "@/utils/schema/posts-schema";
 
 import "@/utils/schema/comments-schema";
 import "@/utils/schema/like-schema";
+import "@/utils/schema/tribes-schema";
 
 export async function GET(request: NextRequest) {
   console.log("Comment schema imported:");
@@ -52,6 +53,11 @@ export async function GET(request: NextRequest) {
                 model: "User",
                 select: "_id username profileImage",
               },
+            },
+            {
+              path: "fromGroup",
+              model: "Tribe",
+              select: "_id name serial",
             },
           ])
           .lean();

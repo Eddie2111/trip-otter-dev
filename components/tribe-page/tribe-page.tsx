@@ -2,32 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import {
   Users,
   Share,
   MoreHorizontal,
-  ImageIcon,
   Calendar,
   Globe,
   Lock,
 } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { formatCountNumber } from "@/lib/count-format";
 import type { TribePageProps } from "@/types/tribes.d";
-// import { CreatePost } from "../create-post";
-import { useSession } from "next-auth/react";
 import { TribePosts } from "./tribe-posts";
 import { TribeMemberButton } from "./tribe-member-button";
-import { useTribeHooks } from "./tribe.hooks";
+import { useTribeStore } from "./tribe.hooks";
 import Dynamic from "next/dynamic";
 import { LoadingSmall } from "../ui/loading";
+
 // const CreatePost = Dynamic(
 //   () => import("../create-post").then((mod) => mod.CreatePost),
 //   {
@@ -38,15 +33,8 @@ import { LoadingSmall } from "../ui/loading";
 
 export function TribePage_v1({ tribeData }: TribePageProps) {
   const [activeTab, setActiveTab] = useState("posts");
-  const [newPost, setNewPost] = useState("");
-  const { data: session } = useSession();
-  const { isTribeAdmin, isTribeMember } = useTribeHooks();
-
-  const handleCreatePost = () => {
-    if (newPost.trim()) {
-      setNewPost("");
-    }
-  };
+  const { isTribeAdmin, isTribeMember } = useTribeStore();
+  console.log(isTribeMember, isTribeAdmin);
 
   if (!tribeData) {
     return (

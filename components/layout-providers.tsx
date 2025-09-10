@@ -1,7 +1,7 @@
 "use client";
 import { signOut, useSession } from "next-auth/react";
 import React, { useState } from "react";
-import { MobileNavigation } from "./mobile-navigation";
+import { MobileNavigation } from "./mobile/mobile-navigation";
 import { DesktopSidebar } from "./desktop-sidebar";
 import { DesktopHeader } from "./desktop-header";
 import { useRouter } from "next/navigation";
@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useUserApi } from "@/lib/requests";
 import { SearchModal } from "./search-modal";
 import { useQuery } from "@tanstack/react-query";
-import { MobileHeader }from "./mobile-header";
+import { MobileHeader }from "./mobile/mobile-header";
 
 export default function LayoutProviders({
   children,

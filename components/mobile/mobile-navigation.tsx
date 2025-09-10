@@ -1,15 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Home, PlusSquare, Search, Heart, User } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import { usePathname, useRouter } from "next/navigation";
-import { SearchModal } from "./search-modal";
+import { SearchModal } from "../search-modal";
 
 import Dynamic from "next/dynamic";
-import { LoadingSmall } from "./ui/loading";
+import { LoadingSmall } from "../ui/loading";
 
 const CreatePost = Dynamic(
-  () => import("./create-post").then((mod) => mod.CreatePost),
+  () => import("../feed/shared/create-post").then((mod) => mod.CreatePost),
   {
     ssr: true,
     loading: () => (

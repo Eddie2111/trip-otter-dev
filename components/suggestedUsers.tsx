@@ -8,6 +8,8 @@ import { Loader2, AlertTriangle } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { FollowButton } from "./follow-button";
 import Link from "next/link";
+import { Card } from "./ui/card";
+import { FeedFooter } from "./feed-footer";
 
 const NUMBER_OF_PROFILES = 5;
 
@@ -93,7 +95,7 @@ export function SuggestedUsers() {
   const allSuggestedUsers = data?.pages.flatMap((page) => page) ?? [];
 
   return (
-    <div className="flex flex-col space-y-4 p-4">
+    <div className="flex flex-col space-y-4 p-4 sticky top-4">
       {allSuggestedUsers.length > 0 ? (
         allSuggestedUsers.map((profile) => (
           <div key={profile._id} className="flex items-center justify-between">
@@ -138,6 +140,28 @@ export function SuggestedUsers() {
       )}
 
       <div ref={observerTarget} />
+    </div>
+  );
+}
+export function SuggestedUserWrapper() {
+  return (
+    <div className="hidden lg:block w-80 space-y-6 sticky top-8">
+      <Card className="p-4 bg-white dark:bg-gray-800 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-gray-500 dark:text-gray-300">
+            Suggested for you
+          </h3>
+          <Link
+            href="/companions"
+            className="text-xs font-semibold text-gray-700 dark:text-gray-200 dark:hover:bg-gray-700 hover:underline"
+          >
+            See All
+          </Link>
+        </div>
+        <SuggestedUsers />
+      </Card>
+
+      <FeedFooter />
     </div>
   );
 }

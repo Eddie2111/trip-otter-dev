@@ -35,7 +35,6 @@ export function TribesPage_V1() {
   const [filteredGroups, setFilteredGroups] = useState(allGroups);
   const filterState = useStore(filterTribeStore);
 
-  // 🚀 Tanstack Query replacing useEffect
   const { data: tribes, isLoading, isError } = useQuery<ITribe[]>({
     queryKey: ["tribes", 1, 10],
     queryFn: async () => {

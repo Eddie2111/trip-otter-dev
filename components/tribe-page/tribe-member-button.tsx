@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "../ui/button";
 import { useSession } from "next-auth/react";
 import { LoadingSmall } from "../ui/loading";
-import { useTribeHooks } from "./tribe.hooks";
+import { useTribeStore } from "./tribe.hooks";
 import { useEffect } from "react";
 
 import {
@@ -20,8 +20,8 @@ import { ModifyTribeModal } from "./modify-tribe/modify-tribe-modal";
 
 export function TribeMemberButton({ tribeId }: { tribeId: string }) {
   const { data: session } = useSession();
-  const { setIsTribeAdmin, setIsTribeMember } = useTribeHooks();
-  const currentLoggedInUser = session?.user?.id as string;
+  const { setIsTribeAdmin, setIsTribeMember } = useTribeStore();
+  const currentLoggedInUser = session?.user;
 
   const joinTribeMutation = useMutation({
     mutationFn: async (data: { tribeId: string; userId: string }) => {
@@ -40,7 +40,7 @@ export function TribeMemberButton({ tribeId }: { tribeId: string }) {
     queryKey: [`isMember-${tribeId}`],
     queryFn: async () => {
       const response = await useTribeAPI.isTribeMember(
-        session?.user?.id as string,
+        currentLoggedInUser?.id as string,
         tribeId
       );
       if (response.status !== 200) {
@@ -75,26 +75,27 @@ export function TribeMemberButton({ tribeId }: { tribeId: string }) {
   }
 
   const { isAdmin, isMember } = isTribeMember.data;
-
-  if (isAdmin && isMember) {
+  console.log("from member button", isAdmin, isMember);
+  
+  if (isAdmin) {
     return (
     <DropdownMenu>
       <DropdownMenuTrigger>
         <Button>Edit Tribe</Button>
       </DropdownMenuTrigger>
     <DropdownMenuContent>
-      <DropdownMenuItem>
+      <DropdownMenuItem onSelect={(e)=> e.preventDefault()}>
         <ModifyTribeModal
-        tribeSerial={tribeId}
-        type="EDIT"
-        editButton= {<Button>Edit your tribe</Button>}
+          tribeSerial={tribeId}
+          type="EDIT"
+          editButton= {<Button>Edit your tribe</Button>}
         />
       </DropdownMenuItem>
-      <DropdownMenuItem>
+      <DropdownMenuItem onSelect={(e)=>e.preventDefault()}>
         <ModifyTribeModal
-        tribeSerial={tribeId}
-        type="DELETE"
-        editButton= {<Button>Delete your tribe</Button>}
+          tribeSerial={tribeId}
+          type="DELETE"
+          editButton= {<Button>Delete your tribe</Button>}
         />
       </DropdownMenuItem>
     </DropdownMenuContent>

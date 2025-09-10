@@ -24,192 +24,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
-  TribeCreateSchema,
-  TribeCreateInput,
   TribeCategory,
   TribePrivacy,
 } from "@/components/tribes-page/create-tribe/create-tribe.validation";
 
-import { useCallback, useEffect, useState } from "react";
-import { useDropzone } from "react-dropzone";
-import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import * as nsfwjs from "nsfwjs";
 import { useSession } from "next-auth/react";
-import { getSanityMedia } from "@/lib/getSanityImage";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTribeAPI } from "@/lib/requests";
-import { XCircle } from 'lucide-react';
-import { useActionState } from "react";
-import { runDBOperation } from "@/lib/useDB";
-import { getTribeBySerial } from "@/app/api/tribe/tribe.action";
+import { ImageDropzone, uploadImage } from "@/lib/imageUpload.utils";
+import { useRouter } from "next/navigation";
 
-async function uploadImage(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const res = await fetch("/api/media", {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!res.ok) {
-    const dataRes = await res.json();
-    throw new Error(dataRes.error || "Failed to upload image");
-  }
-
-  const result = await res.json();
-  const mediaLink = await getSanityMedia(result.mediaId);
-  return mediaLink.data.url;
-}
-
-let nsfwModel: nsfwjs.NSFWJS | null = null;
-const loadNsfwModel = async () => {
-  if (!nsfwModel) {
-    nsfwModel = await nsfwjs.load();
-  }
-};
-
-interface ImageDropzoneProps {
-  onFileSelected: (file: File | null) => void;
-  label: string;
-  value?: File | string | null;
-}
-
-function ImageDropzone({ onFileSelected, label, value }: ImageDropzoneProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadNsfwModel();
-  }, []);
-
-  useEffect(() => {
-    if (value instanceof File) {
-      const url = URL.createObjectURL(value);
-      setPreviewUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else if (typeof value === 'string' && value) {
-      setPreviewUrl(value);
-      return;
-    } else {
-      setPreviewUrl(null);
-    }
-  }, [value]);
-
-  const onDrop = useCallback(
-    async (acceptedFiles: File[]) => {
-      const file = acceptedFiles[0];
-      if (!file || !file.type.startsWith("image/")) {
-        toast.error("Please drop an image file.");
-        return;
-      }
-
-      let processedFile = file;
-      let fileSrc: string | undefined;
-
-      if (file.type === "image/heic" || file.type === "image/heif") {
-        try {
-          const heic2anyModule = await import("heic2any");
-          const heic2any = heic2anyModule.default;
-          const convertedBlob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 });
-          processedFile = new File([convertedBlob as Blob], file.name.replace(/\.heic$/i, ".jpeg"), { type: "image/jpeg" });
-          fileSrc = URL.createObjectURL(processedFile);
-        } catch {
-          toast.error(`Failed to process HEIC image: ${file.name}`);
-          return;
-        }
-      } else {
-        fileSrc = URL.createObjectURL(file);
-      }
-
-      if (!fileSrc) return;
-
-      const img = document.createElement("img");
-      img.src = fileSrc;
-
-      const imageLoadPromise = new Promise<void>((resolve, reject) => {
-        img.onload = async () => {
-          if (nsfwModel) {
-            const predictions = await nsfwModel.classify(img);
-            const isExplicit = predictions.some(
-              (p) =>
-                (p.className === "Porn" || p.className === "Sexy" || p.className === "Hentai") &&
-                p.probability > 0.5
-            );
-
-            if (isExplicit) {
-              toast.error("Explicit image detected.");
-              reject(new Error("Explicit image detected."));
-            } else {
-              onFileSelected(processedFile);
-              resolve();
-            }
-          } else {
-            onFileSelected(processedFile);
-            resolve();
-          }
-          URL.revokeObjectURL(fileSrc);
-        };
-        img.onerror = () => {
-          toast.error(`Failed to load image: ${file.name}`);
-          URL.revokeObjectURL(fileSrc);
-          reject(new Error("Failed to load image."));
-        };
-      });
-
-      try {
-        await imageLoadPromise;
-      } catch (err) {
-        console.error(err);
-      }
-    },
-    [onFileSelected]
-  );
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      "image/*": [".jpeg", ".jpg", ".png", ".gif", ".webp", ".heic", ".heif"],
-    },
-    maxFiles: 1,
-    multiple: false,
-  });
-
-  const handleCancel = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onFileSelected(null);
-  };
-
-  return (
-    <div className="space-y-2">
-      <FormLabel>{label}</FormLabel>
-      <div
-        {...getRootProps()}
-        className={cn(
-          "relative border border-dashed rounded-md px-4 py-10 text-center cursor-pointer transition",
-          isDragActive ? "bg-muted/50" : "bg-muted"
-        )}
-      >
-        <input {...getInputProps()} />
-        {previewUrl ? (
-          <>
-            <img src={previewUrl} alt="Preview" className="max-h-40 mx-auto object-cover rounded-md" />
-            <button
-                onClick={handleCancel}
-                className="absolute top-2 right-2 text-red-500 hover:text-red-700 p-1 bg-white rounded-full shadow-md"
-            >
-                <XCircle size={16} />
-            </button>
-          </>
-        ) : (
-          <p>Drag & drop or click to upload</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Define a separate Zod schema for the form's local state to handle the File objects
 const FormSchema = z.object({
   name: z.string().min(1, "Name is required."),
   description: z.string().min(1, "Description is required."),
@@ -219,13 +45,6 @@ const FormSchema = z.object({
   coverImage: z.union([z.instanceof(File), z.string(), z.null()]).optional(),
   profileImage: z.union([z.instanceof(File), z.string(), z.null()]).optional(),
 });
-async function getTribeData(tribeId: string) {
-  const tribeData = await runDBOperation(async ()=>{
-    const tribe = await getTribeBySerial(tribeId);
-    return JSON.parse(JSON.stringify(tribe));
-  });
-  return tribeData;
-}
 
 export function EditTribeForm({
   tribeSerial,
@@ -233,47 +52,62 @@ export function EditTribeForm({
   closeButton,
 }: {
   tribeSerial: string;
-  submitTrigger: (arg0: boolean)=>void;
+  submitTrigger: (arg0: boolean) => void;
   closeButton: React.ReactNode;
 }) {
+  const router = useRouter();
   const { data: session } = useSession();
   const [isUploadingImages, setIsUploadingImages] = useState(false);
-  const [tribeData, setTribeData] = useState<any | null>([]);
-  useEffect(()=>{
-    async function fetchData() {
-      if(!tribeData) {
-        const response = await getTribeData(tribeSerial);
-        setTribeData(response);
-      } else {
-        return;
-      }
-    }
-    fetchData();
-  },[])
+
   const form = useForm<z.infer<typeof FormSchema>>({
-    resolver: zodResolver(FormSchema), // Use the new local schema for validation
-    defaultValues: {
-      name: "",
-      description: "",
-      category: "COMMUNITY",
-      privacy: "PUBLIC",
-      tags: [],
-      coverImage: null,
-      profileImage: null,
-    },
+    resolver: zodResolver(FormSchema),
   });
 
   const queryClient = useQueryClient();
 
-  const { mutateAsync: createTribe, isLoading } = useMutation({
-    mutationFn: (data: any) => useTribeAPI.updateTribe(data),
+  const {
+    data: tribe,
+    isLoading: isLoadingTribe,
+    isError,
+  } = useQuery({
+    queryKey: ["tribe", tribeSerial],
+    queryFn: async () => {
+      const response = await useTribeAPI.getTribeBySerial(tribeSerial);
+      console.log("Tribe API response:", response.data);
+      return response.data;
+    },
+    enabled: !!tribeSerial,
+  });
+
+  useEffect(() => {
+    if (tribe && !isLoadingTribe) {
+      const tribeData = Array.isArray(tribe) ? tribe[0] : tribe;
+
+      const category = tribeData.category;
+      const privacy = tribeData.privacy;
+
+      form.reset({
+        name: tribeData.name || "",
+        description: tribeData.description || "",
+        category: category as z.infer<typeof TribeCategory>,
+        privacy: privacy as z.infer<typeof TribePrivacy>,
+        tags: Array.isArray(tribeData.tags) ? tribeData.tags : [],
+        coverImage: tribeData.coverImage || null,
+        profileImage: tribeData.profileImage || null,
+      });
+    }
+  }, [tribe, isLoadingTribe]);
+
+  const { mutateAsync: updateTribe, isLoading } = useMutation({
+    mutationFn: (data: any) => useTribeAPI.updateTribe(tribeSerial, data),
     onSuccess: () => {
-      toast.success("Tribe created!");
+      toast.success("Tribe updated!");
       queryClient.invalidateQueries({ queryKey: ["ProfileFeed"] });
-      queryClient.invalidateQueries({ queryKey: ["HomeFeed"] });
+      queryClient.invalidateQueries({ queryKey: ["tribe", tribeSerial] });
+      router.refresh();
     },
     onError: (error) => {
-      toast.error(`Failed to create tribe: ${(error as any)?.message}`);
+      toast.error(`Failed to update tribe: ${(error as any)?.message}`);
     },
   });
 
@@ -281,17 +115,18 @@ export function EditTribeForm({
     try {
       setIsUploadingImages(true);
 
-      const uploadedImageUrls: { coverImage?: string; profileImage?: string } = {};
+      const uploadedImageUrls: { coverImage?: string; profileImage?: string } =
+        {};
 
       if (data.coverImage instanceof File) {
         uploadedImageUrls.coverImage = await uploadImage(data.coverImage);
-      } else if (typeof data.coverImage === 'string' && data.coverImage) {
+      } else if (typeof data.coverImage === "string" && data.coverImage) {
         uploadedImageUrls.coverImage = data.coverImage;
       }
 
       if (data.profileImage instanceof File) {
         uploadedImageUrls.profileImage = await uploadImage(data.profileImage);
-      } else if (typeof data.profileImage === 'string' && data.profileImage) {
+      } else if (typeof data.profileImage === "string" && data.profileImage) {
         uploadedImageUrls.profileImage = data.profileImage;
       }
 
@@ -299,8 +134,8 @@ export function EditTribeForm({
 
       const ownerId = (session?.user?.id as string) ?? "";
 
-      // Construct a new payload to match the original API schema
-      const payload: TribeCreateInput = {
+      const payload = {
+        serial: tribeSerial,
         name: data.name,
         description: data.description,
         category: data.category,
@@ -308,23 +143,29 @@ export function EditTribeForm({
         tags: data.tags,
         coverImage: uploadedImageUrls.coverImage || "",
         profileImage: uploadedImageUrls.profileImage || "",
+        createdBy: ownerId,
       };
 
-      await createTribe({
-        ...payload,
-        createdBy: ownerId,
-      });
-
+      await updateTribe(payload);
       submitTrigger(false);
     } catch (error) {
       setIsUploadingImages(false);
-      console.error("Error creating tribe:", error);
-      toast.error("Tribe creation failed. Please try again.");
+      console.error("Error updating tribe:", error);
+      toast.error("Tribe update failed. Please try again.");
     }
   };
 
+  if (isLoadingTribe) {
+    return <div>Loading tribe data...</div>;
+  }
+
+  if (isError) {
+    return <div>Error loading tribe.</div>;
+  }
+
   return (
     <Form {...form}>
+      <h2>Edit tribe details</h2>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
@@ -362,7 +203,7 @@ export function EditTribeForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value} defaultValue={tribe.category}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
@@ -388,7 +229,7 @@ export function EditTribeForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Privacy</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value} defaultValue={tribe.privacy}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select privacy" />
@@ -466,10 +307,16 @@ export function EditTribeForm({
           )}
         />
 
-        <Button type="submit" disabled={isLoading || isUploadingImages}>
-          {isUploadingImages ? "Uploading Images..." : (isLoading ? "Creating Tribe..." : "Create Tribe")}
-        </Button>
-        {closeButton}
+        <div className="flex flex-row gap-2">
+          <Button type="submit" disabled={isLoading || isUploadingImages}>
+            {isUploadingImages
+              ? "Uploading Images..."
+              : isLoading
+                ? "Updating Tribe..."
+                : "Update Tribe"}
+          </Button>
+          {closeButton}
+        </div>
       </form>
     </Form>
   );

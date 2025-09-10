@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { PlusSquare } from "lucide-react";
-import { Card, CardContent } from "./ui/card";
-import { ScrollArea } from "./ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Card, CardContent } from "../../ui/card";
+import { ScrollArea } from "../../ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar";
 import { stories } from "@/data/mocks/feed.mock";
 
 export function UserStories() {

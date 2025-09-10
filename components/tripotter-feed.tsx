@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { LoadingScreen } from "./ui/loading-splash";
 import { SuggestedUserWrapper } from "./suggestedUsers";
-import { UserStories } from "./user-stories";
+import { UserStories } from "./feed/shared/user-stories";
 import PostContainer from "./feed/home";
 
 

@@ -1,17 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runDBOperationWithTransaction } from "@/lib/useDB";
-
-import postsSchema from "@/utils/schema/posts-schema";
-
-import "@/utils/schema/comments-schema";
-import "@/utils/schema/like-schema";
-import "@/utils/schema/tribes-schema";
+import { getPublicFeed } from "./feed.action";
 
 export async function GET(request: NextRequest) {
-  console.log("Comment schema imported:");
-  console.log("Likes model registered:");
-  console.log("Comment model registered:");
-
   const searchParams = request.nextUrl.searchParams;
   const profileId = searchParams.get("id");
 
@@ -19,51 +9,23 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "10", 10);
   const skip = (page - 1) * limit;
 
+  if(!profileId) {
+    return NextResponse.json({
+      message: `Failed to load posts: profile id not provided`,
+      status: 400,
+      data: [],
+      pagination: {
+        currentPage: 1,
+        postsPerPage: limit,
+        totalPosts: 0,
+        totalPages: 0,
+        hasMore: false,
+      },
+    });
+  }
+
   try {
-    const { posts, totalPosts } = await runDBOperationWithTransaction(
-      async () => {
-        let query = postsSchema.find();
-
-        if (profileId) {
-          query = query.where("owner", profileId);
-        }
-
-        const totalCount = await postsSchema.countDocuments(query.getQuery());
-
-        const fetchedPosts = await query
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .populate([
-            {
-              path: "owner",
-              select: "_id fullName username profileImage",
-            },
-            {
-              path: "likes",
-              model: "User",
-              select: "_id username fullName profileImage",
-            },
-            {
-              path: "comments",
-              model: "Comment",
-              select: "_id content owner createdAt",
-              populate: {
-                path: "owner",
-                model: "User",
-                select: "_id username profileImage",
-              },
-            },
-            {
-              path: "fromGroup",
-              model: "Tribe",
-              select: "_id name serial",
-            },
-          ])
-          .lean();
-        return { posts: fetchedPosts, totalPosts: totalCount };
-      }
-    );
+    const { posts, totalPosts } = await getPublicFeed(profileId, skip, limit);
 
     return NextResponse.json({
       message: "Received feed data",
@@ -94,14 +56,6 @@ export async function GET(request: NextRequest) {
       },
     });
   }
-}
-
-export async function POST(request: Request) {
-  return NextResponse.json({
-    message: "Hello World",
-    status: 200,
-    method: request.method,
-  });
 }
 
 export async function OPTIONS(request: Request) {

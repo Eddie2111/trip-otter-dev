@@ -608,6 +608,15 @@ class TribeAPI extends BaseAPI {
       throw axiosError.response?.data || axiosError.message;
     }
   }
+  public getTribesForUser = async (category: "joined" | "created" | "notJoined"): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`api/tribe?ownership=${category}`);
+      return response.data;
+    } catch(error){
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
   public isTribeMember = async (userId: string, tribeId: string): Promise<AxiosResponse> => {
     try {
       const response = await this.apiClient.get(`/api/tribe/join?userId=${userId}&tribeId=${tribeId}&requestType=memberCheck`);

@@ -150,6 +150,75 @@ export async function getTribes(page: string, limit: string) {
   }
 }
 
+export async function getJoinedTribes(userId: string, page: string, limit: string) {
+  try {
+    const _page = parseInt(page) - 1;
+    const _limit = parseInt(limit);
+    const tribe = await runDBOperation(async () => {
+      return await tribesSchema
+        .find({ users: { $in: [userId] } })
+        .limit(_limit)
+        .skip(_page * _limit)
+        .select("-posts -users")
+        .lean()
+        .exec();
+    });
+    return tribe;
+  } catch (error) {
+    const errResponse = error as unknown as { message: string; code: number };
+    return errResponse;
+  }
+}
+
+export async function getCreatedTribes(
+  userId: string,
+  page: string,
+  limit: string
+) {
+  try {
+    const _page = parseInt(page) - 1;
+    const _limit = parseInt(limit);
+    const tribe = await runDBOperation(async () => {
+      return await tribesSchema
+        .find({ createdBy: userId })
+        .limit(_limit)
+        .skip(_page * _limit)
+        .select("-posts -users")
+        .lean()
+        .exec();
+    });
+    return tribe;
+  } catch (error) {
+    const errResponse = error as unknown as { message: string; code: number };
+    return errResponse;
+  }
+}
+
+export async function getUnjoinedTribes(
+  userId: string,
+  page: string,
+  limit: string
+) {
+  try {
+    const _page = parseInt(page) - 1;
+    const _limit = parseInt(limit);
+    const tribe = await runDBOperation(async () => {
+      return await tribesSchema
+        .find({ users: { $nin: [userId] } })
+        .limit(_limit)
+        .skip(_page * _limit)
+        .select("-posts -users")
+        .lean()
+        .exec();
+    }
+    );
+    return tribe;
+  } catch (error) {
+    const errResponse = error as unknown as { message: string; code: number };
+    return errResponse;
+  }
+}
+
 export async function getTribesByCategory(
   category: string,
   page: string,

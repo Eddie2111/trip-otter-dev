@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       const isAdmin = await isCreatorOfTribe(tribeId, userId);
       return Response.json({
         message: isMember ?  "Checked tribe membership" : "Failed checking tribe membership",
-        status: [isMember, isAdmin] ? 200 : 400,
+        status: (isMember || isAdmin) ? 200 : 400,
         data: {
           isMember,
           isAdmin,

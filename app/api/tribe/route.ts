@@ -4,11 +4,14 @@ import { NextRequest } from "next/server";
 import {
   createTribeAction,
   deleteTribeAction,
+  getCreatedTribes,
+  getJoinedTribes,
   getTribe,
   getTribeBySerial,
   getTribeMembers,
   getTribePosts,
   getTribes,
+  getUnjoinedTribes,
   getUsersTribe,
   updateTribe,
 } from "./tribe.action";
@@ -24,6 +27,9 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get("user") ?? "";
   const member = searchParams.get("member") ?? "";
   const posts = searchParams.get("posts") ?? "";
+
+  const ownership = searchParams.get("ownership") ?? "";
+  // should be joined or created or notJoined
   if (serverSession?.user?.id) {
     let payload: any;
     if (
@@ -48,6 +54,15 @@ export async function GET(request: NextRequest) {
     ) {
       console.log("case reached for posts");
       payload = await getTribePosts(tribeId, page, limit);
+    } else if (ownership && ownership.length > 0) {
+      console.log("case reached for membership/ownership");
+      if(ownership === "joined") {
+        payload = await getJoinedTribes(serverSession?.user?.id, page, limit);
+      } else if(ownership === "created") {
+        payload = await getCreatedTribes(serverSession?.user?.id, page, limit);
+      } else {
+        payload = await getUnjoinedTribes(serverSession?.user?.id, page, limit);
+      }
     } else if (page && limit && page.length > 0 && limit.length > 0) {
       console.log("case reached for page and limit");
       payload = await getTribes(page, limit);

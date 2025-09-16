@@ -1,7 +1,5 @@
-import NotificationPage from "./_component";
-
-export default function Notification() { 
+export default function ApiPage() {
   return (
-    <NotificationPage />
+    <div> API details page here</div>
   )
 }

@@ -25,3 +25,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+# users
+test user = 686aeab9ee170ba542783cff
+test profile = 686e5b0636921407e5d3af44

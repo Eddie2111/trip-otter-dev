@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosResponse, AxiosInstance } from "axios";
 import { SignUpData } from "@/types/requests.d";
+import { IPayloadProps } from "@/app/api/tribe/search/route";
 
 export class BaseAPI {
   protected readonly apiClient: AxiosInstance;
@@ -199,10 +200,10 @@ class ReviewAPI extends BaseAPI {
 }
 
 class FeedAPI extends BaseAPI {
-  public getFeed = async (page: number, limit: number): Promise<any> => {
+  public getFeed = async (profileId: string, page: number, limit: number): Promise<any> => {
     try {
       const response = await this.apiClient.get(
-        `/api/feed?page=${page}&limit=${limit}`
+        `/api/feed?page=${page}&limit=${limit}&id=${profileId}`
       );
       return response.data;
     } catch (error) {
@@ -344,6 +345,7 @@ class PostAPI extends BaseAPI {
     }
   };
 }
+
 class MediaAPI extends BaseAPI {
   public getMedia = async (): Promise<AxiosResponse> => {
     try {
@@ -516,6 +518,15 @@ class TribeAPI extends BaseAPI {
       throw axiosError.response?.data || axiosError.message;
     }
   };
+  public getTribeBySerial = async (serial: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/tribe?serial=${serial}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
   public getTribeMembers = async (id: string, page: number, limit: number): Promise<AxiosResponse> => {
     try {
       const response = await this.apiClient.get(
@@ -561,9 +572,9 @@ class TribeAPI extends BaseAPI {
       throw axiosError.response?.data || axiosError.message;
     }
   };
-  public updateTribe = async (data: any): Promise<AxiosResponse> => {
+  public updateTribe = async (serial:string, data: any): Promise<AxiosResponse> => {
     try {
-      const response = await this.apiClient.patch(`/api/tribe`, data);
+      const response = await this.apiClient.patch(`/api/tribe?serial=${serial}`, data);
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError;
@@ -579,6 +590,51 @@ class TribeAPI extends BaseAPI {
       throw axiosError.response?.data || axiosError.message;
     }
   };
+  public joinTribe = async (tribeId: string, userId: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`api/tribe/join`, {tribeId, userId});
+      return response.data;
+    } catch(error){
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public getJoinedTribes = async (userId: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`api/tribe/join?userId=${userId}`);
+      return response.data;
+    } catch(error){
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public getTribesForUser = async (category: "joined" | "created" | "notJoined"): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`api/tribe?ownership=${category}`);
+      return response.data;
+    } catch(error){
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public isTribeMember = async (userId: string, tribeId: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`/api/tribe/join?userId=${userId}&tribeId=${tribeId}&requestType=memberCheck`);
+      return response.data;
+    } catch(error){
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+  public searchTribe = async (query: string, filterData: IPayloadProps): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.post(`api/tribe/search?searchText=${query}`, filterData);
+      return response.data;
+    } catch(error){
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
 }
 
 export const useAuthApi = new AuthAPI();

@@ -1,63 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runDBOperationWithTransaction } from "@/lib/useDB";
-
-import postsSchema from "@/utils/schema/posts-schema";
-
-import "@/utils/schema/comments-schema";
-import "@/utils/schema/like-schema";
+import { getPublicFeed, getPublicFeed_v2 } from "./feed.action";
 
 export async function GET(request: NextRequest) {
-  console.log("Comment schema imported:");
-  console.log("Likes model registered:");
-  console.log("Comment model registered:");
-
   const searchParams = request.nextUrl.searchParams;
   const profileId = searchParams.get("id");
+  const versionId = searchParams.get("versionId");
 
   const page = parseInt(searchParams.get("page") || "1", 10);
   const limit = parseInt(searchParams.get("limit") || "10", 10);
   const skip = (page - 1) * limit;
 
   try {
-    const { posts, totalPosts } = await runDBOperationWithTransaction(
-      async () => {
-        let query = postsSchema.find();
 
-        if (profileId) {
-          query = query.where("owner", profileId);
-        }
-
-        const totalCount = await postsSchema.countDocuments(query.getQuery());
-
-        const fetchedPosts = await query
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .populate([
-            {
-              path: "owner",
-              select: "_id fullName username profileImage",
-            },
-            {
-              path: "likes",
-              model: "User",
-              select: "_id username fullName profileImage",
-            },
-            {
-              path: "comments",
-              model: "Comment",
-              select: "_id content owner createdAt",
-              populate: {
-                path: "owner",
-                model: "User",
-                select: "_id username profileImage",
-              },
-            },
-          ])
-          .lean();
-        return { posts: fetchedPosts, totalPosts: totalCount };
+    ////////////////////////////////////////////////////////////////////////
+    /* v2 testing, requires profileId and versionId to be set */
+    if(versionId === "v2") {
+      try {
+        const dummy = await getPublicFeed_v2(skip, limit, profileId ?? "");
+        console.log(dummy, "dummy");
+      } catch(err) {
+        console.log(err, "the heck");
       }
-    );
+      const posts = {}
+      const totalPosts = {}
+      return NextResponse.json({
+        message: "Received v2 feed data",
+        status: 200,
+        data: posts,
+        pagination: {
+          currentPage: page,
+          postsPerPage: limit,
+          totalPosts: totalPosts,
+          totalPages: 10, /* Math.ceil(totalPosts / limit) */
+          hasMore: true, /* page * limit < totalPosts */
+        },
+      });
+    }
+    ////////////////////////////////////////////////////////////////////////
+
+    const { posts, totalPosts } = await getPublicFeed(skip, limit);
 
     return NextResponse.json({
       message: "Received feed data",
@@ -88,14 +69,6 @@ export async function GET(request: NextRequest) {
       },
     });
   }
-}
-
-export async function POST(request: Request) {
-  return NextResponse.json({
-    message: "Hello World",
-    status: 200,
-    method: request.method,
-  });
 }
 
 export async function OPTIONS(request: Request) {

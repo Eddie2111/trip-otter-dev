@@ -1,7 +1,8 @@
 import { getTribeBySerial } from "@/app/api/tribe/tribe.action";
 import { runDBOperation } from "@/lib/useDB";
 import { Metadata } from "next";
-import { TribePage_v1 } from "@/components/tribe-page";
+import TribePage_v1 from "@/components/tribe-page";
+
 interface GroupPageProps {
   params: {
     id: string;
@@ -17,7 +18,7 @@ export async function generateMetadata({
   let title = "Tribe";
 
   try {
-    const tribeData = await runDBOperation(async ()=>{
+    const tribeData = await runDBOperation(async () => {
       const tribe = await getTribeBySerial(id);
       return JSON.parse(JSON.stringify(tribe))[0];
     });
@@ -34,9 +35,10 @@ export async function generateMetadata({
 }
 
 export default async function TribePage({ params }: GroupPageProps) {
-    const tribeParams = await params;
-    const { id: tribeId } = tribeParams;
-    const tribeData = await runDBOperation(async ()=>{
+  const tribeParams = await params;
+  const { id: tribeId } = tribeParams;  
+  try {
+    const tribeData = await runDBOperation(async () => {
       const tribe = await getTribeBySerial(tribeId);
       return JSON.parse(JSON.stringify(tribe));
     });
@@ -44,5 +46,12 @@ export default async function TribePage({ params }: GroupPageProps) {
       <div className="md:ml-[270px]">
         <TribePage_v1 tribeData={tribeData} />
       </div>
-    )
+    );
+  } catch (err) {
+    return (
+      <div className="md:ml-[270px]">
+        <div>This tribe was deleted</div>
+      </div>
+    );
+  }
 }

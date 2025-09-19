@@ -1,9 +1,10 @@
 "use client";
+// removed next/image usage to block auto image optimization
+// auto image optimization is blocked anyway in the next.config.js
 import { useEffect, useState } from "react";
 
-import Image from "next/image";
-
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 import { getSanityImage } from "@/lib/getSanityImage";
 
 export default function SanityImage({

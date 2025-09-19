@@ -235,8 +235,8 @@ export function CreateTribeForm({
       category: "COMMUNITY",
       privacy: "PUBLIC",
       tags: [],
-      coverImage: null,
-      profileImage: null,
+      coverImage: "",
+      profileImage: "",
     },
   });
 
@@ -248,6 +248,7 @@ export function CreateTribeForm({
       toast.success("Tribe created!");
       queryClient.invalidateQueries({ queryKey: ["ProfileFeed"] });
       queryClient.invalidateQueries({ queryKey: ["HomeFeed"] });
+      queryClient.invalidateQueries({ queryKey: ["tribes"] });
     },
     onError: (error) => {
       toast.error(`Failed to create tribe: ${(error as any)?.message}`);
@@ -283,8 +284,8 @@ export function CreateTribeForm({
         category: data.category,
         privacy: data.privacy,
         tags: data.tags,
-        coverImage: uploadedImageUrls.coverImage || null,
-        profileImage: uploadedImageUrls.profileImage || null,
+        coverImage: uploadedImageUrls.coverImage || "",
+        profileImage: uploadedImageUrls.profileImage || "",
       };
 
       await createTribe({

@@ -78,6 +78,7 @@ export function PostContainer() {
     queryKey: ["homeFeed"],
     queryFn: async ({ pageParam = 1 }) => {
       const response = await useFeedAPI.getFeed(
+        currentUserProfile?.data?.id,
         pageParam as number,
         NUMBER_OF_POSTS
       );

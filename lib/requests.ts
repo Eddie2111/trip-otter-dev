@@ -200,10 +200,10 @@ class ReviewAPI extends BaseAPI {
 }
 
 class FeedAPI extends BaseAPI {
-  public getFeed = async (page: number, limit: number): Promise<any> => {
+  public getFeed = async (profileId: string, page: number, limit: number): Promise<any> => {
     try {
       const response = await this.apiClient.get(
-        `/api/feed?page=${page}&limit=${limit}`
+        `/api/feed?page=${page}&limit=${limit}&id=${profileId}`
       );
       return response.data;
     } catch (error) {

@@ -56,34 +56,32 @@ export default function CompanionPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-full p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      <div className="flex justify-center items-center h-full p-4 dark:text-gray-300">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500 dark:text-gray-400" />
       </div>
     );
   }
 
-  // Handle error state
   if (isError) {
     return (
-      <div className="flex justify-center items-center h-full p-4 text-red-500">
+      <div className="flex justify-center items-center h-full p-4 text-red-500 dark:text-red-400">
         <AlertTriangle className="h-6 w-6 mr-2" />
         <p>Error: {error.message}</p>
       </div>
     );
   }
 
-  // Get all users from all pages and flatten the array
   const allSuggestedUsers = data?.pages.flatMap((page) => page) ?? [];
 
   return (
-    <div className="flex flex-col p-4 md:mx-20 mx-auto">
+    <div className="flex flex-col p-4 md:mx-20 mx-auto bg-gray-50 dark:bg-gray-900 dark:text-gray-50">
       <h2 className="font-bold text-2xl mb-4">Companions Around You</h2>
       <div className="flex flex-col space-y-4">
         {allSuggestedUsers.length > 0 ? (
           allSuggestedUsers.map((profile) => (
             <Card
               key={profile._id}
-              className="flex flex-col max-w-[625px] max-h-[325px]"
+              className="flex flex-col max-w-[625px] max-h-[325px] dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
             >
               <CardHeader className="flex flex-row items-center space-x-4">
                 <Avatar className="h-12 w-12">
@@ -96,7 +94,7 @@ export default function CompanionPage() {
                   <CardTitle className="text-lg">
                     <Link
                       href={`/person/${profile.user?._id}`}
-                      className="text-black hover:text-blue-500 duration-300"
+                      className="text-black hover:text-blue-500 duration-300 dark:text-white dark:hover:text-blue-400"
                     >
                       {profile.user?.fullName}
                     </Link>
@@ -104,7 +102,7 @@ export default function CompanionPage() {
                   <CardDescription>
                     <Link
                       href={`/person/${profile.user?._id}`}
-                      className="text-blue-500 hover:text-blue-300 duration-300"
+                      className="text-blue-500 hover:text-blue-300 duration-300 dark:text-blue-400 dark:hover:text-blue-300"
                     >
                       @{profile.user?.username}
                     </Link>
@@ -116,7 +114,7 @@ export default function CompanionPage() {
                 />
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-500 line-clamp-2">
+                <p className="text-sm text-gray-500 line-clamp-2 dark:text-gray-400">
                   {profile.user?.bio || profile.user?.location}
                 </p>
               </CardContent>
@@ -124,11 +122,9 @@ export default function CompanionPage() {
             </Card>
           ))
         ) : (
-          <p className="text-center text-gray-500">No suggested users found.</p>
+          <p className="text-center text-gray-500 dark:text-gray-400">No suggested users found.</p>
         )}
       </div>
-
-      {/* "Load More" button for infinite scrolling */}
       {hasNextPage && (
         <div className="mt-8 text-center">
           <Button

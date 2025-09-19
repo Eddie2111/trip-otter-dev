@@ -1,5 +1,5 @@
-import { TribesPage_V1 } from "@/components/tribes-page";
 import { Metadata } from "next";
+import TribesPage_V101 from "@/components/tribes-page/tribes-page_v1.01";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -14,8 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function Tribes() {
   return (
     <div className="md:ml-[250px]">
-
-      <TribesPage_V1 />
+      <TribesPage_V101 />
     </div>
   );
 }

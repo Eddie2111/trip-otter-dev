@@ -31,6 +31,7 @@ import { useSearchAPI } from "@/lib/requests";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AIResponse } from "@/components/ai-response";
+import { AiSuggestionTab } from "./search-tab/ai-suggestion-tab";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -241,30 +242,6 @@ export function SearchModal({
   //   onShopSelect(shopId);
   //   onClose();
   // };
-
-  const handleGenerateAIResponse = async () => {
-    if (!aiPrompt.trim()) {
-      setAiError("Please enter a prompt for AI suggestions.");
-      return;
-    }
-    setAiLoading(true);
-    setAiError(null);
-    setAiResponse(null);
-
-    try {
-      const response = await ai(aiPrompt);
-      if (response) {
-        setAiResponse(response);
-      } else {
-        setAiError("Failed to get AI suggestions. Please try again.");
-      }
-    } catch (err) {
-      console.error("Error calling AI:", err);
-      setAiError("An unexpected error occurred while generating suggestions.");
-    } finally {
-      setAiLoading(false);
-    }
-  };
 
   const renderResults = () => {
     if (loading) {
@@ -609,49 +586,7 @@ export function SearchModal({
 
               {/* AI Tab Content */}
               <TabsContent value="ai" className="mt-0">
-                <div className="space-y-4">
-                  {aiResponse ? (
-                    <Button
-                      className="w-full rounded-md"
-                      onClick={() => setAiPrompt("")}
-                    >
-                      Ask another question?
-                    </Button>
-                  ) : (
-                    <Textarea
-                      placeholder="Tell me about your travel preferences, e.g., 'I want a relaxing beach vacation in Europe with good seafood and historical sites.'"
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      className="min-h-[100px] rounded-md"
-                    />
-                  )}
-                  {aiResponse ? (
-                    <div></div>
-                  ) : (
-                    <Button
-                      onClick={handleGenerateAIResponse}
-                      disabled={aiLoading}
-                      className="w-full rounded-md"
-                    >
-                      {aiLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Wand2 className="mr-2 h-4 w-4" />
-                          Ask AI
-                        </>
-                      )}
-                    </Button>
-                  )}
-
-                  {aiError && (
-                    <div className="text-red-500 text-sm mt-2">{aiError}</div>
-                  )}
-                  {aiResponse && <AIResponse answer={aiResponse} />}
-                </div>
+                <AiSuggestionTab />
               </TabsContent>
             </ScrollArea>
           </Tabs>

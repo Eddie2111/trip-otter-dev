@@ -11,7 +11,7 @@ export async function runDBOperation<T>(
   operation: () => Promise<T>
 ): Promise<T> {
   try {
-    await connectToDatabase_low();
+    await connectToDatabase();
 
     return await operation();
   } catch (error) {

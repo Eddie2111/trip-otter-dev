@@ -27,9 +27,9 @@ export function DesktopSidebar() {
     <div className="hidden md:block fixed left-0 top-0 h-screen max-w-64 min-w-24 bg-white border-r pt-20 z-20 overflow-y-auto dark:bg-gray-900 dark:border-gray-700">
       <div className="p-4">
         <nav className="space-y-2">
-          <Link href="/" passHref>
+          <Link href="/feed" passHref>
             <Button
-              variant={pathname === "/" ? "default" : "ghost"}
+              variant={pathname === "/feed" ? "default" : "ghost"}
               className={cn(
                 "w-full justify-start gap-3 h-12 text-base",
                 pathname === "/"

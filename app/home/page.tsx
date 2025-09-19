@@ -1,3 +1,4 @@
+import { AuthChecker } from "./components/auth-checker";
 import { HeroSection } from "./components/hero-section";
 import { FeaturesSection } from "./components/features-section";
 import { AIAssistantSection } from "./components/ai-assistant-section";
@@ -18,6 +19,7 @@ export default function HomePage() {
       <MisspellingWordCloud />
       <AboutSection />
       <Footer />
+      <AuthChecker />
     </main>
   );
 }

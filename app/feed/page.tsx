@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import HomePage from "./home/page";
+import HomeComponent from "./_component";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -12,5 +12,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Home() {
-  return <HomePage />
+  return <HomeComponent />
 }

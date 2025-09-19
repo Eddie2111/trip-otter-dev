@@ -1,0 +1,23 @@
+import { HeroSection } from "./components/hero-section";
+import { FeaturesSection } from "./components/features-section";
+import { AIAssistantSection } from "./components/ai-assistant-section";
+import { TribesSection } from "./components/tribes-section";
+import { ComingSoonSection } from "./components/coming-soon-section";
+import { MisspellingWordCloud } from"./components/misspelling-wordcloud";
+import { AboutSection } from "./components/about-section";
+import { Footer } from "./components/footer";
+
+export default function HomePage() {
+  return (
+    <main className="min-h-screen">
+      <HeroSection />
+      <FeaturesSection />
+      <AIAssistantSection />
+      <TribesSection />
+      <ComingSoonSection />
+      <MisspellingWordCloud />
+      <AboutSection />
+      <Footer />
+    </main>
+  );
+}

@@ -22,7 +22,7 @@ export function MisspellingWordCloud() {
   return (
     <section className="py-20 px-4 bg-card">
       <div className="max-w-4xl mx-auto">
-        <Card className="border-border">
+        <Card className="border-border shadow-md shadow-teal-400">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-black mb-4">However You Spell It, We Know You Mean Us! 😄</CardTitle>
             <p className="text-muted-foreground text-lg">
@@ -50,11 +50,14 @@ export function MisspellingWordCloud() {
                 </h1>
               ))}
             </div>
-            <div className="text-center mt-8">
-              <p className="text-sm text-muted-foreground">
+
+            <div className="flex flex-col md:flex-row text-center mt-8 mx-auto justify-center gap-8">
+              <img src="/assets/ai-section-left.png" height={350} width={280} alt="left" className="h-32 w-28" />
+              <p className="text-sm text-muted-foreground mt-0 md:mt-12">
                 <span className="text-primary font-semibold">TripOtter</span> is the correct spelling, but we love all
                 the creative attempts! 🦦
               </p>
+              <img src="/assets/ai-section-right.png" height={350} width={300} alt="left" className="h-32 w-32 ml-[45vw] sm:ml-[55vw] md:ml-0" />
             </div>
           </CardContent>
         </Card>

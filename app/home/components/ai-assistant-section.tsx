@@ -60,7 +60,6 @@ export function AIAssistantSection() {
             <Link href="/login">
               <Button
                 size="lg"
-                className="bg-accent hover:bg-accent/90 text-accent-foreground"
               >
                 <MessageCircle className="mr-2 h-5 w-5" />
                 Chat with Cappy
@@ -69,12 +68,12 @@ export function AIAssistantSection() {
           </div>
 
           <div className="relative">
-            <Card className="bg-gradient-to-br from-accent/10 to-primary/10 border-accent/20">
+            <Card className="bg-gradient-to-br from-slate-400/70 to-slate-700/70 border-10 border-blue-500">
               <CardContent className="p-8">
                 <div className="text-center">
-                  <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-accent/20 flex items-center justify-center">
+                  <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-teal-400 flex items-center justify-center border-10 border-blue-500">
                     <img
-                      src="/placeholder-logo.png"
+                      src="/assets/cappy.png"
                       alt="Cappy the Capybara"
                       className="w-24 h-24 rounded-full"
                     />

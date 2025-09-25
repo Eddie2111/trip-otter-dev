@@ -1,140 +1,158 @@
+"use client"
+
+import { createNewsletter } from "@/app/api/newsletter/newsletter.action";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Facebook, Twitter, Instagram, Youtube, Mail, MapPin, Phone } from "lucide-react"
+import Link from "next/link";
+import { useActionState } from "react";
+import { toast } from "sonner";
+import { useEffect } from "react";
+
+const SOCIAL_LINKS = [
+  { name: "Facebook", icon: Facebook, href: "/" },
+  { name: "Twitter", icon: Twitter, href: "/" },
+  { name: "Instagram", icon: Instagram, href: "/" },
+  { name: "YouTube", icon: Youtube, href: "/" },
+];
+
+const QUICK_LINKS = {
+  title: "Quick Links",
+  links: [
+    { name: "Home", href: "/" },
+    { name: "Features", href: "/" },
+    { name: "Tribes", href: "/" },
+    { name: "Reviews", href: "/" },
+    { name: "Issues", href: "/" },
+    { name: "About", href: "/" },
+  ]
+};
+
+const SUPPORT_LINKS = {
+  title: "Support",
+  links: [
+    { name: "Help Center", href: "/" },
+    { name: "Contact Us", href: "/" },
+    { name: "Privacy Policy", href: "/" },
+    { name: "Terms of Service", href: "/" },
+    { name: "Community Guidelines", href: "/" },
+  ]
+};
+
+const CONTACT_INFO = [
+  { icon: Mail, value: "hello@tripotter.net" },
+  { icon: Phone, value: "+1 (555) 123-4567" },
+  { icon: MapPin, value: "Earth, Milkyway" },
+];
 
 export function Footer() {
+  // Initialize action state with null state
+  const [state, formAction] = useActionState(createNewsletter, null);
+  console.log(state,formAction);
+  // Show toast when state changes
+  useEffect(() => {
+    if (state === null) return;
+    
+    if (state.status) {
+      toast.success(state.message);
+    } else {
+      toast.error(state.message);
+    }
+  }, [state]);
+
   return (
     <footer className="bg-foreground text-background py-16">
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-          {/* Brand Section */}
+          
+          {/* Brand Section (Fixed Content) */}
           <div className="lg:col-span-1">
             <h3 className="text-2xl font-black mb-4">TripOtter</h3>
             <p className="text-background/80 mb-6 leading-relaxed">
               The ultimate travel social platform where adventures come alive, friendships bloom, and every journey
               becomes a story worth sharing.
             </p>
+            
+            {/* Social Links (Mapped from SOCIAL_LINKS) */}
             <div className="flex space-x-4">
-              <Button variant="ghost" size="icon" className="text-background hover:text-foreground hover:bg-background">
-                <Facebook className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-background hover:text-foreground hover:bg-background">
-                <Twitter className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-background hover:text-foreground hover:bg-background">
-                <Instagram className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-background hover:text-foreground hover:bg-background">
-                <Youtube className="h-5 w-5" />
-              </Button>
+              {SOCIAL_LINKS.map((link) => {
+                const Icon = link.icon; // Lucide icon component
+                return (
+                  <Button 
+                    key={link.name}
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-background hover:text-foreground hover:bg-background"
+                    asChild
+                  >
+                    <Link href={link.href} aria-label={link.name}>
+                      <Icon className="h-5 w-5" />
+                    </Link>
+                  </Button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2">
-              <li>
-                <a href="#" className="text-background/80 hover:text-background transition-colors">
-                  Home
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/80 hover:text-background transition-colors">
-                  Features
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/80 hover:text-background transition-colors">
-                  Tribes
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/80 hover:text-background transition-colors">
-                  Reviews
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/80 hover:text-background transition-colors">
-                  Issues
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/80 hover:text-background transition-colors">
-                  About
-                </a>
-              </li>
-            </ul>
-          </div>
+          {/* Quick Links (Mapped from QUICK_LINKS) */}
+          {[QUICK_LINKS, SUPPORT_LINKS].map((section) => (
+            <div key={section.title}>
+              <h4 className="text-lg font-semibold mb-4">{section.title}</h4>
+              <ul className="space-y-2">
+                {section.links.map((link) => (
+                  <li key={link.name}>
+                    <Link 
+                      href={link.href} 
+                      className="text-background/80 hover:text-background transition-colors"
+                    >
+                      {link.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
-          {/* Support */}
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Support</h4>
-            <ul className="space-y-2">
-              <li>
-                <a href="#" className="text-background/80 hover:text-background transition-colors">
-                  Help Center
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/80 hover:text-background transition-colors">
-                  Contact Us
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/80 hover:text-background transition-colors">
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/80 hover:text-background transition-colors">
-                  Terms of Service
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-background/80 hover:text-background transition-colors">
-                  Community Guidelines
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Newsletter */}
+          {/* Newsletter Form */}
           <div>
             <h4 className="text-lg font-semibold mb-4">Stay Updated</h4>
             <p className="text-background/80 mb-4">
               Get the latest travel tips and platform updates delivered to your inbox.
             </p>
-            <div className="space-y-3">
+            <form action={formAction} className="space-y-3">
               <Input
+                name="email"
                 type="email"
                 placeholder="Enter your email"
                 className="bg-background/10 border-background/20 text-background placeholder:text-background/60"
+                required
               />
-              <Button className="w-full bg-background text-foreground hover:bg-background/90">Subscribe</Button>
-            </div>
+              <Button 
+                type="submit" 
+                className="w-full bg-background text-foreground hover:bg-background/90"
+              >
+                Subscribe
+              </Button>
+            </form>
           </div>
         </div>
 
-        {/* Contact Info */}
+        {/* Contact Info (Mapped from CONTACT_INFO) */}
         <div className="border-t border-background/20 pt-8 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center gap-3">
-              <Mail className="h-5 w-5 text-background/80" />
-              <span className="text-background/80">hello@tripotter.net</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Phone className="h-5 w-5 text-background/80" />
-              <span className="text-background/80">+1 (555) 123-4567</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5 text-background/80" />
-              <span className="text-background/80">Earth, Milkyway</span>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-between">
+            {CONTACT_INFO.map((item, index) => {
+              const Icon = item.icon;
+              return (
+                <div key={index} className="flex items-center gap-3">
+                  <Icon className="h-5 w-5 text-background/80" />
+                  <span className="text-background/80">{item.value}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Copyright */}
+        {/* Copyright (Fixed Content) */}
         <div className="border-t border-background/20 pt-8 text-center">
           <p className="text-background/60">
             © 2025 TripOtter. All rights reserved. Made with ❤️ for travelers worldwide.

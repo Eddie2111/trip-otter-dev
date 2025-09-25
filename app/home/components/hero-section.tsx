@@ -1,8 +1,9 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { ArrowRight, Play } from "lucide-react"
-import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button";
+import { ArrowRight, Play } from "lucide-react";
+import Link from "next/link";
+import { useState, useEffect } from "react";
 
 export function HeroSection() {
   const heroImages = [
@@ -26,17 +27,17 @@ export function HeroSection() {
       url: "/backgrounds/bustling-street-market-in-colorful-asian-city.jpg",
       alt: "Vibrant city street market",
     },
-  ]
+  ];
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length)
-    }, 5000)
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length);
+    }, 5000);
 
-    return () => clearInterval(interval)
-  }, [heroImages.length])
+    return () => clearInterval(interval);
+  }, [heroImages.length]);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -60,7 +61,9 @@ export function HeroSection() {
             key={index}
             onClick={() => setCurrentImageIndex(index)}
             className={`w-3 h-3 rounded-full transition-all duration-300 ${
-              index === currentImageIndex ? "bg-white scale-110" : "bg-white/50 hover:bg-white/75"
+              index === currentImageIndex
+                ? "bg-white scale-110"
+                : "bg-white/50 hover:bg-white/75"
             }`}
             aria-label={`Go to slide ${index + 1}`}
           />
@@ -69,25 +72,32 @@ export function HeroSection() {
 
       {/* Content */}
       <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
-        <h1 className="text-5xl md:text-7xl font-black mb-6 text-balance">Connect, Share, Explore</h1>
+        <h1 className="text-5xl md:text-7xl font-black mb-6 text-balance">
+          Connect, Share, Explore
+        </h1>
         <p className="text-xl md:text-2xl mb-8 text-balance opacity-90">
-          Join the ultimate travel social platform where adventures come alive, friendships bloom, and every journey
-          becomes a story worth sharing.
+          Join the ultimate travel social platform where adventures come alive,
+          friendships bloom, and every journey becomes a story worth sharing.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg">
-            Join the Adventure
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-          <Button
+          <Link href="/login">
+            <Button
+              size="lg"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg"
+            >
+              Join the Adventure
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
+          {/* <Button
             variant="outline"
             size="lg"
             className="border-white text-white hover:bg-white hover:text-foreground px-8 py-4 text-lg bg-transparent"
           >
             <Play className="mr-2 h-5 w-5" />
             Watch Demo
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -124,5 +134,5 @@ export function HeroSection() {
         }
       `}</style>
     </section>
-  )
+  );
 }

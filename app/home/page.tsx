@@ -7,6 +7,16 @@ import { ComingSoonSection } from "./components/coming-soon-section";
 import { MisspellingWordCloud } from"./components/misspelling-wordcloud";
 import { AboutSection } from "./components/about-section";
 import { Footer } from "./components/footer";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: {
+    template: "Home | Tripotter",
+    default: "Tripotter",
+  },
+  description:
+    "Tripotter is a social media platform for travelers to share their adventures, discover new destinations, and connect with fellow explorers.",
+};
 
 export default function HomePage() {
   return (

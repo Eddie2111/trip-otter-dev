@@ -46,7 +46,6 @@ export default function Analytics() {
         if (response.status === 200) {
           setAnalyticsData(response.data);
         } else {
-          console.log(response);
           setError("Failed to fetch analytics data.");
         }
       } catch (err: any) {

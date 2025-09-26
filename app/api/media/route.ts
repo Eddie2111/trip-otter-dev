@@ -98,7 +98,6 @@ export async function POST(request: NextRequest) {
       "video/x-msvideo",
     ];
     const mimeType = file.type;
-    console.log(mimeType);
     if (
       !allowedMimeTypesForImage.includes(mimeType) &&
       !allowedMimeTypesForVideo.includes(mimeType)
@@ -177,7 +176,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (allowedMimeTypesForVideo.includes(mimeType)) {
-      console.log("mime type of video recieved", mimeType);
       const MAX_VIDEO_SIZE_MB = 50;
       const MAX_VIDEO_SIZE_BYTES = MAX_VIDEO_SIZE_MB * 1024 * 1024;
 
@@ -194,15 +192,12 @@ export async function POST(request: NextRequest) {
       const fileBuffer = Buffer.from(await file.arrayBuffer());
 
       const uniqueFilename = generateUniqueVideoFilename(mimeType.split("/")[1]);
-      console.log("unique file name: ", uniqueFilename);
 
       // Upload the video and get the asset id
       const assetResponse = await client.assets.upload("file", fileBuffer, {
         filename: uniqueFilename,
         contentType: mimeType,
       });
-
-      console.log(assetResponse);
 
       // Create the document referencing the video asset
       const docResponse = await client.create({

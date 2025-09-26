@@ -41,7 +41,6 @@ export function ForgotPasswordPage() {
 
   const handleEmailSubmit = async (data: EmailFormValues) => {
     setIsLoading(true);
-    console.log("Email submitted:", data.email);
     setUserEmail(data.email);
     // Simulate API call to send verification email
     const response = await useResetPasswordAPI.createEmail({

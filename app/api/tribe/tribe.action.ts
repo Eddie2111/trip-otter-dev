@@ -58,7 +58,6 @@ export async function getTribe(id: string) {
   try {
     const tribe = await runDBOperation(async () => {
       const data = await tribesSchema.findById(id).lean().exec();
-      console.log(data);
       return data;
     });
     return tribe;
@@ -465,7 +464,6 @@ export async function isMemberOfTribe(tribeId: string, userId: string) {
         .exec();
       const parsedTribeData = JSON.stringify(tribeData);
       const _parsedTribeData = JSON.parse(parsedTribeData);
-      console.log(_parsedTribeData)
       return _parsedTribeData?.users ? _parsedTribeData.users.includes(userId) : false;
     });
     return tribe;
@@ -485,7 +483,6 @@ export async function isCreatorOfTribe(tribeId: string, userId: string) {
         .exec();
       const parsedTribeData = JSON.stringify(tribeData);
       const _parsedTribeData = JSON.parse(parsedTribeData);
-      console.log(_parsedTribeData)
       return _parsedTribeData?.createdBy === userId ? true : false;
     });
     return tribe;

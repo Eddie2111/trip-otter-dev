@@ -4,10 +4,8 @@ import newsletterSchema from "@/utils/schema/newsletter-schema";
 import { runDBOperation  } from "@/lib/useDB";
 
 export async function createNewsletter(prevState: any, formData: FormData) {
-  console.log(prevState, formData, "where is this?");
   try {
     const payload = { email: formData.get("email") as string };
-    console.log(payload);
     const data = newsLetterValidationSchema.parse(payload);
     await runDBOperation(async () => {
       const newsLetterDocument = new newsletterSchema(data);

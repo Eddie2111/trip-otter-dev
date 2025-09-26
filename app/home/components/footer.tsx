@@ -46,10 +46,7 @@ const CONTACT_INFO = [
 ];
 
 export function Footer() {
-  // Initialize action state with null state
   const [state, formAction] = useActionState(createNewsletter, null);
-  console.log(state,formAction);
-  // Show toast when state changes
   useEffect(() => {
     if (state === null) return;
     

@@ -76,7 +76,6 @@ export function ResetPasswordPage({ id }: ResetPasswordPageProps) {
         userData?.email,
         data.newPassword
       );
-      console.log(response);
 
       toast.success("Password has been reset successfully!");
       router.push("/login");

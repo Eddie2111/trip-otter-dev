@@ -32,7 +32,6 @@ export async function getSuggestionData({
       const skip = (filters.page - 1) * filters.limit;
       const userProfile = await userSchema
         .findOne({ _id: filters.userId });
-      console.log(userProfile);
       if (filters.profileFilter) {
         suggestionResult.users = await userSchema
           .find({

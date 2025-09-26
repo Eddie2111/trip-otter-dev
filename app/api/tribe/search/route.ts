@@ -31,7 +31,6 @@ function searchFilter(payload: IPayloadProps) {
       delete searchPayload['category'];
     }
   });
-  console.log(searchPayload, "filtered payload")
   return searchPayload;
 }
 

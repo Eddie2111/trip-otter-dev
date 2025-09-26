@@ -57,7 +57,7 @@ export function LoginPage() {
       });
       if (response?.ok) {
         toast.success("Welcome!");
-        router.push("/");
+        router.push("/feed");
       } else {
         toast.info("Unable to sign in, try again?");
       }
@@ -76,7 +76,7 @@ export function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    signIn("google", { callbackUrl: "/" });
+    signIn("google", { callbackUrl: "/feed" });
   };
 
   return (

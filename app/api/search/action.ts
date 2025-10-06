@@ -36,7 +36,7 @@ export async function getSearchData(filters: IFilterProps) {
             fullName: { $regex: filters.profileFilter, $options: "i" },
             active: true,
           })
-          .select("-password -emails -agreeToTerms -reputation -bio -socials")
+          .select("-password -emails -agreeToTerms -reputation -bio -socials -active -location")
           .skip(skip)
           .limit(filters.limit);
       }

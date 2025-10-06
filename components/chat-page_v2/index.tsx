@@ -1,10 +1,61 @@
+"use client";
+import { useSearchParams } from "next/navigation";
+
+import { ChatArea } from "./chat-area";
+import { ChatUsers } from "./chat-users";
 import { ChatLayoutContainer } from "@/components/chat-page_v2/layout-container";
-import { ChatRelay } from "@/components/chat-page_v2/relay-connector";
+
+import { ChatRelay } from "./relay-connector";
 
 export default function ChatPage_V2() {
-  return (
-    <ChatLayoutContainer>
-      <ChatRelay />
-    </ChatLayoutContainer>
-  )
+  const searchParams = useSearchParams();
+
+  const userLayout = searchParams.get('user');
+  const groupLayout = searchParams.get('group');
+  const publicLayout = searchParams.get('public');
+
+  if (userLayout) {
+    return (
+      <>
+        <ChatRelay relayType="user" />
+        <ChatLayoutContainer>
+          <ChatUsers />
+          <ChatArea />
+        </ChatLayoutContainer>
+      </>
+    )
+  }
+  if (groupLayout) {
+    return (
+      <>
+        <ChatRelay relayType="group" />
+        <ChatLayoutContainer>
+          <ChatUsers />
+          <ChatArea />
+        </ChatLayoutContainer>
+      </>
+    )
+  }
+  if (publicLayout) {
+    return (
+      <>
+        <ChatRelay relayType="public"/>
+        <ChatLayoutContainer>
+          <ChatUsers />
+          <ChatArea />
+        </ChatLayoutContainer>
+      </>
+    )
+  }
+  else {
+    return (
+      <>
+        <p> Pick a inbox to start chatting </p>
+        <ChatLayoutContainer>
+          <ChatUsers />
+          <ChatArea />
+        </ChatLayoutContainer>
+      </>
+    )
+  }
 }

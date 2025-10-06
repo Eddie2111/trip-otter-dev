@@ -15,7 +15,7 @@ export function ChatLayoutContainer({children}: {children: React.ReactNode}) {
     }
   }, [userId]);
   return (
-    <div>
+    <div className="flex flex-row border-2 border-blue-500">
       {children}
     </div>
   )

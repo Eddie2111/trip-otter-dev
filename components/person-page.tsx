@@ -65,12 +65,11 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
   } = useQuery<IUserProfile, Error>({
     queryKey: ["user", personId],
     queryFn: async () => {
-      const response = await fetch(`/api/users?id=${personId}`);
-      if (!response.ok) {
+      const response = await useUserApi.getUser(personId);
+      if (!response.data) {
         throw new Error("Failed to fetch user profile");
       }
-      const user = await response.json();
-      return user.data;
+      return response.data;
     },
     // Query is enabled only when personId is available AND session is loaded (not 'loading')
     enabled: !!personId && sessionStatus !== "loading",

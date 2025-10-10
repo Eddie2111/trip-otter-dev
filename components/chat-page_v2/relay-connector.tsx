@@ -7,9 +7,10 @@ import { toast } from "sonner";
 import { $isConnected, $userLoggedIn, $chatSocket } from "./chat.store";
 import { Socket } from "socket.io-client";
 import { Session } from "next-auth";
+import { chatEvents } from "./constants/events";
 
 const emitLogin = (socket: Socket, session: Session) => {
-  socket.emit("login", {
+  socket.emit(chatEvents.login, {
     userId: session.user.id,
     email: session.user.email,
   });

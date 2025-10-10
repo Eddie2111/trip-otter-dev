@@ -11,10 +11,22 @@ export function Loading() {
 
 export function LoadingSmall() {
   return (
-    <div className="flex items-center justify-center">
-      <div className="text-center">
+    <div className="flex">
+      <div className="">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2 dark:border-blue-400"></div>
       </div>
     </div>
   );
+}
+
+export function ChatTypingStatus() {
+  return (
+    <div className="text-left justify-start m-2 p-2">
+      <div className="flex items-center space-x-1">
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+      </div>
+    </div>
+  )
 }

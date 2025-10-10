@@ -1,12 +1,6 @@
 import { atom } from 'nanostores';
 import { Socket } from 'socket.io-client';
-
-interface IMessage {
-  content: string;
-  recipientId: string;
-  senderId: string;
-  timestamp: number;
-}
+import { IMessage } from './constants/types';
 
 export const $isConnected = atom<boolean>(false);
 export const $userLoggedIn = atom<boolean>(false);
@@ -27,3 +21,6 @@ export const $chatSocket = atom<Socket | null>(null);
 export const $userLayout = atom<string>("");
 
 export const $currentChatHistory = atom<IMessage[]>([]);
+
+export const $isTyping = atom<boolean> (false);
+

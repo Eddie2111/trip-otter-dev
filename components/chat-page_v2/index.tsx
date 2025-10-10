@@ -1,4 +1,7 @@
 "use client";
+// layout wrapper for chat-v2
+// this is the only component that should be exported to page.tsx
+
 import { useSearchParams } from "next/navigation";
 
 import { ChatArea } from "./chat-area";

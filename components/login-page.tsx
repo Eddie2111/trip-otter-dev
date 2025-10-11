@@ -234,7 +234,7 @@ export function LoginPage() {
             Continue with Google
           </Button>
 
-          <DemoLoginButton />
+          {/* <DemoLoginButton /> */}
 
           <div className="text-center">
             <span className="text-gray-600 dark:text-gray-300">

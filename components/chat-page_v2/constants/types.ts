@@ -4,5 +4,5 @@ export interface IMessage {
   senderId: string;
   timestamp: number;
   isSelf: boolean;
-  status: 'sent' | 'delivered' | 'read'
+  status: 'sent' | 'delivered' | 'read' | 'failed'
 }

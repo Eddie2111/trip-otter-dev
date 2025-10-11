@@ -9,17 +9,17 @@ import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { LoadingSmall } from "../ui/loading";
 import { CurrentChatHistory } from "./chat-history-area";
-// import { IMessage } from "./constants/types";
+import { IMessage } from "./constants/types";
 import { chatEvents } from "./constants/events";
 
-export interface IMessage {
-  content: string;
-  recipientId: string;
-  senderId: string;
-  timestamp: number;
-  isSelf: boolean;
-  status: 'sent' | 'delivered' | 'read'
-}
+// export interface IMessage {
+//   content: string;
+//   recipientId: string;
+//   senderId: string;
+//   timestamp: number;
+//   isSelf: boolean;
+//   status: 'sent' | 'delivered' | 'read' | 'failed'
+// }
 
 export function ChatArea() {
   const userOnArea = useStore($userLayout);
@@ -128,7 +128,7 @@ export function ChatArea() {
   )
   useEffect(
     () => {
-      const typingStatusStartHandler = (data: IMessage) => {
+      const typingStatusStartHandler = () => {
         $isTyping.set(true);
       };
       chatSocket?.on(chatEvents.startTyping, typingStatusStartHandler)
@@ -140,7 +140,7 @@ export function ChatArea() {
 
   useEffect(
     () => {
-      const typingStatusStopHandler = (data: IMessage) => {
+      const typingStatusStopHandler = () => {
         $isTyping.set(false);
       };
       chatSocket?.on(chatEvents.stopTyping, typingStatusStopHandler)

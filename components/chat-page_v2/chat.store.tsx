@@ -1,4 +1,4 @@
-import { atom } from 'nanostores';
+import { atom, PreinitializedWritableAtom } from 'nanostores';
 import { Socket } from 'socket.io-client';
 import { IMessage } from './constants/types';
 
@@ -24,3 +24,4 @@ export const $currentChatHistory = atom<IMessage[]>([]);
 
 export const $isTyping = atom<boolean> (false);
 
+export type IMessageStoreType = PreinitializedWritableAtom<IMessage[]> & object;

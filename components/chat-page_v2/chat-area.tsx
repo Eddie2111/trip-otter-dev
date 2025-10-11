@@ -1,7 +1,7 @@
 "use client";
 
 import { useStore } from "@nanostores/react";
-import { $chatSocket, $currentChatHistory, $isTyping, $userLayout } from "./chat.store";
+import { $chatSocket, $currentChatHistory, $isTyping, $userLayout, type IMessageStoreType } from "./chat.store";
 import { Separator } from "../ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { useUserApi } from "@/lib/requests";
@@ -9,9 +9,17 @@ import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { LoadingSmall } from "../ui/loading";
 import { CurrentChatHistory } from "./chat-history-area";
-import { IMessage } from "./constants/types";
+// import { IMessage } from "./constants/types";
 import { chatEvents } from "./constants/events";
-import { PreinitializedWritableAtom } from "nanostores";
+
+export interface IMessage {
+  content: string;
+  recipientId: string;
+  senderId: string;
+  timestamp: number;
+  isSelf: boolean;
+  status: 'sent' | 'delivered' | 'read'
+}
 
 export function ChatArea() {
   const userOnArea = useStore($userLayout);
@@ -39,17 +47,19 @@ export function ChatArea() {
     message: string
   ) => {
     if (chatSocket) {
+      const timestamp = Date.now();
       const payload = {
         message,
         by: session?.user?.id,
         to: userOnArea,
+        timestamp
       }
       chatSocket.emit(chatEvents.sendMessageToUser, payload);
       $currentChatHistory.set([...userChats, {
         content: message,
         recipientId: userOnArea,
         senderId: session?.user?.id ?? "",
-        timestamp: Date.now(),
+        timestamp,
         isSelf: true,
         status: 'sent',
       }]);
@@ -64,8 +74,8 @@ export function ChatArea() {
       const messageHandler = (data: IMessage) => {
         console.log("New Message Received:", data);
         if (chatSocket && data.timestamp) {
-          $currentChatHistory.set([...userChats, {...data, isSelf: false}]);
-          console.log([...userChats, {...data, isSelf: false}]);
+          $currentChatHistory.set([...userChats, { ...data, isSelf: false }]);
+          console.log([...userChats, { ...data, isSelf: false }]);
           chatSocket.emit(chatEvents.messageReceived, { messageId: data.timestamp });
         }
       };
@@ -77,36 +87,44 @@ export function ChatArea() {
     }, [chatSocket, userChats]
   )
 
-  function ChatStoreOptimization(chatStore: PreinitializedWritableAtom<IMessage[]> & object): void {
+  function ChatStoreOptimization(chatStore: IMessageStoreType): void {
     const chatStoreLength = chatStore.get().length;
     const MAX_MESSAGES = 500;
-    if(chatStoreLength > 30) {
+    if (chatStoreLength > MAX_MESSAGES) {
       chatStore.set(
         chatStore.get()
-        .slice(chatStoreLength - MAX_MESSAGES)
+          .slice(chatStoreLength - MAX_MESSAGES)
       );
     } else {
       return;
     }
   }
   useEffect(
-    ()=> {
-      const updateMessageStatus = (data: { messageId: number}) => {
-        const chatStory = userChats;
+    () => {
+      const updateMessageStatus = (data: { messageId: number }) => {
+        console.log("message sent at server")
+        const chatStory = $currentChatHistory.get();
         const updateRequiredIndex = chatStory.findIndex(
           value => value.timestamp === data.messageId
         )
         // update updateRequiredIndex and set the store
         ChatStoreOptimization($currentChatHistory)
-
+        // if (updateRequiredIndex === -1) return;
+        let updatedChatStory = [...chatStory];
+        updatedChatStory[updateRequiredIndex] = {
+          ...updatedChatStory[updateRequiredIndex],
+          status: 'delivered',
+        };
+        $currentChatHistory.set(updatedChatStory);
+        console.log(updatedChatStory, updateRequiredIndex, data);
       }
-      if(chatSocket) {
+      if (chatSocket) {
         chatSocket?.on(chatEvents.messageReceived, updateMessageStatus);
         return () => {
           chatSocket?.off(chatEvents.messageReceived, updateMessageStatus);
         }
       }
-    },[]
+    }, [chatSocket]
   )
   useEffect(
     () => {
@@ -145,9 +163,9 @@ export function ChatArea() {
     <div className="flex flex-col w-full mx-2">
       <p>{profileData?.fullName ?? ""}</p>
       <Separator />
-      <CurrentChatHistory 
-        chats={userChats} 
-        messageSender={handleMessageEmit} 
+      <CurrentChatHistory
+        chats={userChats}
+        messageSender={handleMessageEmit}
         sender={profileData}
         recipientId={userOnArea}
         senderId={session?.user?.id ?? ""}

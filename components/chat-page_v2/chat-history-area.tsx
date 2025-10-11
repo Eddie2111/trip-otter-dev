@@ -120,6 +120,7 @@ export function CurrentChatHistory({ chats, messageSender, sender, recipientId, 
                 messages.isSelf ?
                   <div className="flex flex-col">
                     <div className="flex flex-row justify-end">
+                      <p className="text-xs text-slate-500 mt-10">{messages.status}</p>
                       <p className="text-right m-2 p-2 max-w-[300px] bg-slate-500 shadow-sm shadow-slate-600 rounded-xl text-white" >{messages.content}</p>
                     </div>
                     <p className="text-right text-xs text-slate-500">{formatTimeAgo(messages.timestamp)}</p>

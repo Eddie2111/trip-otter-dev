@@ -6,7 +6,7 @@
     "build": "next build",
     "dev": "set NODE_OPTIONS=--max-old-space-size=4096 && next dev --turbopack",
     "dev:turbo": "next dev --turbopack",
-    "dev:test": "next dev --turbopack",
+    "dev:test": "next dev",
     "lint": "next lint",
     "start": "next start"
   },

@@ -4,12 +4,33 @@ import { IPayloadProps } from "@/app/api/tribe/search/route";
 
 export class BaseAPI {
   protected readonly apiClient: AxiosInstance;
+  protected readonly selfServer: string;
+  protected readonly pulseServer: string;
+  protected readonly beaconServer: string;
 
   constructor() {
     this.apiClient = axios.create({
       // baseURL: process.env.NEXT_PUBLIC_API_URL || '/api/',
       withCredentials: true,
     });
+    this.selfServer = "/api/";
+    this.pulseServer = process.env.NEXT_PUBLIC_PULSE_SERVER ?? "";
+    this.beaconServer = process.env.NEXT_PUBLIC_BEACON_SERVER ?? "";
+  }
+  protected buildUrl(path: string, params: Record<string, any> = {}): string {
+    const validParams = Object.keys(params).reduce((acc, key) => {
+      const value = params[key];
+      if (
+        value !== undefined && 
+        value !== null && 
+        value !== ''
+      ) acc[key] = String(value).trim();
+      return acc;
+    }, {} as Record<string, string>);
+    const searchParams = new URLSearchParams(validParams);
+    const queryString = searchParams.toString();
+
+    return queryString ? `${path}?${queryString}` : path;
   }
 }
 
@@ -121,9 +142,11 @@ class ResetPasswordAPI extends BaseAPI {
     try {
       // const link = "http://localhost:10000/api/verification";
       // process.env.PULSE_BASE_URL ?? process.env.NEXT_PUBLIC_PULSE_BASE_URL;
-      console.log(`"http://localhost:10000/api/verification/"${token}`);
+      const link =
+        process.env.PULSE_BASE_URL ?? process.env.NEXT_PUBLIC_PULSE_BASE_URL;
+      console.log(`"${link}api/verification/"${token}`);
       const response = await this.apiClient.post(
-        `http://localhost:10000/api/verification/${token}`
+        `${link}api/verification/${token}`
       );
       return response.data;
     } catch (error) {
@@ -200,10 +223,10 @@ class ReviewAPI extends BaseAPI {
 }
 
 class FeedAPI extends BaseAPI {
-  public getFeed = async (profileId: string, page: number, limit: number): Promise<any> => {
+  public getFeed = async ( page: number, limit: number): Promise<any> => {
     try {
       const response = await this.apiClient.get(
-        `/api/feed?page=${page}&limit=${limit}&id=${profileId}`
+        `/api/feed?page=${page}&limit=${limit}`
       );
       return response.data;
     } catch (error) {
@@ -637,6 +660,33 @@ class TribeAPI extends BaseAPI {
   }
 }
 
+class MessageAPI extends BaseAPI {
+  public getMessages = async (
+    senderId: string,
+    recipientId: string,
+    page: number,
+    limit: number
+  ): Promise<AxiosResponse> => {
+    try {
+      const pulseUrl = process.env.PULSE_BASE_URL ?? process.env.NEXT_PUBLIC_PULSE_BASE_URL;
+      const response = await this.apiClient.get(`${pulseUrl}/api/messages/user?senderId=${senderId}&recipientId=${recipientId}&page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  };
+  public searchGroups = async (query: string): Promise<AxiosResponse> => {
+    try {
+      const response = await this.apiClient.get(`${process.env.PULSE_BASE_URL}/api/messages/group/search/${query}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      throw axiosError.response?.data || axiosError.message;
+    }
+  }
+}
+
 export const useAuthApi = new AuthAPI();
 export const usePostApi = new PostAPI();
 export const useMediaApi = new MediaAPI();
@@ -653,3 +703,4 @@ export const useFeedAPI = new FeedAPI();
 export const useSearchAPI = new SearchAPI();
 export const useCompanionAPI = new CompanionAPI();
 export const useTribeAPI = new TribeAPI();
+export const useMessageAPI = new MessageAPI();

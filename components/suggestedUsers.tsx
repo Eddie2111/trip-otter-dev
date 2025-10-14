@@ -145,7 +145,7 @@ export function SuggestedUsers() {
 }
 export function SuggestedUserWrapper() {
   return (
-    <div className="hidden lg:block w-80 space-y-6 sticky top-8">
+    <div className="hidden lg:block w-80 space-y-6 sticky top-8 h-[350px]">
       <Card className="p-4 bg-white dark:bg-gray-800 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-500 dark:text-gray-300">

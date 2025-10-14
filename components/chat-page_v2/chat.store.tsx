@@ -22,6 +22,19 @@ export const $userLayout = atom<string>("");
 
 export const $currentChatHistory = atom<IMessage[]>([]);
 
-export const $isTyping = atom<boolean> (false);
+export const $isTyping = atom<boolean>(false);
 
 export type IMessageStoreType = PreinitializedWritableAtom<IMessage[]> & object;
+
+export function ChatStoreOptimization(chatStore: IMessageStoreType): void {
+  const chatStoreLength = chatStore.get().length;
+  const MAX_MESSAGES = 500;
+  if (chatStoreLength > MAX_MESSAGES) {
+    chatStore.set(
+      chatStore.get()
+        .slice(chatStoreLength - MAX_MESSAGES)
+    );
+  } else {
+    return;
+  }
+}

@@ -42,7 +42,9 @@ export function TripotterFeed() {
             </div>
 
             {/* Right Sidebar - Suggested Users */}
+            <div className="h-[300px]">
             <SuggestedUserWrapper />
+            </div>
           </div>
         </div>
       </div>

@@ -8,10 +8,10 @@ interface ChatUserProps {
   profileImage: string;
 }
 
-export function ChatUser({ ChatUserProp }: { ChatUserProp: ChatUserProps }) {
+export function ChatUser({ ChatUserProp, onClick }: { ChatUserProp: ChatUserProps, onClick: () => void; }) {
   const chatLink = `/test?user=${ChatUserProp._id}`;
   return (
-    <Link href={chatLink} shallow>
+    <Link href={chatLink} shallow onClick={onClick}>
       <div className="flex flex-row gap-1 m-2">
         <img
           src={ChatUserProp.profileImage ? ChatUserProp.profileImage : "placeholder-logo.png"}

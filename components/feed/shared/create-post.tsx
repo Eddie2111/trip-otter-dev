@@ -155,7 +155,6 @@ export function CreatePostForm({
 
   // Debounce the search to avoid too many API calls
   useEffect(() => {
-    // Only run the effect if there's a location value
     if (!locationValue || locationValue.length < 3) {
       setSuggestions([]);
       return;
@@ -178,11 +177,11 @@ export function CreatePostForm({
         console.error("Nominatim API error:", error);
         toast.error("Failed to search for locations. Please try again.");
       }
-    }, 500); // 500ms debounce time
+    }, 500);
 
-    // Cleanup function to clear the timeout
     return () => clearTimeout(timeoutId);
   }, [locationValue]);
+  
   const [_isSubmitting, setIsSubmitting] = useState(false);
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {

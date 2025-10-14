@@ -1,16 +1,18 @@
 "use client";
 
 import { useStore } from "@nanostores/react";
-import { $chatSocket, $currentChatHistory, $isTyping, $userLayout, type IMessageStoreType } from "./chat.store";
+import { $chatSocket, $currentChatHistory, $isTyping, $userLayout, ChatStoreOptimization, type IMessageStoreType } from "./chat.store";
 import { Separator } from "../ui/separator";
 import { useQuery } from "@tanstack/react-query";
-import { useUserApi } from "@/lib/requests";
+import { useMessageAPI, useUserApi } from "@/lib/requests";
 import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { LoadingSmall } from "../ui/loading";
 import { CurrentChatHistory } from "./chat-history-area";
 import { IMessage } from "./constants/types";
 import { chatEvents } from "./constants/events";
+import { MESSAGE_TIMEOUT_MS, RETRY_INTERVAL_MS } from "./constants/constraints";
+import { toast } from "sonner";
 
 // export interface IMessage {
 //   content: string;
@@ -50,8 +52,8 @@ export function ChatArea() {
       const timestamp = Date.now();
       const payload = {
         message,
-        by: session?.user?.id,
-        to: userOnArea,
+        senderId: session?.user?.id,
+        recipientId: userOnArea,
         timestamp
       }
       chatSocket.emit(chatEvents.sendMessageToUser, payload);
@@ -74,9 +76,7 @@ export function ChatArea() {
       const messageHandler = (data: IMessage) => {
         console.log("New Message Received:", data);
         if (chatSocket && data.timestamp) {
-          $currentChatHistory.set([...userChats, { ...data, isSelf: false }]);
-          console.log([...userChats, { ...data, isSelf: false }]);
-          chatSocket.emit(chatEvents.messageReceived, { messageId: data.timestamp });
+          $currentChatHistory.set([...userChats, data]);
         }
       };
       chatSocket?.on(chatEvents.newMessage, messageHandler)
@@ -87,18 +87,52 @@ export function ChatArea() {
     }, [chatSocket, userChats]
   )
 
-  function ChatStoreOptimization(chatStore: IMessageStoreType): void {
-    const chatStoreLength = chatStore.get().length;
-    const MAX_MESSAGES = 500;
-    if (chatStoreLength > MAX_MESSAGES) {
-      chatStore.set(
-        chatStore.get()
-          .slice(chatStoreLength - MAX_MESSAGES)
+  // attempt to resend the 'sent' or 'failed' messages again
+  useEffect(() => {
+    if (!chatSocket || !session?.user?.id) return;
+
+    const resendLoop = setInterval(() => {
+      const chatStory = $currentChatHistory.get();
+      const now = Date.now();
+
+      const messagesToResend = chatStory.filter((msg) => 
+        (msg.status === 'sent' || msg.status === 'failed') && 
+        msg.isSelf && 
+        (now - msg.timestamp) > MESSAGE_TIMEOUT_MS
       );
-    } else {
-      return;
-    }
-  }
+
+      if (messagesToResend.length > 0) {
+        toast.info(`Retrying ${messagesToResend.length} unsent messages...`);
+
+        messagesToResend.forEach((message) => {
+          const payload = {
+            message: message.content,
+            senderId: message.senderId,
+            recipientId: message.recipientId,
+            timestamp: message.timestamp
+          };
+          
+          const resendAckHandler = (response: { success: boolean; error?: string; messageId?: number }) => {
+            if (!response.success) {
+              const current = $currentChatHistory.get();
+              const index = current.findIndex(m => m.timestamp === message.timestamp);
+              if (index !== -1) {
+                const updated = [...current];
+                updated[index] = { ...updated[index], status: 'failed' };
+                $currentChatHistory.set(updated);
+              }
+            }
+          };
+          
+          chatSocket.emit(chatEvents.sendMessageToUser, payload, resendAckHandler);
+        });
+      }
+    }, RETRY_INTERVAL_MS);
+
+    return () => clearInterval(resendLoop);
+  }, [chatSocket, session]);
+
+  // message delivery listener
   useEffect(
     () => {
       const updateMessageStatus = (data: { messageId: number }) => {
@@ -107,9 +141,8 @@ export function ChatArea() {
         const updateRequiredIndex = chatStory.findIndex(
           value => value.timestamp === data.messageId
         )
-        // update updateRequiredIndex and set the store
         ChatStoreOptimization($currentChatHistory)
-        // if (updateRequiredIndex === -1) return;
+        if (updateRequiredIndex === -1) return;
         let updatedChatStory = [...chatStory];
         updatedChatStory[updateRequiredIndex] = {
           ...updatedChatStory[updateRequiredIndex],
@@ -126,6 +159,8 @@ export function ChatArea() {
       }
     }, [chatSocket]
   )
+
+  // type start status listener
   useEffect(
     () => {
       const typingStatusStartHandler = () => {
@@ -138,6 +173,7 @@ export function ChatArea() {
     }, [chatSocket, isTyping]
   );
 
+  // type stop status listener
   useEffect(
     () => {
       const typingStatusStopHandler = () => {
@@ -169,6 +205,7 @@ export function ChatArea() {
         sender={profileData}
         recipientId={userOnArea}
         senderId={session?.user?.id ?? ""}
+        userOnArea={userOnArea}
       />
     </div>
   )

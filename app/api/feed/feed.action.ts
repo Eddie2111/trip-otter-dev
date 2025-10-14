@@ -12,7 +12,6 @@ import { ObjectId } from "mongoose";
 export async function getPublicFeed(
   skip: number,
   limit: number,
-  profileId?: string
 ) {
   const { posts, totalPosts } = await runDBOperationWithTransaction(
     async () => {
@@ -56,6 +55,49 @@ export async function getPublicFeed(
   return { posts, totalPosts };
 }
 
+export async function getUserPosts(
+  skip: number,
+  limit: number,
+  profileId: string,
+) {
+  const { posts, totalPosts } = await runDBOperationWithTransaction(
+    async () => {
+      const query = postsSchema.find().where("fromGroup", { $exists: false });
+      const totalCount = await postsSchema.countDocuments(query.getQuery());
+      const fetchedPosts = await query
+        .find({ owner: profileId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate([
+          {
+            path: "owner",
+            select: "_id fullName username profileImage",
+          },
+          {
+            path: "likes",
+            model: "User",
+            select: "_id username fullName profileImage",
+          },
+          {
+            path: "comments",
+            model: "Comment",
+            select: "_id content owner createdAt",
+            populate: {
+              path: "owner",
+              model: "User",
+              select: "_id username profileImage",
+            },
+          }
+        ])
+        .lean();
+
+      return { posts: fetchedPosts, totalPosts: totalCount };
+    }
+  );
+  return { posts, totalPosts };
+}
+
 function testLogger(scope: string, message: string, payloads: any) {
   console.log(
     `at scope: ${scope}, logging for: ${message}, payloads recieved: ${JSON.stringify(
@@ -66,6 +108,11 @@ function testLogger(scope: string, message: string, payloads: any) {
 
 /*
  WIP: This is a new function that is not yet implemented
+
+ This function will fetch all the posts filtered out using user's profile, 
+ should not be implemented if the number of users is less than 200 
+ or less than 20 followers.
+
  This function often fails to work if the array for joinedTribes or createdTribes is empty, appearently creating a new profile solves this issue.
  or the old user interacts with new feature, it works
  TODO: fix this

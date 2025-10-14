@@ -2,7 +2,7 @@
 
 import { useSearchAPI } from "@/lib/requests";
 import { Input } from "../ui/input";
-import { $userLoggedIn } from "./chat.store";
+import { $currentChatHistory, $isTyping, $userLayout, $userLoggedIn } from "./chat.store";
 import { useStore } from '@nanostores/react';
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -40,6 +40,10 @@ export function ChatUsers() {
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.target.value);
   };
+  const cleanUpSearchParam = () => {
+    setInputValue('');
+    setSearchQuery('');
+  }
   console.log(data, isLoading, isError);
 
   return (
@@ -63,7 +67,12 @@ export function ChatUsers() {
           <ul>
             {data.users.map((user: any) => {
               return (
-                <ChatUser key={user._id} ChatUserProp={user} />
+                <ChatUser key={user._id} ChatUserProp={user} onClick={() => {
+                  cleanUpSearchParam();
+                  $userLayout.set(user._id);
+                  $currentChatHistory.set([]);
+                  $isTyping.set(false);
+                }} />
               )
             }
             )}

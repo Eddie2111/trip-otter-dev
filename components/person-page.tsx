@@ -39,6 +39,7 @@ import { FollowModal } from "./follow-modal";
 import { useWebsocket } from "@/lib/useWebsocket";
 
 import { PersonPageProps, IPost } from "@/types/person";
+import { useRouter } from "next/navigation";
 
 const CreatePost = Dynamic(
   () => import("./feed/shared/create-post").then((mod) => mod.CreatePost),
@@ -136,13 +137,13 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
       });
     }
   };
+  const router = useRouter();
 
-  // TanStack Query for Follow/Unfollow Mutation
   const followMutation = useMutation<
-    any, // Expected response data type
-    Error, // Error type
-    string, // Variable type passed to mutationFn (personId to follow/unfollow)
-    { previousIsFollowing: boolean; previousFollowersCount: number } // Context type for onMutate
+    any,
+    Error,
+    string,
+    { previousIsFollowing: boolean; previousFollowersCount: number }
   >({
     mutationFn: async (targetPersonId) => {
       const response = await useFollowApi.toggleFollow(targetPersonId);
@@ -448,7 +449,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                     onClick={handleFollow}
                     className="flex-1 md:flex-none
                     dark:border-blue-500 dark:text-blue-500 dark:hover:bg-blue-900
-                    dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white"
+                    dark:bg-blue-600"
                     disabled={followMutation.isPending}
                   >
                     {followMutation.isPending ? (
@@ -463,6 +464,7 @@ export function PersonPage({ personId, selfProfile }: PersonPageProps) {
                   <Button
                     variant="outline"
                     className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                    onClick={()=> (router.push(`chat?userId=${displayPersonData._id}`))}
                   >
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Message

@@ -36,6 +36,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { CommentBox } from "../shared/comment-box";
+import { type Session } from "next-auth";
 
 export function PostCardV2({
   post,
@@ -48,15 +49,7 @@ export function PostCardV2({
   post: IPostProps;
   currentUserProfile: any;
   userImage: any
-  session: {
-    user: {
-      id: string;
-      name: string;
-      email: string;
-      image?: string;
-      username: string;
-    };
-  } | null;
+  session: Session | null;
   socket: Socket<any, any>;
   isSocketConnected: boolean;
 }) {

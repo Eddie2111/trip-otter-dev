@@ -1,0 +1,2 @@
+export const RETRY_INTERVAL_MS = 10000;
+export const MESSAGE_TIMEOUT_MS = 5000;

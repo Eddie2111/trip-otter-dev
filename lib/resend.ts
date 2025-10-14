@@ -18,7 +18,7 @@ export async function getEmailInstance() {
 //     const emailInstance = await getEmailInstance()
 //     emailInstance.emails.send({
 //         from: "onboarding@resend.dev",
-//         to: "asm.tareq.mahmood@g.bracu.ac.bd",
+//         to: "test.user@email.abc",
 //         subject: "Hello World",
 //         html: "<p>Congrats on sending your <strong>first email</strong>!</p>",
 //     });

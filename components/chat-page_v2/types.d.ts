@@ -9,4 +9,5 @@ export interface ICurrentChatHistoryProps {
   }
   recipientId: string;
   senderId: string;
+  userOnArea: string;
 }

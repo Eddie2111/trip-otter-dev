@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPublicFeed, getPublicFeed_v2 } from "./feed.action";
+import { getPublicFeed, getPublicFeed_v2, getUserPosts } from "./feed.action";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -38,20 +38,37 @@ export async function GET(request: NextRequest) {
     }
     ////////////////////////////////////////////////////////////////////////
 
-    const { posts, totalPosts } = await getPublicFeed(skip, limit);
+    if(profileId) {
+      const userPosts = await getUserPosts(skip, limit, profileId);
+      return NextResponse.json({
+        message: "Received feed data",
+        status: 200,
+        data: userPosts.posts,
+        pagination: {
+          currentPage: page,
+          postsPerPage: limit,
+          totalPosts: userPosts.totalPosts,
+          totalPages: Math.ceil(userPosts.totalPosts / limit),
+          hasMore: page * limit < userPosts.totalPosts,
+        },
+      });
+    }
+    else {
+      const { posts, totalPosts } = await getPublicFeed(skip, limit);
+      return NextResponse.json({
+        message: "Received feed data",
+        status: 200,
+        data: posts,
+        pagination: {
+          currentPage: page,
+          postsPerPage: limit,
+          totalPosts: totalPosts,
+          totalPages: Math.ceil(totalPosts / limit),
+          hasMore: page * limit < totalPosts,
+        },
+      });
+    }
 
-    return NextResponse.json({
-      message: "Received feed data",
-      status: 200,
-      data: posts,
-      pagination: {
-        currentPage: page,
-        postsPerPage: limit,
-        totalPosts: totalPosts,
-        totalPages: Math.ceil(totalPosts / limit),
-        hasMore: page * limit < totalPosts,
-      },
-    });
   } catch (err) {
     console.error("Error fetching posts:", err);
     return NextResponse.json({

@@ -13,10 +13,13 @@ import { IMessage } from "./constants/types";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useStore } from '@nanostores/react';
-import { $chatSocket, $isTyping } from './chat.store';
+import { $chatSocket, $currentChatHistory, $isTyping, $userLayout } from './chat.store';
 import { ChatTypingStatus } from '../ui/loading';
 import { chatEvents } from './constants/events';
 import { ICurrentChatHistoryProps } from './types';
+import { useMessageAPI } from '@/lib/requests';
+import { useQuery } from '@tanstack/react-query';
+import { messages } from '@/data/mocks/chat.mock';
 
 dayjs.extend(relativeTime);
 
@@ -29,10 +32,39 @@ const messageSchema = z.object({
 
 type MessageFormValues = z.infer<typeof messageSchema>;
 
-export function CurrentChatHistory({ chats, messageSender, sender, recipientId, senderId }: ICurrentChatHistoryProps) {
+export function CurrentChatHistory({ chats, messageSender, sender, recipientId, senderId, userOnArea }: ICurrentChatHistoryProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatSocket = useStore($chatSocket);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // old message fetcher
+  const { data: messagesData, isLoading: loadingMessages, isError: messagesError } = useQuery({
+    queryKey: ["chatData", userOnArea],
+    queryFn: async () => {
+      const response = await useMessageAPI.getMessages(senderId ?? "", userOnArea, 1, 10);
+      if (!response) {
+        throw new Error("Failed to fetch user profile");
+      }
+      if (response) {
+        const _response = response as unknown as IMessage[];
+        console.log(_response, "check me")
+      }
+      return response;
+    },
+    enabled: !!userOnArea && !!senderId,
+    staleTime: 1000 * 60 * 15,
+  })
+  console.log(messagesData, "what is this?")
+
+  useEffect(() => {
+  if (messagesData && !loadingMessages && !messagesError) {
+    // Only update if we're still chatting with the same user
+    if ($userLayout.get() === userOnArea) {
+      const _messagesData = messagesData as unknown as IMessage[]
+      $currentChatHistory.set(_messagesData);
+    }
+  }
+}, [messagesData, loadingMessages, messagesError, userOnArea]);
 
   const {
     register,
@@ -57,8 +89,8 @@ export function CurrentChatHistory({ chats, messageSender, sender, recipientId, 
       }
 
       const payload = {
-        by: senderId,
-        to: recipientId,
+        senderId,
+        recipientId,
       };
       chatSocket.emit(chatEvents.startTyping, payload);
 
@@ -91,8 +123,8 @@ export function CurrentChatHistory({ chats, messageSender, sender, recipientId, 
     }
     if (chatSocket) {
       const payload = {
-        by: senderId,
-        to: recipientId,
+        senderId,
+        recipientId,
       };
       chatSocket.emit(chatEvents.stopTyping, payload);
     }
@@ -111,7 +143,7 @@ export function CurrentChatHistory({ chats, messageSender, sender, recipientId, 
   }, [chats, typingStatus]);
 
   const messageStatusIndicator = (status: string) => {
-    if (status === "sent") return <Check className="text-[12px] h-[12px] w-[12px]"/>
+    if (status === "sent") return <Check className="text-[12px] h-[12px] w-[12px]" />
     if (status === 'delivered') return <CheckCheck className="text-blue-500 text-[12px] h-[12px] w-[12px]" />
     if (status === 'read') return <CircleCheck className="text-green-500 text-[12px] h-[12px] w-[12px]" />
     if (status === 'failed') return <CircleAlert className="text-red-500 text-[12px] h-[12px] w-[12px]" />
@@ -124,10 +156,10 @@ export function CurrentChatHistory({ chats, messageSender, sender, recipientId, 
           chats.map((messages: IMessage) => (
             <div key={messages.timestamp}>
               {
-                messages.isSelf ?
+                messages.recipientId === userOnArea ?
                   <div className="flex flex-col">
                     <div className="flex flex-row justify-end">
-                      <p className="text-xs text-slate-500 mt-10">{ messageStatusIndicator(messages.status) }</p>
+                      <p className="text-xs text-slate-500 mt-10">{messageStatusIndicator(messages.status)}</p>
                       <p className="text-right m-2 p-2 max-w-[300px] bg-slate-500 shadow-sm shadow-slate-600 rounded-xl text-white" >{messages.content}</p>
                     </div>
                     <p className="text-right text-xs text-slate-500">{formatTimeAgo(messages.timestamp)}</p>

@@ -1,17 +1,36 @@
 "use client";
 
-import { useSearchAPI } from "@/lib/requests";
+import { useMessageAPI, useSearchAPI } from "@/lib/requests";
 import { Input } from "../ui/input";
 import { $currentChatHistory, $isTyping, $userLayout, $userLoggedIn } from "./chat.store";
 import { useStore } from '@nanostores/react';
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { ChatUser } from "./chat-user";
+import { ChatUser, ChatUserMessages } from "./chat-user";
+import { useSession } from "next-auth/react";
+import { IConversationPayload } from "./types";
+
 
 export function ChatUsers() {
-  const userLoggedIn = useStore($userLoggedIn);
   const [inputValue, setInputValue] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const { data: session } = useSession();
+  const loggedInUserId = session?.user?.id;
+
+  // user message listener
+  const { data: messageListener, isLoading: isLoadingUserMessages, isError: isErrorUserMessages } = useQuery({
+    queryKey: ["chatUsers", 'chatUsers'],
+    queryFn: async () => {
+      const response = await useMessageAPI.messageListenerForUser(loggedInUserId ?? "", 1, 10);
+      if (!response.data) {
+        throw new Error("Failed to fetch user profile");
+      }
+      return response.data;
+    },
+    enabled: !!loggedInUserId,
+    staleTime: 1000 * 60 * 15,
+  });
+  console.log(messageListener)
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -24,6 +43,7 @@ export function ChatUsers() {
     };
   }, [inputValue]);
 
+  // search for a user
   const { data, isLoading, isError } = useQuery({
     queryKey: ["searchUser", searchQuery],
     queryFn: async () => {
@@ -44,7 +64,6 @@ export function ChatUsers() {
     setInputValue('');
     setSearchQuery('');
   }
-  console.log(data, isLoading, isError);
 
   return (
     <div className="border-2 border-red-500 min-w-[240px]">
@@ -55,11 +74,6 @@ export function ChatUsers() {
         value={inputValue}
         onChange={handleInputChange}
       />
-      {
-        userLoggedIn ?
-          <span className="text-green-500">connected</span> :
-          <span className="text-red-500">connecting</span>
-      }
       <div className="border-2 border-green-500 my-2">
         {isLoading && searchQuery && <p>Searching...</p>}
         {isError && <p className="text-red-500">Error fetching data.</p>}
@@ -79,8 +93,26 @@ export function ChatUsers() {
           </ul>
         )}
         {data && searchQuery && data.length === 0 && <p>No users found.</p>}
-        {!searchQuery && <p>Start typing to search.</p>}
       </div>
+      <div className="flex flex-col">
+        {messageListener && messageListener.length > 0 && messageListener.map((user: IConversationPayload) => {
+          return (
+            <ChatUserMessages 
+            key={user.contactId} 
+            ChatUserProp={user.contact} 
+            ChatUserMessage={user.latestMessage} 
+            ChatUserMessageTime={user.lastMessageAt} 
+            onClick={() => {
+              cleanUpSearchParam();
+              $userLayout.set(user.contactId);
+              $currentChatHistory.set([]);
+              $isTyping.set(false);
+            }} />
+          )
+        })}
+
+      </div>
+
     </div>
   )
 }

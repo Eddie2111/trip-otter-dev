@@ -9,6 +9,7 @@ import { ChatUsers } from "./chat-users";
 import { ChatLayoutContainer } from "@/components/chat-page_v2/layout-container";
 
 import { ChatRelay } from "./relay-connector";
+import { ChatSettings, ChatSettingsLoader } from "./chat-settings";
 
 export default function ChatPage_V2() {
   const searchParams = useSearchParams();
@@ -24,6 +25,7 @@ export default function ChatPage_V2() {
         <ChatLayoutContainer>
           <ChatUsers />
           <ChatArea />
+          <ChatSettings />
         </ChatLayoutContainer>
       </>
     )
@@ -35,6 +37,7 @@ export default function ChatPage_V2() {
         <ChatLayoutContainer>
           <ChatUsers />
           <ChatArea />
+          <ChatSettings />
         </ChatLayoutContainer>
       </>
     )
@@ -46,6 +49,7 @@ export default function ChatPage_V2() {
         <ChatLayoutContainer>
           <ChatUsers />
           <ChatArea />
+          <ChatSettings />
         </ChatLayoutContainer>
       </>
     )
@@ -57,6 +61,7 @@ export default function ChatPage_V2() {
         <ChatLayoutContainer>
           <ChatUsers />
           <ChatArea />
+          <ChatSettingsLoader />
         </ChatLayoutContainer>
       </>
     )

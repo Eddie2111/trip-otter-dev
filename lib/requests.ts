@@ -1,6 +1,7 @@
 import axios, { AxiosError, AxiosResponse, AxiosInstance } from "axios";
 import { SignUpData } from "@/types/requests.d";
 import { IPayloadProps } from "@/app/api/tribe/search/route";
+import { IMessage } from "@/components/chat-page_v2/constants/types";
 
 export class BaseAPI {
   protected readonly apiClient: AxiosInstance;
@@ -661,24 +662,37 @@ class TribeAPI extends BaseAPI {
 }
 
 class MessageAPI extends BaseAPI {
-  public getMessages = async (
-    senderId: string,
-    recipientId: string,
-    page: number,
-    limit: number
-  ): Promise<AxiosResponse> => {
+public getMessages = async (
+  senderId: string,
+  recipientId: string,
+  page: number,
+  limit: number
+): Promise<{
+  data: IMessage[];
+  page: number;
+  hasMore: boolean;
+  total: number;
+}> => {
+  const pulseUrl = process.env.PULSE_BASE_URL ?? process.env.NEXT_PUBLIC_PULSE_BASE_URL;
+  const response = await this.apiClient.get(`${pulseUrl}/api/messages/user`, {
+    params: { senderId, recipientId, page, limit }
+  });
+  return response.data; // Should match the shape above
+};
+  public searchGroups = async (query: string): Promise<AxiosResponse> => {
     try {
       const pulseUrl = process.env.PULSE_BASE_URL ?? process.env.NEXT_PUBLIC_PULSE_BASE_URL;
-      const response = await this.apiClient.get(`${pulseUrl}/api/messages/user?senderId=${senderId}&recipientId=${recipientId}&page=${page}&limit=${limit}`);
+      const response = await this.apiClient.get(`${pulseUrl}/api/messages/group/search/${query}`);
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError;
       throw axiosError.response?.data || axiosError.message;
     }
-  };
-  public searchGroups = async (query: string): Promise<AxiosResponse> => {
+  }
+  public messageListenerForUser = async (userId: string, page: number, limit: number): Promise<AxiosResponse> => {
     try {
-      const response = await this.apiClient.get(`${process.env.PULSE_BASE_URL}/api/messages/group/search/${query}`);
+      const pulseUrl = process.env.PULSE_BASE_URL ?? process.env.NEXT_PUBLIC_PULSE_BASE_URL;
+      const response = await this.apiClient.get(`${pulseUrl}/api/messages/user/listener/${userId}?page=${page}&limit=${limit}`);
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError;

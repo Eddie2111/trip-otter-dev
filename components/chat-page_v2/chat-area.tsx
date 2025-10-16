@@ -3,7 +3,7 @@
 import { useStore } from "@nanostores/react";
 import { $chatSocket, $currentChatHistory, $isTyping, $userLayout, ChatStoreOptimization, type IMessageStoreType } from "./chat.store";
 import { Separator } from "../ui/separator";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMessageAPI, useUserApi } from "@/lib/requests";
 import { useEffect } from "react";
 import { useSession } from "next-auth/react";
@@ -29,6 +29,7 @@ export function ChatArea() {
   const chatSocket = useStore($chatSocket);
   const userChats = useStore($currentChatHistory);
   const isTyping = useStore($isTyping);
+  const queryClient = useQueryClient();
 
   // profile fetcher
   const { data: profileData, isLoading, isError } = useQuery({
@@ -65,72 +66,81 @@ export function ChatArea() {
         isSelf: true,
         status: 'sent',
       }]);
+      queryClient.invalidateQueries({ queryKey: ['chatUsers', 'chatUsers'] });
     } else {
       console.error("Chat socket is not yet connected/authenticated.");
     }
   };
 
   // new message listener
-  useEffect(
-    () => {
-      const messageHandler = (data: IMessage) => {
-        console.log("New Message Received:", data);
-        if (chatSocket && data.timestamp) {
-          $currentChatHistory.set([...userChats, data]);
+useEffect(
+  () => {
+    const messageHandler = (data: IMessage) => {
+      console.log("New Message Received:", data);
+      queryClient.invalidateQueries({ queryKey: ['chatUsers', 'chatUsers'] });
+      
+      if (chatSocket && data.timestamp && data.senderId === userOnArea) {
+        // Check if message already exists to prevent duplicates
+        const currentChats = $currentChatHistory.get();
+        const messageExists = currentChats.some(msg => msg.timestamp === data.timestamp);
+        
+        if (!messageExists) {
+          $currentChatHistory.set([...currentChats, data]);
         }
-      };
-      chatSocket?.on(chatEvents.newMessage, messageHandler)
-
-      return () => {
-        chatSocket?.off(chatEvents.newMessage, messageHandler)
       }
-    }, [chatSocket, userChats]
-  )
+    };
+    chatSocket?.on(chatEvents.newMessage, messageHandler)
+
+    return () => {
+      chatSocket?.off(chatEvents.newMessage, messageHandler)
+    }
+  }, [chatSocket, userOnArea] // Removed userChats from dependencies
+)
 
   // attempt to resend the 'sent' or 'failed' messages again
-  useEffect(() => {
-    if (!chatSocket || !session?.user?.id) return;
+  // useEffect(() => {
+  //   if (!chatSocket || !session?.user?.id) return;
 
-    const resendLoop = setInterval(() => {
-      const chatStory = $currentChatHistory.get();
-      const now = Date.now();
+  //   const resendLoop = setInterval(() => {
+  //     const chatStory = $currentChatHistory.get();
+  //     const now = Date.now();
 
-      const messagesToResend = chatStory.filter((msg) => 
-        (msg.status === 'sent' || msg.status === 'failed') && 
-        msg.isSelf && 
-        (now - msg.timestamp) > MESSAGE_TIMEOUT_MS
-      );
+  //     const messagesToResend = chatStory.filter((msg) => 
+  //       (msg.status === 'sent' || msg.status === 'failed') && 
+  //       msg.isSelf && 
+  //       (now - msg.timestamp) > MESSAGE_TIMEOUT_MS
+  //     );
 
-      if (messagesToResend.length > 0) {
-        toast.info(`Retrying ${messagesToResend.length} unsent messages...`);
+  //     if (messagesToResend.length > 0) {
+  //       toast.info(`Retrying ${messagesToResend.length} unsent messages...`);
 
-        messagesToResend.forEach((message) => {
-          const payload = {
-            message: message.content,
-            senderId: message.senderId,
-            recipientId: message.recipientId,
-            timestamp: message.timestamp
-          };
+  //       messagesToResend.forEach((message) => {
+  //         const payload = {
+  //           message: message.content,
+  //           senderId: message.senderId,
+  //           recipientId: message.recipientId,
+  //           timestamp: message.timestamp
+  //         };
           
-          const resendAckHandler = (response: { success: boolean; error?: string; messageId?: number }) => {
-            if (!response.success) {
-              const current = $currentChatHistory.get();
-              const index = current.findIndex(m => m.timestamp === message.timestamp);
-              if (index !== -1) {
-                const updated = [...current];
-                updated[index] = { ...updated[index], status: 'failed' };
-                $currentChatHistory.set(updated);
-              }
-            }
-          };
+  //         const resendAckHandler = (response: { success: boolean; error?: string; messageId?: number }) => {
+  //           if (!response.success) {
+  //             const current = $currentChatHistory.get();
+  //             const index = current.findIndex(m => m.timestamp === message.timestamp);
+  //             if (index !== -1) {
+  //               const updated = [...current];
+  //               updated[index] = { ...updated[index], status: 'failed' };
+  //               $currentChatHistory.set(updated);
+  //             }
+  //           }
+  //         };
           
-          chatSocket.emit(chatEvents.sendMessageToUser, payload, resendAckHandler);
-        });
-      }
-    }, RETRY_INTERVAL_MS);
+  //         chatSocket.emit(chatEvents.sendMessageToUser, payload, resendAckHandler);
+  //       });
+  //     }
+  //   }, RETRY_INTERVAL_MS);
 
-    return () => clearInterval(resendLoop);
-  }, [chatSocket, session]);
+  //   return () => clearInterval(resendLoop);
+  // }, [chatSocket, session]);
 
   // message delivery listener
   useEffect(
@@ -197,7 +207,9 @@ export function ChatArea() {
 
   return (
     <div className="flex flex-col w-full mx-2">
-      <p>{profileData?.fullName ?? ""}</p>
+      <div className="h-16">
+        <p className='p-2'>{profileData?.fullName ?? ""}</p>
+      </div>
       <Separator />
       <CurrentChatHistory
         chats={userChats}
